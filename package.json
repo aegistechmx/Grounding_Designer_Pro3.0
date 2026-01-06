@@ -1,0 +1,54 @@
+{
+  "name": "calculadora-ieee80",
+  "version": "1.0.0",
+  "description": "Calculadora de Mallas IEEE 80",
+  "author": "Tu Nombre",
+  "main": "main.js",
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "dist": "npm run build && electron-builder --win"
+  },
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "lucide-react": "^0.344.0"
+  },
+  "devDependencies": {
+    "electron": "28.1.0",
+    "electron-builder": "^24.9.1",
+    "react-scripts": "5.0.1"
+  },
+  "build": {
+    "appId": "com.ieee.calculator",
+    "productName": "Calculadora IEEE 80",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "build/**/*",
+      "main.js",
+      "node_modules/**/*"
+    ],
+    "extraMetadata": {
+      "main": "main.js"
+    },
+    "win": {
+      "target": "nsis",
+      "icon": "public/favicon.ico"
+    }
+  },
+  "homepage": "./",
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  }
+}

@@ -1,0 +1,28 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#000000" />
+    <meta name="description" content="Calculadora de mallas de tierra IEEE 80" />
+    
+    <!-- Content Security Policy para producción -->
+    <% if (process.env.NODE_ENV === 'production') { %>
+    <meta 
+      http-equiv="Content-Security-Policy" 
+      content="default-src 'self'; 
+               script-src 'self' 'unsafe-inline' 'unsafe-eval'; 
+               style-src 'self' 'unsafe-inline'; 
+               img-src 'self' data:; 
+               font-src 'self' data:;"
+    />
+    <% } %>
+    
+    <title>Calculadora de Mallas IEEE 80</title>
+</head>
+<body>
+    <noscript>Necesitas habilitar JavaScript para ejecutar esta aplicación.</noscript>
+    <div id="root"></div>
+</body>
+</html>
