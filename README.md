@@ -1,36 +1,49 @@
 
 Cálculos de Malla de Tierras según IEEE 80
+
 ⚡ Sistema Eléctrico
 Transformador (kVA)
-225
+
+
 Voltaje Primario (V)
-13200
+
+
 Corriente de falla (A) - dejar en 0 para calcular
-0
+
+
 Calculada: 1771 A
 
 Duración de falla (s)
-0.5
+
+
 🌍 Características del Suelo
+
 Resistividad del suelo (Ω·m)
-100
+
+
 Típico: 50-200 (húmedo), 200-1000 (seco)
 
 Resistividad capa superficial (Ω·m)
-3000
+
+
 Grava: 3000, Asfalto: 2000-5000
 
 Espesor capa superficial (m)
-0.1
+
+
 📐 Configuración de Malla
+
 Largo (m)
-12.5
+
+
 Ancho (m)
-8
+
+
 Profundidad (m)
-0.5
+
+
 Conductores paralelos
-2
++
 Núm. Varillas
 14
 Long. Varilla (m)
