@@ -1,2 +1,0 @@
-# nonga.github.io
-asd
