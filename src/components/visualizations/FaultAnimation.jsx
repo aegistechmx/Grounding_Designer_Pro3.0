@@ -18,20 +18,24 @@ const FaultAnimation = ({ params, darkMode, onSimulate }) => {
   const [animationSpeed, setAnimationSpeed] = useState(1);
   const [showAdvancedControls, setShowAdvancedControls] = useState(false);
   const [heatMapData, setHeatMapData] = useState([]);
+  const [frameId, setFrameId] = useState(0);
   
   // Estados para Modo 1
   const [particles, setParticles] = useState([]);
   const [ripples, setRipples] = useState([]);
   const canvasRef = useRef(null);
-  
+
   // Estados para Modo 2
   const [currentWave, setCurrentWave] = useState([]);
   const chartRef = useRef(null);
-  
+
   // Estados para Modo 3
   const [voltageGradient, setVoltageGradient] = useState([]);
   const gridRef = useRef(null);
-  
+
+  // Estados para Modo 4
+  const heatmapRef = useRef(null);
+
   const animationRef = useRef(null);
   const loopRef = useRef(null);
 
@@ -70,9 +74,49 @@ const FaultAnimation = ({ params, darkMode, onSimulate }) => {
     const touchFactor = 0.5;
     return {
       step: current * gridResistance * stepFactor * Cs,
-      touch: current * gridResistance * touchFactor * Cs
+      touch: current * gridResistance * touchFactor * Cs,
+      Cs
     };
   };
+
+  // ============================================
+  // CÁLCULOS IEEE STD 80 - PROTECCIÓN
+  // ============================================
+  const calculateIEEE80Protection = () => {
+    const Cs = 1 - (0.09 * (1 - soilResistivity / surfaceLayer)) / (2 * surfaceDepth + 0.09);
+    
+    // Tensión de contacto tolerable sin capa superficial (IEEE 80)
+    const k = 0.157; // Factor para peso de 70kg
+    const EtouchWithoutSurface = (1000 + 1.5 * Cs * soilResistivity) * (k / Math.sqrt(faultDuration));
+    
+    // Tensión de contacto tolerable con capa superficial
+    const EtouchWithSurface = (1000 + 1.5 * Cs * surfaceLayer) * (k / Math.sqrt(faultDuration));
+    
+    // Incremento de seguridad
+    const safetyIncrease = ((EtouchWithSurface - EtouchWithoutSurface) / EtouchWithoutSurface) * 100;
+    
+    // Profundidad efectiva de la capa superficial
+    const effectiveDepth = surfaceDepth + 0.09;
+    
+    // Área de influencia (aproximada)
+    const area = gridLength * gridWidth;
+    const influenceArea = area * 1.5;
+    
+    // Resistividad equivalente
+    const equivalentResistivity = (soilResistivity * surfaceLayer) / (soilResistivity + surfaceLayer) * 1000;
+    
+    return {
+      Cs: Cs.toFixed(3),
+      EtouchWithoutSurface: Math.round(EtouchWithoutSurface),
+      EtouchWithSurface: Math.round(EtouchWithSurface),
+      safetyIncrease: safetyIncrease.toFixed(0),
+      effectiveDepth: effectiveDepth.toFixed(1),
+      influenceArea: Math.round(influenceArea),
+      equivalentResistivity: Math.round(equivalentResistivity)
+    };
+  };
+
+  const ieee80Data = calculateIEEE80Protection();
 
   // ============================================
   // FUNCIÓN PRINCIPAL DE ANIMACIÓN
@@ -81,10 +125,10 @@ const FaultAnimation = ({ params, darkMode, onSimulate }) => {
     // Detener animaciones existentes
     if (animationRef.current) cancelAnimationFrame(animationRef.current);
     if (loopRef.current) clearTimeout(loopRef.current);
-    
+
     setIsSimulating(true);
     setAnimationProgress(0);
-    
+
     // Preparar según modo
     if (mode === 'mode1') {
       const newParticles = [];
@@ -104,18 +148,18 @@ const FaultAnimation = ({ params, darkMode, onSimulate }) => {
         });
       }
       setParticles(newParticles);
-      
+
       const newRipples = [];
       for (let i = 0; i < 5; i++) {
         newRipples.push({ id: i, radius: 30, opacity: 0.8, active: true });
       }
       setRipples(newRipples);
     }
-    
+
     if (mode === 'mode2') {
       setCurrentWave([]);
     }
-    
+
     if (mode === 'mode3') {
       const gradient = [];
       for (let i = 0; i < 10; i++) {
@@ -129,19 +173,41 @@ const FaultAnimation = ({ params, darkMode, onSimulate }) => {
       }
       setVoltageGradient(gradient);
     }
-    
+
+    if (mode === 'mode4') {
+      const heatmap = [];
+      const gridSize = 20;
+      for (let i = 0; i < gridSize; i++) {
+        for (let j = 0; j < gridSize; j++) {
+          const x = (i / gridSize) * 400;
+          const y = (j / gridSize) * 400;
+          const centerX = 200;
+          const centerY = 200;
+          const dist = Math.sqrt((x - centerX) ** 2 + (y - centerY) ** 2);
+          const baseIntensity = Math.exp(-dist / 80);
+          heatmap.push({
+            x,
+            y,
+            intensity: baseIntensity,
+            voltage: maxFaultCurrent * gridResistance * baseIntensity
+          });
+        }
+      }
+      setHeatMapData(heatmap);
+    }
+
     runAnimationCycle(mode);
   };
 
   const runAnimationCycle = (mode) => {
     let startTime = null;
     const duration = 2500 / animationSpeed;
-    
+
     const animate = (timestamp) => {
       if (!startTime) startTime = timestamp;
       const elapsed = timestamp - startTime;
       const progress = Math.min(1, elapsed / duration);
-      
+
       let currentFactor;
       if (progress < 0.2) {
         currentFactor = progress / 0.2;
@@ -150,17 +216,17 @@ const FaultAnimation = ({ params, darkMode, onSimulate }) => {
       } else {
         currentFactor = 1 - (progress - 0.5) / 0.5 * 0.95;
       }
-      
+
       const currentValue = maxFaultCurrent * currentFactor;
       setFaultCurrent(currentValue);
       setGridCurrent(currentValue * 0.85);
       setGpr(currentValue * gridResistance);
-      
+
       const { step, touch } = calculateStepAndTouch(currentValue);
       setStepVoltage(step);
       setTouchVoltage(touch);
       setAnimationProgress(progress);
-      
+
       // Actualizar Modo 1
       if (mode === 'mode1') {
         setParticles(prev => prev.map(p => ({
@@ -169,17 +235,17 @@ const FaultAnimation = ({ params, darkMode, onSimulate }) => {
           x: 50 + Math.cos(p.angle) * (120 + Math.random() * 80) * (1 - p.progress),
           y: 50 + Math.sin(p.angle) * (120 + Math.random() * 80) * (1 - p.progress),
         })).filter(p => p.progress < 1));
-        
+
         setRipples(prev => prev.map(r => ({
           ...r,
           radius: r.radius + 3,
           opacity: r.opacity - 0.02
         })).filter(r => r.opacity > 0));
-        
+
         if (progress < 0.8 && Math.random() < 0.1) {
           setRipples(prev => [...prev, { id: Date.now(), radius: 30, opacity: 0.7, active: true }]);
         }
-        
+
         if (progress < 0.8 && particles.length < 40 && Math.random() < 0.15) {
           const angle = Math.random() * Math.PI * 2;
           setParticles(prev => [...prev, {
@@ -195,7 +261,7 @@ const FaultAnimation = ({ params, darkMode, onSimulate }) => {
           }]);
         }
       }
-      
+
       // Actualizar Modo 2
       if (mode === 'mode2') {
         setCurrentWave(prev => {
@@ -205,7 +271,7 @@ const FaultAnimation = ({ params, darkMode, onSimulate }) => {
           return newWave;
         });
       }
-      
+
       // Actualizar Modo 3
       if (mode === 'mode3') {
         setVoltageGradient(prev => prev.map(p => ({
@@ -213,7 +279,22 @@ const FaultAnimation = ({ params, darkMode, onSimulate }) => {
           voltage: currentValue * gridResistance * Math.exp(-Math.sqrt(Math.pow(p.x - 200, 2) + Math.pow(p.y - 200, 2)) / 50)
         })));
       }
-      
+
+      // Actualizar Modo 4
+      if (mode === 'mode4') {
+        setHeatMapData(prev => prev.map(p => {
+          const centerX = 200;
+          const centerY = 200;
+          const dist = Math.sqrt((p.x - centerX) ** 2 + (p.y - centerY) ** 2);
+          const baseIntensity = Math.exp(-dist / 80);
+          return {
+            ...p,
+            intensity: baseIntensity * currentFactor,
+            voltage: currentValue * gridResistance * baseIntensity
+          };
+        }));
+      }
+
       if (progress < 1) {
         animationRef.current = requestAnimationFrame(animate);
       } else {
@@ -234,6 +315,7 @@ const FaultAnimation = ({ params, darkMode, onSimulate }) => {
           setParticles([]);
           setRipples([]);
           setCurrentWave([]);
+          setHeatMapData([]);
         }
       }
     };
@@ -263,7 +345,8 @@ const FaultAnimation = ({ params, darkMode, onSimulate }) => {
     setParticles([]);
     setRipples([]);
     setCurrentWave([]);
-    setVoltageGradient([]); // Limpiar voltageGradient
+    setVoltageGradient([]);
+    setHeatMapData([]); // Limpiar voltageGradient
     setAnimationProgress(0);
   };
 
@@ -295,6 +378,7 @@ const FaultAnimation = ({ params, darkMode, onSimulate }) => {
     setRipples([]);
     setCurrentWave([]);
     setVoltageGradient([]);
+    setHeatMapData([]);
     setFaultCurrent(0);
     setGridCurrent(0);
     setGpr(0);
@@ -827,9 +911,54 @@ const FaultAnimation = ({ params, darkMode, onSimulate }) => {
     ctx.fillStyle = darkMode ? '#fbbf24' : '#d97706';
     ctx.shadowBlur = 8;
     ctx.shadowColor = darkMode ? '#fbbf24' : '#d97706';
-    ctx.fillText('MALLA DE TIERRA', gridX - 10, gridY - 10);
+    ctx.fillText('MALLA DE TIERRA', gridX - 10, gridY - 15);
     ctx.shadowBlur = 0;
-  }, [voltageGradient, darkMode, animationMode, maxFaultCurrent, gridResistance]);
+    
+    // Leyenda de colores
+    const legendY = height - 30;
+    for (let i = 0; i < 10; i++) {
+      const x = 20 + i * 15;
+      const intensity = i / 9;
+      const red = Math.floor(255 * intensity);
+      const green = Math.floor(255 * (1 - intensity) * 0.5);
+      const blue = Math.floor(255 * (1 - intensity));
+      ctx.fillStyle = `rgb(${red}, ${green}, ${blue})`;
+      ctx.fillRect(x, legendY, 15, 10);
+    }
+    ctx.fillStyle = darkMode ? '#9ca3af' : '#6b7280';
+    ctx.font = '9px sans-serif';
+    ctx.fillText('Bajo', 20, legendY + 20);
+    ctx.fillText('Alto', 155, legendY + 20);
+  }, [heatMapData, darkMode, animationMode, maxFaultCurrent, gridResistance]);
+
+  // ============================================
+  // KEYBOARD SHORTCUTS
+  // ============================================
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === ' ') {
+        e.preventDefault();
+        togglePause();
+      } else if (e.key === 'Escape') {
+        stopAnimation();
+      } else if (e.key === '1') {
+        handleModeChange('mode1');
+      } else if (e.key === '2') {
+        handleModeChange('mode2');
+      } else if (e.key === '3') {
+        handleModeChange('mode3');
+      } else if (e.key === '4') {
+        handleModeChange('mode4');
+      } else if (e.key === 'r' || e.key === 'R') {
+        startAnimation(animationMode);
+      } else if (e.key === 'l' || e.key === 'L') {
+        setIsLooping(!isLooping);
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isSimulating, isPaused, animationMode, isLooping]);
 
   // ============================================
   // ESTILOS
@@ -1067,13 +1196,13 @@ const FaultAnimation = ({ params, darkMode, onSimulate }) => {
         )}
         
         {/* Panel de parámetros de falla (común) */}
-        <div className={`p-4 rounded-lg ${colors.card} border ${colors.border}`}>
+        <div className={`p-4 rounded-lg ${colors.card} border ${colors.border}`} style={{ boxShadow: darkMode ? '0 0 20px rgba(239, 68, 68, 0.3), inset 0 0 10px rgba(239, 68, 68, 0.1)' : '0 0 20px rgba(220, 38, 38, 0.2), inset 0 0 10px rgba(220, 38, 38, 0.05)' }}>
           <h4 className={`font-semibold ${colors.text} mb-4 flex items-center gap-2 text-base`}>
             <AlertTriangle size={16} /> ⚡ PARÁMETROS DE FALLA
           </h4>
           
           <div className="space-y-4">
-            <div className={`p-3 rounded-lg ${darkMode ? 'bg-red-900/30' : 'bg-red-50'}`}>
+            <div className={`p-3 rounded-lg ${darkMode ? 'bg-red-900/30' : 'bg-red-50'}`} style={{ boxShadow: darkMode ? '0 0 15px rgba(239, 68, 68, 0.4), inset 0 0 5px rgba(239, 68, 68, 0.2)' : '0 0 15px rgba(220, 38, 38, 0.3), inset 0 0 5px rgba(220, 38, 38, 0.1)' }}>
               <div className="flex justify-between items-center">
                 <span className={`text-sm ${colors.textSecondary}`}>Corriente de Falla (If)</span>
                 <span className={`text-2xl font-bold ${colors.fault}`}>
@@ -1092,7 +1221,7 @@ const FaultAnimation = ({ params, darkMode, onSimulate }) => {
               </div>
             </div>
             
-            <div className={`p-3 rounded-lg ${darkMode ? 'bg-yellow-900/30' : 'bg-yellow-50'}`}>
+            <div className={`p-3 rounded-lg ${darkMode ? 'bg-yellow-900/30' : 'bg-yellow-50'}`} style={{ boxShadow: darkMode ? '0 0 15px rgba(251, 191, 36, 0.4), inset 0 0 5px rgba(251, 191, 36, 0.2)' : '0 0 15px rgba(217, 119, 6, 0.3), inset 0 0 5px rgba(217, 119, 6, 0.1)' }}>
               <div className="flex justify-between items-center">
                 <span className={`text-sm ${colors.textSecondary}`}>Potencial de Tierra (GPR)</span>
                 <span className={`text-2xl font-bold ${colors.gpr}`}>
@@ -1104,7 +1233,7 @@ const FaultAnimation = ({ params, darkMode, onSimulate }) => {
               </div>
             </div>
             
-            <div className={`p-3 rounded-lg ${darkMode ? 'bg-blue-900/30' : 'bg-blue-50'}`}>
+            <div className={`p-3 rounded-lg ${darkMode ? 'bg-blue-900/30' : 'bg-blue-50'}`} style={{ boxShadow: darkMode ? '0 0 15px rgba(59, 130, 246, 0.4), inset 0 0 5px rgba(59, 130, 246, 0.2)' : '0 0 15px rgba(37, 99, 235, 0.3), inset 0 0 5px rgba(37, 99, 235, 0.1)' }}>
               <div className="flex justify-between items-center">
                 <span className={`text-sm ${colors.textSecondary}`}>Corriente en Malla (Ig)</span>
                 <span className={`text-2xl font-bold ${colors.grid}`}>
@@ -1118,11 +1247,11 @@ const FaultAnimation = ({ params, darkMode, onSimulate }) => {
             
             {animationMode === 'mode2' && (
               <div className="grid grid-cols-2 gap-2">
-                <div className={`p-2 rounded-lg ${darkMode ? 'bg-green-900/30' : 'bg-green-50'}`}>
+                <div className={`p-2 rounded-lg ${darkMode ? 'bg-green-900/30' : 'bg-green-50'}`} style={{ boxShadow: darkMode ? '0 0 12px rgba(34, 197, 94, 0.4), inset 0 0 4px rgba(34, 197, 94, 0.2)' : '0 0 12px rgba(22, 163, 74, 0.3), inset 0 0 4px rgba(22, 163, 74, 0.1)' }}>
                   <div className={`text-xs ${darkMode ? 'text-gray-100' : 'text-gray-600'}`}>Tensión de Paso</div>
                   <div className={`text-lg font-bold ${colors.step}`}>{stepVoltage.toFixed(0)} V</div>
                 </div>
-                <div className={`p-2 rounded-lg ${darkMode ? 'bg-orange-900/30' : 'bg-orange-50'}`}>
+                <div className={`p-2 rounded-lg ${darkMode ? 'bg-orange-900/30' : 'bg-orange-50'}`} style={{ boxShadow: darkMode ? '0 0 12px rgba(249, 115, 22, 0.4), inset 0 0 4px rgba(249, 115, 22, 0.2)' : '0 0 12px rgba(234, 88, 12, 0.3), inset 0 0 4px rgba(234, 88, 12, 0.1)' }}>
                   <div className={`text-xs ${darkMode ? 'text-gray-100' : 'text-gray-600'}`}>Tensión de Contacto</div>
                   <div className={`text-lg font-bold ${colors.touch}`}>{touchVoltage.toFixed(0)} V</div>
                 </div>
