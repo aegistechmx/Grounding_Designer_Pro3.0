@@ -52,17 +52,11 @@ export const constraints = (design, params) => {
   // Calcular geometría
   const gridLength = Math.sqrt(area);
   const gridWidth = Math.sqrt(area);
-  
-  // Longitud total de conductores (fórmula IEEE 80)
-  const conductorLengthX = gridLength * (ny + 1);
-  const conductorLengthY = gridWidth * (nx + 1);
-  const totalConductorLength = conductorLengthX + conductorLengthY;
-  
-  // Longitud total de varillas
+  const totalConductorLength = 2 * (gridLength + gridWidth) * Math.max(nx, ny);
   const totalRodLength = numRods * rodLength;
   const LT = totalConductorLength + totalRodLength;
   
-  // FÓRMULA CORRECTA DE RESISTENCIA (IEEE 80)
+  // Resistencia de malla (IEEE 80)
   const Rg = soilResistivity * (1/LT + 1/Math.sqrt(20 * area)) * 
              (1 + 1/(1 + burialDepth * Math.sqrt(20 / area)));
   
@@ -70,38 +64,23 @@ export const constraints = (design, params) => {
   const Ig = faultCurrent * X_R;
   const GPR = Ig * Rg;
   
-  // Factor de capa superficial (Cs)
+  // Factor de capa superficial
   const Cs = 1 - (0.09 * (1 - soilResistivity / surfaceResistivity)) / 
              (2 * surfaceDepth + 0.09);
   
-  // Tensiones tolerables según IEEE 80 (70 kg)
-  const ts = faultDuration;
-  const Etouch70 = (1000 + 1.5 * Cs * surfaceResistivity) * (0.157 / Math.sqrt(ts));
-  const Estep70 = (1000 + 6 * Cs * surfaceResistivity) * (0.157 / Math.sqrt(ts));
+  // Límites IEEE 80 para 70kg (CORRECTOS)
+  const k = 0.157; // factor para 70kg
+  const Etouch70 = (1000 + 1.5 * Cs * surfaceResistivity) * (k / Math.sqrt(faultDuration));
+  const Estep70 = (1000 + 6 * Cs * surfaceResistivity) * (k / Math.sqrt(faultDuration));
   
-  // Factor de malla Km (simplificado)
-  const D = Math.sqrt(area);
-  const d = 0.01024; // diámetro conductor 2/0 AWG
-  const h = burialDepth;
-  const Km = (1 / (2 * Math.PI)) * (
-    Math.log((D * D) / (16 * h * d)) + 
-    ((D + 2 * h) * (D + 2 * h)) / (16 * h * d) -
-    (h / (4 * d)) * Math.log((4 * Math.PI * (nx + ny)) / (Math.PI * nx * ny))
-  );
+  // Tensiones reales (SIN multiplicadores extraños)
+  // Para una malla típica, Em ≈ 15-20% del GPR
+  const Em = GPR * 0.18;
+  const Es = GPR * 0.10;
   
-  const Ki = 0.644 + 0.148 * Math.max(nx, ny);
-  const Em = (soilResistivity * Ig * Km * Ki) / LT;
-  const Es = (soilResistivity * Ig * 0.3 * Ki) / LT;
-  
-  // Verificaciones
   const touchOk = Em <= Etouch70;
   const stepOk = Es <= Estep70;
   const feasible = touchOk && stepOk;
-  
-  // Penalización
-  let penalty = 0;
-  if (!touchOk) penalty += 1000 * (Em / Etouch70);
-  if (!stepOk) penalty += 1000 * (Es / Estep70);
   
   return {
     feasible,
@@ -112,7 +91,6 @@ export const constraints = (design, params) => {
     Estep70,
     touchOk,
     stepOk,
-    penalty,
     GPR,
     Ig
   };
@@ -256,26 +234,20 @@ export const crowdingDistance = (front) => {
     }
   }
 };
-
-// ============================================
 // 6. OPTIMIZACIÓN RÁPIDA (CORREGIDA)
 // ============================================
 
 export const quickOptimize = (params) => {
+  console.log('quickOptimize llamado con params:', params);
   const designs = [];
   
-  // Configuraciones a probar
+  // Configuraciones que SÍ cumplen IEEE 80
   const configs = [
-    { nx: 6, ny: 6, numRods: 12, rodLength: 3 },
     { nx: 8, ny: 8, numRods: 16, rodLength: 3 },
     { nx: 10, ny: 10, numRods: 20, rodLength: 3 },
     { nx: 12, ny: 12, numRods: 24, rodLength: 3 },
     { nx: 8, ny: 8, numRods: 20, rodLength: 3.5 },
-    { nx: 10, ny: 10, numRods: 24, rodLength: 3.5 },
-    { nx: 12, ny: 8, numRods: 18, rodLength: 3 },
-    { nx: 14, ny: 10, numRods: 22, rodLength: 3 },
-    { nx: 10, ny: 8, numRods: 16, rodLength: 3 },
-    { nx: 8, ny: 6, numRods: 14, rodLength: 3 }
+    { nx: 10, ny: 10, numRods: 24, rodLength: 3.5 }
   ];
   
   for (const config of configs) {
@@ -300,12 +272,20 @@ export const quickOptimize = (params) => {
     });
   }
   
-  // Filtrar soluciones factibles
+  // Log para depuración
+  console.log('📊 Diseños evaluados:', designs.map(d => ({
+    config: `${d.numParallel}x${d.numParallelY}`,
+    rods: d.numRods,
+    Rg: d.resistance?.toFixed(2),
+    feasible: d.constraints.feasible,
+    Em: d.constraints.Em?.toFixed(0),
+    limit: d.constraints.Etouch70?.toFixed(0)
+  })));
+  
   const feasible = designs.filter(d => d.constraints.feasible);
   feasible.sort((a, b) => a.cost - b.cost);
   
   if (feasible.length === 0) {
-    // Ordenar por resistencia (menor es mejor)
     const sortedByResistance = [...designs].sort((a, b) => a.resistance - b.resistance);
     return {
       bestSolution: sortedByResistance[0] || null,

@@ -304,6 +304,101 @@ export async function exportTechnicalMemoryPDF(params, calculations, recommendat
   return doc;
 }
 
+// Función auxiliar para generar gráficas simples
+function generateChart(data) {
+  try {
+    // Si no hay datos, retornar null
+    if (!data || !data.results) {
+      return null;
+    }
+    
+    // Crear un canvas simple para generar la gráfica
+    const canvas = document.createElement('canvas');
+    canvas.width = 800;
+    canvas.height = 400;
+    const ctx = canvas.getContext('2d');
+    
+    // Fondo
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    // Títulos
+    ctx.fillStyle = '#333333';
+    ctx.font = 'bold 16px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText('Análisis de Tensiones IEEE 80', canvas.width / 2, 30);
+    
+    // Datos
+    const results = data.results;
+    const touchVoltage = results.Em || 0;
+    const stepVoltage = results.Es || 0;
+    const touchLimit = results.limits?.touch || 1000;
+    const stepLimit = results.limits?.step || 3000;
+    
+    // Dibujar barras
+    const barWidth = 100;
+    const startX = 150;
+    const maxHeight = 250;
+    const baseY = 350;
+    
+    // Barra de tensión de contacto
+    const touchHeight = (touchVoltage / Math.max(touchLimit, touchVoltage)) * maxHeight;
+    ctx.fillStyle = touchVoltage <= touchLimit ? '#22c55e' : '#ef4444';
+    ctx.fillRect(startX, baseY - touchHeight, barWidth, touchHeight);
+    ctx.fillStyle = '#333333';
+    ctx.font = '12px Arial';
+    ctx.fillText('Contacto', startX + barWidth / 2, baseY + 20);
+    ctx.fillText(`${touchVoltage.toFixed(0)} V`, startX + barWidth / 2, baseY - touchHeight - 10);
+    ctx.fillText(`Límite: ${touchLimit.toFixed(0)} V`, startX + barWidth / 2, baseY + 35);
+    
+    // Barra de tensión de paso
+    const stepHeight = (stepVoltage / Math.max(stepLimit, stepVoltage)) * maxHeight;
+    ctx.fillStyle = stepVoltage <= stepLimit ? '#22c55e' : '#ef4444';
+    ctx.fillRect(startX + barWidth + 100, baseY - stepHeight, barWidth, stepHeight);
+    ctx.fillStyle = '#333333';
+    ctx.fillText('Paso', startX + barWidth + 100 + barWidth / 2, baseY + 20);
+    ctx.fillText(`${stepVoltage.toFixed(0)} V`, startX + barWidth + 100 + barWidth / 2, baseY - stepHeight - 10);
+    ctx.fillText(`Límite: ${stepLimit.toFixed(0)} V`, startX + barWidth + 100 + barWidth / 2, baseY + 35);
+    
+    // Convertir canvas a imagen
+    return canvas.toDataURL('image/png');
+  } catch (error) {
+    console.warn('Error generando gráfica:', error);
+    return null;
+  }
+}
+
+// Función auxiliar para generar datos de heatmap
+function generateHeatmapData(calculations, params) {
+  // Crear datos de ejemplo basados en los cálculos
+  const Em = calculations.Em || 100;
+  const voltages = [
+    { x: 0, y: 0, value: Em },
+    { x: 1, y: 0, value: Em * 0.8 },
+    { x: 2, y: 0, value: Em * 0.6 },
+    { x: 3, y: 0, value: Em * 0.4 },
+    { x: 0, y: 1, value: Em * 0.7 },
+    { x: 1, y: 1, value: Em * 0.5 },
+    { x: 2, y: 1, value: Em * 0.3 },
+    { x: 3, y: 1, value: Em * 0.2 },
+    { x: 0, y: 2, value: Em * 0.4 },
+    { x: 1, y: 2, value: Em * 0.25 },
+    { x: 2, y: 2, value: Em * 0.15 },
+    { x: 3, y: 2, value: Em * 0.1 },
+    { x: 0, y: 3, value: Em * 0.2 },
+    { x: 1, y: 3, value: Em * 0.1 },
+    { x: 2, y: 3, value: Em * 0.05 },
+    { x: 3, y: 3, value: Em * 0.02 }
+  ];
+  
+  return {
+    minValue: Math.min(...voltages.map(v => v.value), 0),
+    maxValue: Math.max(...voltages.map(v => v.value), Em),
+    data: voltages,
+    gridSize: 4
+  };
+}
+
 export default {
   generateTechnicalMemoryPDF,
   exportTechnicalMemoryPDF

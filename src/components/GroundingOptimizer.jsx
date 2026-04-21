@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { optimizeGrounding, quickOptimize } from '../engine/optimizerNSGA2';
+import { quickOptimize, constraints, costFunction } from '../engine/optimizerNSGA2';
 import { Target, DollarSign, Shield, Zap, CheckCircle, XCircle, Loader } from 'lucide-react';
 
 const GroundingOptimizer = ({ params, darkMode, onApplyDesign }) => {
@@ -19,43 +19,69 @@ const GroundingOptimizer = ({ params, darkMode, onApplyDesign }) => {
     setIsOptimizing(true);
     setProgress(0);
     
-    // Simular progreso
     const progressInterval = setInterval(() => {
       setProgress(prev => Math.min(prev + 5, 90));
     }, 200);
     
     try {
+      const area = (params.gridLength || 12.5) * (params.gridWidth || 8);
+      
+      const baseParams = {
+        area: area,
+        soilResistivity: params.soilResistivity || 100,
+        burialDepth: params.gridDepth || 0.5,
+        faultCurrent: params.faultCurrent || 1771,
+        X_R: params.currentDivisionFactor || 0.15,
+        faultDuration: params.faultDuration || 0.5,
+        surfaceResistivity: params.surfaceLayer || 3000,
+        surfaceDepth: params.surfaceDepth || 0.1,
+        nx: params.numParallel || 8,
+        ny: params.numParallelY || 8,
+        numRods: params.numRods || 16,
+        rodLength: params.rodLength || 3
+      };
+      
       let result;
       
+      // Configuraciones según la estrategia seleccionada
       if (selectedStrategy === 'quick') {
-        result = quickOptimize({
-          soilResistivity: params.soilResistivity || 100,
-          area: (params.gridLength || 30) * (params.gridWidth || 16),
-          burialDepth: params.gridDepth || 0.6,
-          faultCurrent: params.faultCurrent || 5000,
-          X_R: params.X_R || 10,
-          faultDuration: params.faultDuration || 0.35,
-          surfaceResistivity: params.surfaceLayer || 10000,
-          surfaceDepth: params.surfaceDepth || 0.2
-        });
-      } else {
-        result = await optimizeGrounding({
-          soilResistivity: params.soilResistivity || 100,
-          area: (params.gridLength || 30) * (params.gridWidth || 16),
-          burialDepth: params.gridDepth || 0.6,
-          faultCurrent: params.faultCurrent || 5000,
-          X_R: params.X_R || 10,
-          faultDuration: params.faultDuration || 0.35,
-          surfaceResistivity: params.surfaceLayer || 10000,
-          surfaceDepth: params.surfaceDepth || 0.2,
-          nx: params.numParallel || 8,
-          ny: params.numParallelY || 8,
-          numRods: params.numRods || 10,
-          rodLength: params.rodLength || 3
-        }, {
-          populationSize: 50,
-          generations: 80
-        });
+        result = quickOptimize(baseParams);
+      } 
+      else if (selectedStrategy === 'cost') {
+        // Mínimo Costo - prioriza configuraciones con menos conductores
+        const costConfigs = [
+          { nx: 6, ny: 6, numRods: 12, rodLength: 3 },
+          { nx: 8, ny: 8, numRods: 14, rodLength: 3 },
+          { nx: 8, ny: 8, numRods: 16, rodLength: 3 },
+          { nx: 10, ny: 10, numRods: 16, rodLength: 3 },
+          { nx: 10, ny: 10, numRods: 18, rodLength: 3 }
+        ];
+        result = evaluateConfigs(costConfigs, baseParams);
+        result.strategy = 'Mínimo Costo';
+      }
+      else if (selectedStrategy === 'safety') {
+        // Máxima Seguridad - prioriza más conductores y varillas
+        const safetyConfigs = [
+          { nx: 12, ny: 12, numRods: 24, rodLength: 3.5 },
+          { nx: 14, ny: 14, numRods: 28, rodLength: 3.5 },
+          { nx: 12, ny: 12, numRods: 30, rodLength: 3 },
+          { nx: 16, ny: 16, numRods: 32, rodLength: 3 },
+          { nx: 10, ny: 10, numRods: 24, rodLength: 3.5 }
+        ];
+        result = evaluateConfigs(safetyConfigs, baseParams);
+        result.strategy = 'Máxima Seguridad';
+      }
+      else {
+        // Equilibrado (balanced) - balance entre costo y seguridad
+        const balancedConfigs = [
+          { nx: 8, ny: 8, numRods: 16, rodLength: 3 },
+          { nx: 10, ny: 10, numRods: 20, rodLength: 3 },
+          { nx: 10, ny: 10, numRods: 22, rodLength: 3.5 },
+          { nx: 12, ny: 12, numRods: 20, rodLength: 3 },
+          { nx: 8, ny: 8, numRods: 20, rodLength: 3.5 }
+        ];
+        result = evaluateConfigs(balancedConfigs, baseParams);
+        result.strategy = 'Equilibrado';
       }
       
       setOptimizationResult(result);
@@ -90,6 +116,53 @@ const GroundingOptimizer = ({ params, darkMode, onApplyDesign }) => {
         hasOnApplyDesign: !!onApplyDesign
       });
     }
+  };
+
+  // Función auxiliar para evaluar configuraciones
+  const evaluateConfigs = (configs, params) => {
+    const designs = [];
+    
+    for (const config of configs) {
+      const constraintsResult = constraints(config, params);
+      const totalLength = 2 * (Math.sqrt(params.area) + Math.sqrt(params.area)) * Math.max(config.nx, config.ny);
+      const cost = costFunction({
+        totalLength,
+        numRods: config.numRods,
+        rodLength: config.rodLength,
+        area: params.area
+      });
+      
+      designs.push({
+        numParallel: config.nx,
+        numParallelY: config.ny,
+        numRods: config.numRods,
+        rodLength: config.rodLength,
+        cost: cost.total,
+        resistance: constraintsResult.Rg,
+        constraints: constraintsResult,
+        costDetails: cost
+      });
+    }
+    
+    const feasible = designs.filter(d => d.constraints.feasible);
+    
+    if (feasible.length === 0) {
+      const sortedByResistance = [...designs].sort((a, b) => a.resistance - b.resistance);
+      return {
+        bestSolution: sortedByResistance[0],
+        alternatives: sortedByResistance.slice(1, 3),
+        noFeasibleSolution: true
+      };
+    }
+    
+    // Ordenar por costo (menor a mayor)
+    feasible.sort((a, b) => a.cost - b.cost);
+    
+    return {
+      bestSolution: feasible[0],
+      alternatives: feasible.slice(1, 3),
+      noFeasibleSolution: false
+    };
   };
 
   return (
@@ -191,11 +264,17 @@ const GroundingOptimizer = ({ params, darkMode, onApplyDesign }) => {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
               <div>
                 <div className="text-xs text-gray-500">Conductores X</div>
-                <div className="text-xl font-bold">{optimizationResult.bestSolution?.nx || 'N/A'}</div>
+                <div className="text-xl font-bold">
+                  {optimizationResult.bestSolution?.numParallel || 
+                   optimizationResult.bestSolution?.nx || 'N/A'}
+                </div>
               </div>
               <div>
                 <div className="text-xs text-gray-500">Conductores Y</div>
-                <div className="text-xl font-bold">{optimizationResult.bestSolution?.ny || 'N/A'}</div>
+                <div className="text-xl font-bold">
+                  {optimizationResult.bestSolution?.numParallelY || 
+                   optimizationResult.bestSolution?.ny || 'N/A'}
+                </div>
               </div>
               <div>
                 <div className="text-xs text-gray-500">Varillas</div>

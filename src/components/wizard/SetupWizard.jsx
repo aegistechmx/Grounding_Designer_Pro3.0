@@ -73,12 +73,12 @@ const SetupWizard = ({ onComplete, darkMode, onClose }) => {
           <div className="space-y-4">
             <div className="flex items-center gap-2 mb-4">
               <ClipboardList size={24} className="text-blue-500" />
-              <h3 className="text-lg font-semibold">Datos del Proyecto</h3>
+              <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : ''}`}>Datos del Proyecto</h3>
             </div>
             
             <div className="space-y-3">
               <div>
-                <label className="block text-sm font-medium mb-1">
+                <label className={`block text-sm font-medium mb-1 ${darkMode ? 'text-white' : ''}`}>
                   📋 Nombre del Proyecto <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -88,11 +88,11 @@ const SetupWizard = ({ onComplete, darkMode, onClose }) => {
                   placeholder="Ej: Subestación Norte, Planta Industrial, etc."
                   className={`w-full px-3 py-2 rounded-md border ${darkMode ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-300'}`}
                 />
-                <p className={`text-xs ${darkMode ? 'text-gray-100' : 'text-gray-600'} mt-1`}>Identificador único del proyecto</p>
+                <p className={`text-xs ${darkMode ? 'text-white' : 'text-gray-600'} mt-1`}>Identificador único del proyecto</p>
               </div>
               
               <div>
-                <label className="block text-sm font-medium mb-1">
+                <label className={`block text-sm font-medium mb-1 ${darkMode ? 'text-white' : ''}`}>
                   📍 Ubicación del Proyecto
                 </label>
                 <input
@@ -105,7 +105,7 @@ const SetupWizard = ({ onComplete, darkMode, onClose }) => {
               </div>
               
               <div>
-                <label className="block text-sm font-medium mb-1">
+                <label className={`block text-sm font-medium mb-1 ${darkMode ? 'text-white' : ''}`}>
                   🏢 Cliente / Empresa
                 </label>
                 <input
@@ -119,7 +119,7 @@ const SetupWizard = ({ onComplete, darkMode, onClose }) => {
               
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-medium mb-1">
+                  <label className={`block text-sm font-medium mb-1 ${darkMode ? 'text-white' : ''}`}>
                     👨‍💻 Ingeniero Responsable <span className="text-red-500">*</span>
                   </label>
                   <input
@@ -131,7 +131,7 @@ const SetupWizard = ({ onComplete, darkMode, onClose }) => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">
+                  <label className={`block text-sm font-medium mb-1 ${darkMode ? 'text-white' : ''}`}>
                     📅 Fecha
                   </label>
                   <input
@@ -145,7 +145,7 @@ const SetupWizard = ({ onComplete, darkMode, onClose }) => {
             </div>
             
             <div className={`p-3 rounded-lg ${darkMode ? 'bg-blue-900/30' : 'bg-blue-50'} mt-4`}>
-              <p className="text-sm flex items-center gap-2">
+              <p className={`text-sm flex items-center gap-2 ${darkMode ? 'text-white' : ''}`}>
                 <User size={16} className="text-blue-500" />
                 <span>💡 Esta información aparecerá en los reportes y certificados</span>
               </p>
@@ -158,24 +158,24 @@ const SetupWizard = ({ onComplete, darkMode, onClose }) => {
           <div className="space-y-4">
             <div className="flex items-center gap-2 mb-4">
               <Settings size={24} className="text-blue-500" />
-              <h3 className="text-lg font-semibold">Datos del Transformador</h3>
+              <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : ''}`}>Datos del Transformador</h3>
             </div>
             
             <div className="space-y-3">
               <div>
-                <label className="block text-sm font-medium mb-1">Potencia (kVA)</label>
+                <label className={`block text-sm font-medium mb-1 ${darkMode ? 'text-white' : ''}`}>Potencia (kVA)</label>
                 <input
                   type="number"
                   value={config.transformerKVA}
                   onChange={(e) => setConfig({...config, transformerKVA: safeParseFloat(e.target.value, 75)})}
                   className={`w-full px-3 py-2 rounded-md border ${darkMode ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-300'}`}
                 />
-                <p className={`text-xs ${darkMode ? 'text-gray-100' : 'text-gray-600'} mt-1`}>Rango típico: 25 - 10,000 kVA</p>
+                <p className={`text-xs ${darkMode ? 'text-white' : 'text-gray-600'} mt-1`}>Rango típico: 25 - 10,000 kVA</p>
               </div>
               
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-medium mb-1">Voltaje Primario (V)</label>
+                  <label className={`block text-sm font-medium mb-1 ${darkMode ? 'text-white' : ''}`}>Voltaje Primario (V)</label>
                   <input
                     type="number"
                     value={config.primaryVoltage}
@@ -184,7 +184,7 @@ const SetupWizard = ({ onComplete, darkMode, onClose }) => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">Voltaje Secundario (V)</label>
+                  <label className={`block text-sm font-medium mb-1 ${darkMode ? 'text-white' : ''}`}>Voltaje Secundario (V)</label>
                   <input
                     type="number"
                     value={config.secondaryVoltage}
@@ -195,7 +195,7 @@ const SetupWizard = ({ onComplete, darkMode, onClose }) => {
               </div>
               
               <div>
-                <label className="block text-sm font-medium mb-1">Impedancia (%Z)</label>
+                <label className={`block text-sm font-medium mb-1 ${darkMode ? 'text-white' : ''}`}>Impedancia (%Z)</label>
                 <input
                   type="number"
                   value={config.transformerImpedance}
@@ -203,7 +203,7 @@ const SetupWizard = ({ onComplete, darkMode, onClose }) => {
                   step="0.5"
                   className={`w-full px-3 py-2 rounded-md border ${darkMode ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-300'}`}
                 />
-                <p className={`text-xs ${darkMode ? 'text-gray-100' : 'text-gray-600'} mt-1`}>Típico: 5-7% para transformadores de distribución</p>
+                <p className={`text-xs ${darkMode ? 'text-white' : 'text-gray-600'} mt-1`}>Típico: 5-7% para transformadores de distribución</p>
               </div>
             </div>
           </div>
@@ -214,34 +214,34 @@ const SetupWizard = ({ onComplete, darkMode, onClose }) => {
           <div className="space-y-4">
             <div className="flex items-center gap-2 mb-4">
               <Shield size={24} className="text-blue-500" />
-              <h3 className="text-lg font-semibold">Características del Suelo</h3>
+              <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : ''}`}>Características del Suelo</h3>
             </div>
             
             <div className="space-y-3">
               <div>
-                <label className="block text-sm font-medium mb-1">Resistividad del suelo (Ω·m)</label>
+                <label className={`block text-sm font-medium mb-1 ${darkMode ? 'text-white' : ''}`}>Resistividad del suelo (Ω·m)</label>
                 <input
                   type="number"
                   value={config.soilResistivity}
                   onChange={(e) => setConfig({...config, soilResistivity: safeParseFloat(e.target.value, 100)})}
                   className={`w-full px-3 py-2 rounded-md border ${darkMode ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-300'}`}
                 />
-                <p className={`text-xs ${darkMode ? 'text-gray-100' : 'text-gray-600'} mt-1`}>Típico: 50-200 (húmedo), 200-1000 (seco)</p>
+                <p className={`text-xs ${darkMode ? 'text-white' : 'text-gray-600'} mt-1`}>Típico: 50-200 (húmedo), 200-1000 (seco)</p>
               </div>
               
               <div>
-                <label className="block text-sm font-medium mb-1">Resistividad capa superficial (Ω·m)</label>
+                <label className={`block text-sm font-medium mb-1 ${darkMode ? 'text-white' : ''}`}>Resistividad capa superficial (Ω·m)</label>
                 <input
                   type="number"
                   value={config.surfaceLayer}
                   onChange={(e) => setConfig({...config, surfaceLayer: safeParseFloat(e.target.value, 3000)})}
                   className={`w-full px-3 py-2 rounded-md border ${darkMode ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-300'}`}
                 />
-                <p className={`text-xs ${darkMode ? 'text-gray-100' : 'text-gray-600'} mt-1`}>Grava: 3000, Asfalto: 2000-5000</p>
+                <p className={`text-xs ${darkMode ? 'text-white' : 'text-gray-600'} mt-1`}>Grava: 3000, Asfalto: 2000-5000</p>
               </div>
               
               <div>
-                <label className="block text-sm font-medium mb-1">Espesor capa superficial (m)</label>
+                <label className={`block text-sm font-medium mb-1 ${darkMode ? 'text-white' : ''}`}>Espesor capa superficial (m)</label>
                 <input
                   type="number"
                   value={config.surfaceDepth}
@@ -249,20 +249,20 @@ const SetupWizard = ({ onComplete, darkMode, onClose }) => {
                   step="0.01"
                   className={`w-full px-3 py-2 rounded-md border ${darkMode ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-300'}`}
                 />
-                <p className={`text-xs ${darkMode ? 'text-gray-100' : 'text-gray-600'} mt-1`}>Típico: 0.10 - 0.20 m</p>
+                <p className={`text-xs ${darkMode ? 'text-white' : 'text-gray-600'} mt-1`}>Típico: 0.10 - 0.20 m</p>
               </div>
             </div>
             
             <div className={`p-3 rounded-lg ${darkMode ? 'bg-amber-900/30' : 'bg-amber-50'} mt-4`}>
-              <p className="text-sm">💡 La capa superficial de alta resistividad protege a las personas contra tensiones de contacto y paso</p>
+              <p className={`text-sm ${darkMode ? 'text-white' : ''}`}>💡 La capa superficial de alta resistividad protege a las personas contra tensiones de contacto y paso</p>
             </div>
             
             <div className="border-t pt-3 mt-4">
-              <h4 className="font-semibold text-sm mb-3">🌡️ Corrección de Resistividad (Opcional)</h4>
+              <h4 className={`font-semibold text-sm mb-3 ${darkMode ? 'text-white' : ''}`}>🌡️ Corrección de Resistividad (Opcional)</h4>
               
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-medium mb-1">Temperatura (°C)</label>
+                  <label className={`block text-sm font-medium mb-1 ${darkMode ? 'text-white' : ''}`}>Temperatura (°C)</label>
                   <input
                     type="number"
                     value={config.temperature || 20}
@@ -270,10 +270,10 @@ const SetupWizard = ({ onComplete, darkMode, onClose }) => {
                     step="1"
                     className={`w-full px-3 py-2 rounded-md border ${darkMode ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-300'}`}
                   />
-                  <p className={`text-xs ${darkMode ? 'text-gray-100' : 'text-gray-600'} mt-1`}>Temperatura durante la medición</p>
+                  <p className={`text-xs ${darkMode ? 'text-white' : 'text-gray-600'} mt-1`}>Temperatura durante la medición</p>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">💧 Humedad</label>
+                  <label className={`block text-sm font-medium mb-1 ${darkMode ? 'text-white' : ''}`}>💧 Humedad</label>
                   <select
                     value={config.humidity || 'normal'}
                     onChange={(e) => setConfig({...config, humidity: e.target.value})}
@@ -288,7 +288,7 @@ const SetupWizard = ({ onComplete, darkMode, onClose }) => {
               
               <div className="grid grid-cols-2 gap-3 mt-3">
                 <div>
-                  <label className="block text-sm font-medium mb-1">📅 Mes de medición</label>
+                  <label className={`block text-sm font-medium mb-1 ${darkMode ? 'text-white' : ''}`}>📅 Mes de medición</label>
                   <select
                     value={config.measureMonth || new Date().getMonth() + 1}
                     onChange={(e) => setConfig({...config, measureMonth: safeParseInt(e.target.value, new Date().getMonth() + 1)})}
@@ -309,7 +309,7 @@ const SetupWizard = ({ onComplete, darkMode, onClose }) => {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">📍 Región</label>
+                  <label className={`block text-sm font-medium mb-1 ${darkMode ? 'text-white' : ''}`}>📍 Región</label>
                   <select
                     value={config.region || 'templado'}
                     onChange={(e) => setConfig({...config, region: e.target.value})}
@@ -324,7 +324,7 @@ const SetupWizard = ({ onComplete, darkMode, onClose }) => {
               </div>
               
               <div className={`mt-3 p-2 rounded ${darkMode ? 'bg-blue-900/30' : 'bg-blue-50'} text-xs`}>
-                <p>💡 La resistividad medida se corregirá automáticamente según temperatura, humedad y época del año para obtener un valor más representativo para el diseño.</p>
+                <p className={darkMode ? 'text-white' : ''}>💡 La resistividad medida se corregirá automáticamente según temperatura, humedad y época del año para obtener un valor más representativo para el diseño.</p>
               </div>
             </div>
           </div>
@@ -335,13 +335,13 @@ const SetupWizard = ({ onComplete, darkMode, onClose }) => {
           <div className="space-y-4">
             <div className="flex items-center gap-2 mb-4">
               <FileText size={24} className="text-blue-500" />
-              <h3 className="text-lg font-semibold">Configuración de la Malla</h3>
+              <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : ''}`}>Configuración de la Malla</h3>
             </div>
             
             <div className="space-y-3">
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-medium mb-1">Largo (m)</label>
+                  <label className={`block text-sm font-medium mb-1 ${darkMode ? 'text-white' : ''}`}>Largo (m)</label>
                   <input
                     type="number"
                     value={config.gridLength}
@@ -350,7 +350,7 @@ const SetupWizard = ({ onComplete, darkMode, onClose }) => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">Ancho (m)</label>
+                  <label className={`block text-sm font-medium mb-1 ${darkMode ? 'text-white' : ''}`}>Ancho (m)</label>
                   <input
                     type="number"
                     value={config.gridWidth}
@@ -361,7 +361,7 @@ const SetupWizard = ({ onComplete, darkMode, onClose }) => {
               </div>
               
               <div>
-                <label className="block text-sm font-medium mb-1">Profundidad de la malla (m)</label>
+                <label className={`block text-sm font-medium mb-1 ${darkMode ? 'text-white' : ''}`}>Profundidad de la malla (m)</label>
                 <input
                   type="number"
                   value={config.gridDepth}
@@ -369,23 +369,23 @@ const SetupWizard = ({ onComplete, darkMode, onClose }) => {
                   step="0.1"
                   className={`w-full px-3 py-2 rounded-md border ${darkMode ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-300'}`}
                 />
-                <p className={`text-xs ${darkMode ? 'text-gray-100' : 'text-gray-600'} mt-1`}>Típico: 0.5 - 1.0 m</p>
+                <p className={`text-xs ${darkMode ? 'text-white' : 'text-gray-600'} mt-1`}>Típico: 0.5 - 1.0 m</p>
               </div>
               
               <div>
-                <label className="block text-sm font-medium mb-1">Conductores paralelos</label>
+                <label className={`block text-sm font-medium mb-1 ${darkMode ? 'text-white' : ''}`}>Conductores paralelos</label>
                 <input
                   type="number"
                   value={config.numParallel}
                   onChange={(e) => setConfig({...config, numParallel: safeParseInt(e.target.value, 12)})}
                   className={`w-full px-3 py-2 rounded-md border ${darkMode ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-300'}`}
                 />
-                <p className={`text-xs ${darkMode ? 'text-gray-100' : 'text-gray-600'} mt-1`}>Mínimo 2, máximo 20</p>
+                <p className={`text-xs ${darkMode ? 'text-white' : 'text-gray-600'} mt-1`}>Mínimo 2, máximo 20</p>
               </div>
               
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-medium mb-1">Número de varillas</label>
+                  <label className={`block text-sm font-medium mb-1 ${darkMode ? 'text-white' : ''}`}>Número de varillas</label>
                   <input
                     type="number"
                     value={config.numRods}
@@ -394,7 +394,7 @@ const SetupWizard = ({ onComplete, darkMode, onClose }) => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">Longitud de varilla (m)</label>
+                  <label className={`block text-sm font-medium mb-1 ${darkMode ? 'text-white' : ''}`}>Longitud de varilla (m)</label>
                   <input
                     type="number"
                     value={config.rodLength}
@@ -407,7 +407,7 @@ const SetupWizard = ({ onComplete, darkMode, onClose }) => {
               
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-medium mb-1">Tiempo de falla (s)</label>
+                  <label className={`block text-sm font-medium mb-1 ${darkMode ? 'text-white' : ''}`}>Tiempo de falla (s)</label>
                   <input
                     type="number"
                     value={config.faultDuration}
@@ -417,7 +417,7 @@ const SetupWizard = ({ onComplete, darkMode, onClose }) => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">Factor Sf</label>
+                  <label className={`block text-sm font-medium mb-1 ${darkMode ? 'text-white' : ''}`}>Factor Sf</label>
                   <input
                     type="number"
                     value={config.currentDivisionFactor}
@@ -436,14 +436,14 @@ const SetupWizard = ({ onComplete, darkMode, onClose }) => {
           <div className="space-y-4">
             <div className="flex items-center gap-2 mb-4">
               <Check size={24} className="text-blue-500" />
-              <h3 className="text-lg font-semibold">Verificación Final</h3>
+              <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : ''}`}>Verificación Final</h3>
             </div>
             
             <div className={`p-4 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>
-              <h4 className="font-semibold flex items-center gap-2 mb-3">
+              <h4 className={`font-semibold flex items-center gap-2 mb-3 ${darkMode ? 'text-white' : ''}`}>
                 <ClipboardList size={18} /> Datos del Proyecto
               </h4>
-              <ul className="space-y-1 text-sm">
+              <ul className={`space-y-1 text-sm ${darkMode ? 'text-white' : ''}`}>
                 <li>• <strong>Proyecto:</strong> {config.projectName || 'Sin especificar'}</li>
                 <li>• <strong>Ubicación:</strong> {config.projectLocation || 'Sin especificar'}</li>
                 <li>• <strong>Cliente:</strong> {config.clientName || 'Sin especificar'}</li>
@@ -456,7 +456,7 @@ const SetupWizard = ({ onComplete, darkMode, onClose }) => {
               <h4 className="font-semibold flex items-center gap-2 mb-3">
                 <Settings size={18} /> Parámetros Técnicos
               </h4>
-              <ul className="space-y-1 text-sm">
+              <ul className={`space-y-1 text-sm ${darkMode ? 'text-white' : ''}`}>
                 <li>• <strong>Transformador:</strong> {config.transformerKVA} kVA, {config.primaryVoltage}/{config.secondaryVoltage} V, {config.transformerImpedance}%</li>
                 <li>• <strong>Suelo:</strong> {config.soilResistivity} Ω·m, Capa: {config.surfaceLayer} Ω·m / {config.surfaceDepth}m</li>
                 <li>• <strong>Malla:</strong> {config.gridLength} × {config.gridWidth} m, {config.numParallel} conductores</li>
@@ -483,7 +483,7 @@ const SetupWizard = ({ onComplete, darkMode, onClose }) => {
     <div className={`fixed top-0 left-0 right-0 z-50 p-4 ${darkMode ? 'bg-gray-800' : 'bg-white'} shadow-xl border-b-2 border-blue-600`}>
       <div className="max-w-4xl mx-auto">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-bold">⚡ Grounding Designer Pro - Asistente de Configuración</h2>
+          <h2 className={`text-xl font-bold ${darkMode ? 'text-white' : ''}`}>⚡ Grounding Designer Pro - Asistente de Configuración</h2>
           <button onClick={onClose} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded">
             <X size={20} />
           </button>
@@ -496,11 +496,11 @@ const SetupWizard = ({ onComplete, darkMode, onClose }) => {
               <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm ${
                 step >= s.number 
                   ? 'bg-blue-600 text-white' 
-                  : darkMode ? 'bg-gray-700 text-gray-400' : 'bg-gray-200 text-gray-600'
+                  : darkMode ? 'bg-gray-700 text-white' : 'bg-gray-200 text-gray-600'
               }`}>
                 {step > s.number ? <Check size={14} /> : s.icon}
               </div>
-              <div className="text-xs mt-1">{s.title}</div>
+              <div className={`text-xs mt-1 ${darkMode ? 'text-white' : ''}`}>{s.title}</div>
             </div>
           ))}
         </div>

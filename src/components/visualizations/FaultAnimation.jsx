@@ -116,12 +116,26 @@ const FaultAnimation = ({ params, darkMode, onSimulate }) => {
       setCurrentWave([]);
     }
     
+    if (mode === 'mode3') {
+      const gradient = [];
+      for (let i = 0; i < 10; i++) {
+        for (let j = 0; j < 10; j++) {
+          const x = (i - 5) * 20;
+          const y = (j - 5) * 20;
+          const dist = Math.sqrt(x * x + y * y);
+          const voltage = maxFaultCurrent * gridResistance * Math.exp(-dist / 50);
+          gradient.push({ x: i * 40, y: j * 40, voltage });
+        }
+      }
+      setVoltageGradient(gradient);
+    }
+    
     runAnimationCycle(mode);
   };
 
   const runAnimationCycle = (mode) => {
     let startTime = null;
-    const duration = 2500;
+    const duration = 2500 / animationSpeed;
     
     const animate = (timestamp) => {
       if (!startTime) startTime = timestamp;
@@ -192,6 +206,14 @@ const FaultAnimation = ({ params, darkMode, onSimulate }) => {
         });
       }
       
+      // Actualizar Modo 3
+      if (mode === 'mode3') {
+        setVoltageGradient(prev => prev.map(p => ({
+          ...p,
+          voltage: currentValue * gridResistance * Math.exp(-Math.sqrt(Math.pow(p.x - 200, 2) + Math.pow(p.y - 200, 2)) / 50)
+        })));
+      }
+      
       if (progress < 1) {
         animationRef.current = requestAnimationFrame(animate);
       } else {
@@ -241,7 +263,7 @@ const FaultAnimation = ({ params, darkMode, onSimulate }) => {
     setParticles([]);
     setRipples([]);
     setCurrentWave([]);
-    setVoltageGradient([]);
+    setVoltageGradient([]); // Limpiar voltageGradient
     setAnimationProgress(0);
   };
 
@@ -461,6 +483,48 @@ const FaultAnimation = ({ params, darkMode, onSimulate }) => {
   }, [currentWave, maxFaultCurrent, darkMode, animationMode]);
 
   // ============================================
+  // DIBUJAR GRADIENTE DE VOLTAJE (MODO 3)
+  // ============================================
+  useEffect(() => {
+    if (animationMode !== 'mode3') return;
+    
+    const canvas = gridRef.current;
+    if (!canvas || voltageGradient.length === 0) return;
+    
+    const ctx = canvas.getContext('2d');
+    const width = canvas.width;
+    const height = canvas.height;
+    
+    ctx.clearRect(0, 0, width, height);
+    
+    ctx.fillStyle = darkMode ? '#1f2937' : '#f3f4f6';
+    ctx.fillRect(0, 0, width, height);
+    
+    const maxVoltage = Math.max(...voltageGradient.map(v => v.voltage), 1);
+    
+    voltageGradient.forEach(point => {
+      const intensity = point.voltage / maxVoltage;
+      const red = Math.floor(239 * intensity);
+      const green = Math.floor(68 * (1 - intensity));
+      const blue = Math.floor(68 * (1 - intensity));
+      
+      ctx.fillStyle = `rgba(${red}, ${green}, ${blue}, 0.6)`;
+      ctx.beginPath();
+      ctx.arc(point.x, point.y, 15, 0, 2 * Math.PI);
+      ctx.fill();
+    });
+    
+    // Dibujar malla de tierra
+    ctx.strokeStyle = darkMode ? '#fbbf24' : '#d97706';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(180, 180, 40, 40);
+    
+    ctx.font = 'bold 12px sans-serif';
+    ctx.fillStyle = darkMode ? '#fbbf24' : '#d97706';
+    ctx.fillText('MALLA', 185, 175);
+  }, [voltageGradient, darkMode, animationMode, maxFaultCurrent, gridResistance]);
+
+  // ============================================
   // ESTILOS
   // ============================================
   const colors = darkMode ? {
@@ -552,9 +616,9 @@ const FaultAnimation = ({ params, darkMode, onSimulate }) => {
         </div>
 
         {showAdvancedControls && (
-          <div className={`mt-2 p-3 rounded-lg ${darkMode ? 'bg-gray-600' : 'bg-gray-200'}`}>
+          <div className={`mt-2 p-3 rounded-lg ${darkMode ? 'bg-gray-600' : 'bg-gray-200'} border ${colors.border}`}>
             <div className="flex items-center gap-3">
-              <span className="text-sm">Velocidad:</span>
+              <span className={`text-sm ${darkMode ? 'text-white' : ''}`}>Velocidad:</span>
               <input
                 type="range"
                 min="0.5"
@@ -564,10 +628,11 @@ const FaultAnimation = ({ params, darkMode, onSimulate }) => {
                 onChange={(e) => setAnimationSpeed(parseFloat(e.target.value))}
                 className="w-24"
               />
-              <span className="text-sm font-semibold">{animationSpeed}x</span>
+              <span className={`text-sm font-semibold ${darkMode ? 'text-white' : ''}`}>{animationSpeed}x</span>
               <button
                 onClick={() => setAnimationSpeed(1)}
                 className="text-xs px-2 py-1 rounded bg-gray-500 hover:bg-gray-600 text-white"
+                title="Restaurar velocidad"
               >
                 <RotateCw size={12} />
               </button>
@@ -596,6 +661,16 @@ const FaultAnimation = ({ params, darkMode, onSimulate }) => {
             }`}
           >
             <TrendingUp size={14} /> Modo 2: Onda Técnica
+          </button>
+          <button
+            onClick={() => handleModeChange('mode3')}
+            className={`px-3 py-1 text-sm rounded-lg transition-all flex items-center gap-1 ${
+              animationMode === 'mode3'
+                ? 'bg-blue-600 text-white'
+                : darkMode ? 'bg-gray-600 text-gray-300 hover:bg-gray-500' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+            }`}
+          >
+            <Layers size={14} /> Modo 3: Gradiente
           </button>
         </div>
         
@@ -665,9 +740,28 @@ const FaultAnimation = ({ params, darkMode, onSimulate }) => {
           </div>
         )}
         
+        {/* MODO 3: Gradiente de voltaje */}
+        {animationMode === 'mode3' && (
+          <div className={`p-4 rounded-lg ${colors.card} border ${colors.border}`}>
+            <h4 className={`font-semibold ${colors.text} mb-3 flex items-center gap-2`}>
+              <Layers size={16} /> GRADIENTE DE VOLTAJE (3D)
+            </h4>
+            <canvas
+              ref={gridRef}
+              width={400}
+              height={400}
+              className="w-full h-auto border rounded-lg"
+              style={{ maxWidth: '100%', height: 'auto', minHeight: '300px' }}
+            />
+            <div className={`mt-2 text-center text-xs ${darkMode ? 'text-gray-100' : 'text-gray-600'}`}>
+              💡 Distribución del potencial de tierra alrededor de la malla
+            </div>
+          </div>
+        )}
+        
         {/* Panel de parámetros de falla (común) */}
         <div className={`p-4 rounded-lg ${colors.card} border ${colors.border}`}>
-          <h4 className={`font-semibold ${colors.text} mb-3 flex items-center gap-2`}>
+          <h4 className={`font-semibold ${colors.text} mb-4 flex items-center gap-2 text-base`}>
             <AlertTriangle size={16} /> ⚡ PARÁMETROS DE FALLA
           </h4>
           
@@ -754,44 +848,44 @@ const FaultAnimation = ({ params, darkMode, onSimulate }) => {
       </div>
       
       {/* Nota explicativa */}
-      <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-        <p className="text-xs text-blue-700 dark:text-blue-300 flex items-start gap-2">
-          <Shield size={14} className="flex-shrink-0 mt-0.5" />
+      <div className={`mt-4 p-4 rounded-lg border ${darkMode ? 'bg-green-900/20 border-green-700' : 'bg-green-50 border-green-200'}`}>
+        <p className={`text-sm flex items-start gap-2 ${darkMode ? 'text-green-300' : 'text-green-800'}`}>
+          <Shield size={16} className="flex-shrink-0 mt-0.5" />
           <span>
             <strong>✅ Flujo correcto de corriente:</strong> Durante una falla, la corriente fluye 
-            <strong className="text-red-600"> DESDE el punto de falla</strong> (equipo energizado) 
-            <strong className="text-blue-600"> HACIA la malla de tierra</strong>, donde se disipa de manera segura.
+            <strong className={darkMode ? 'text-red-400' : 'text-red-600'}> DESDE el punto de falla</strong> (equipo energizado) 
+            <strong className={darkMode ? 'text-blue-400' : 'text-blue-600'}> HACIA la malla de tierra</strong>, donde se disipa de manera segura.
           </span>
         </p>
       </div>
       
       {/* Datos adicionales */}
       <div className="mt-3 grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
-        <div className={`p-2 rounded ${darkMode ? 'bg-gray-700' : 'bg-gray-100'} text-center`}>
-          <span className={darkMode ? 'text-gray-100' : 'text-gray-600'}>Transformador</span>
-          <div className="font-bold">{transformerKVA} kVA</div>
+        <div className={`p-3 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-100'} text-center border ${colors.border}`}>
+          <div className={`font-semibold mb-1 ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Transformador</div>
+          <div className={`text-lg font-bold ${colors.text}`}>{transformerKVA} kVA</div>
         </div>
-        <div className={`p-2 rounded ${darkMode ? 'bg-gray-700' : 'bg-gray-100'} text-center`}>
-          <span className={darkMode ? 'text-gray-100' : 'text-gray-600'}>Tensión</span>
-          <div className="font-bold">{voltage/1000} kV</div>
+        <div className={`p-3 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-100'} text-center border ${colors.border}`}>
+          <div className={`font-semibold mb-1 ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Tensión</div>
+          <div className={`text-lg font-bold ${colors.text}`}>{voltage/1000} kV</div>
         </div>
-        <div className={`p-2 rounded ${darkMode ? 'bg-gray-700' : 'bg-gray-100'} text-center`}>
-          <span className={darkMode ? 'text-gray-100' : 'text-gray-600'}>Resistencia Malla</span>
-          <div className="font-bold">{gridResistance} Ω</div>
+        <div className={`p-3 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-100'} text-center border ${colors.border}`}>
+          <div className={`font-semibold mb-1 ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Resistencia Malla</div>
+          <div className={`text-lg font-bold ${colors.text}`}>{gridResistance} Ω</div>
         </div>
-        <div className={`p-2 rounded ${darkMode ? 'bg-gray-700' : 'bg-gray-100'} text-center`}>
-          <span className={darkMode ? 'text-gray-100' : 'text-gray-600'}>Corriente Máx</span>
-          <div className="font-bold">{maxFaultCurrent.toFixed(0)} A</div>
+        <div className={`p-3 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-100'} text-center border ${colors.border}`}>
+          <div className={`font-semibold mb-1 ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Corriente Máx</div>
+          <div className={`text-lg font-bold ${colors.text}`}>{maxFaultCurrent.toFixed(0)} A</div>
         </div>
       </div>
       
       {/* Indicadores de estado */}
       <div className="mt-3 flex justify-center gap-4">
-        <span className={`text-xs px-2 py-1 rounded-full ${darkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>
+        <span className={`text-xs px-3 py-1.5 rounded-full ${darkMode ? 'bg-gray-700 text-white border border-gray-600' : 'bg-gray-100 text-gray-700 border border-gray-200'}`}>
           <Layers size={12} className="inline mr-1" />
-          Modo: {animationMode === 'mode1' ? 'Flujo Visual' : 'Onda Técnica'}
+          Modo: {animationMode === 'mode1' ? 'Flujo Visual' : animationMode === 'mode2' ? 'Onda Técnica' : 'Gradiente 3D'}
         </span>
-        <span className={`text-xs px-2 py-1 rounded-full ${isLooping ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' : darkMode ? 'bg-gray-700 text-gray-100' : 'bg-gray-100 text-gray-600'}`}>
+        <span className={`text-xs px-3 py-1.5 rounded-full ${isLooping ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 border border-green-300 dark:border-green-700' : darkMode ? 'bg-gray-700 text-white border border-gray-600' : 'bg-gray-100 text-gray-700 border border-gray-200'}`}>
           {isLooping ? '🔄 Reproducción continua (bucle)' : '⏹️ Un solo ciclo'}
         </span>
       </div>
