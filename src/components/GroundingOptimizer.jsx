@@ -71,15 +71,18 @@ const GroundingOptimizer = ({ params, darkMode, onApplyDesign }) => {
 
   const applyDesign = () => {
     console.log('applyDesign llamado', optimizationResult?.bestSolution);
+    
     if (optimizationResult?.bestSolution && onApplyDesign) {
-      const design = {
-        numParallel: optimizationResult.bestSolution.nx,
-        numParallelY: optimizationResult.bestSolution.ny,
-        numRods: optimizationResult.bestSolution.numRods,
-        rodLength: optimizationResult.bestSolution.rodLength
+      // Mapear correctamente los nombres de propiedades
+      const designToApply = {
+        numParallel: optimizationResult.bestSolution.numParallel || optimizationResult.bestSolution.nx || optimizationResult.bestSolution.numParallelX || 8,
+        numParallelY: optimizationResult.bestSolution.numParallelY || optimizationResult.bestSolution.ny || 8,
+        numRods: optimizationResult.bestSolution.numRods || 16,
+        rodLength: optimizationResult.bestSolution.rodLength || 3.5
       };
-      console.log('Aplicando diseño:', design);
-      onApplyDesign(design);
+      
+      console.log('Aplicando diseño:', designToApply);
+      onApplyDesign(designToApply);
       setOptimizationResult(null);
     } else {
       console.log('No se puede aplicar: bestSolution o onApplyDesign faltan', {

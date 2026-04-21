@@ -239,11 +239,12 @@ Este software es propiedad de Proyectos Integrales.
 
 ## 🔄 Versiones
 
+- **v3.0** - Grounding Designer Pro 3.0 - Optimización NSGA-II, Diseño Avanzado
 - **v2.0** - IA Predictiva, Google Maps, Exportación DXF
 - **v1.0** - Versión inicial con cálculos IEEE 80 básicos
 
 ---
 
 **Desarrollado por:** Proyectos Integrales
-**Versión:** 2.0
+**Versión:** 3.0
 **Última actualización:** 2026

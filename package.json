@@ -1,8 +1,8 @@
 {
-  "name": "calculadora-ieee80",
-  "version": "1.0.0",
-  "description": "Calculadora de Mallas IEEE 80",
-  "author": "Tu Nombre",
+  "name": "grounding-designer-pro",
+  "version": "3.0.0",
+  "description": "Grounding Designer Pro 3.0 - Sistema Profesional de Diseño de Mallas de Tierra",
+  "author": "Proyectos Integrales",
   "main": "main.js",
   "scripts": {
     "start": "react-scripts start",
@@ -38,8 +38,8 @@
     "webpack-bundle-analyzer": "^5.3.0"
   },
   "build": {
-    "appId": "com.ieee.calculator",
-    "productName": "Calculadora IEEE 80",
+    "appId": "com.grounding.designer.pro",
+    "productName": "Grounding Designer Pro 3.0",
     "directories": {
       "output": "dist"
     },
