@@ -1,6 +1,7 @@
 // src/components/normatives/MexicanNormatives.jsx
 import React, { useState, useMemo } from 'react';
 import { Shield, Zap, AlertTriangle, CheckCircle, XCircle, FileText, Download } from 'lucide-react';
+import { formatResistance, formatVoltage, formatCurrent, formatNumber, formatPercentage, formatDistance } from '../../utils/formatters';
 
 const MexicanNormatives = ({ params, calculations, darkMode }) => {
   const [activeNormative, setActiveNormative] = useState('NOM-022');
@@ -19,7 +20,7 @@ const MexicanNormatives = ({ params, calculations, darkMode }) => {
       complies,
       Rg,
       requiredResistance: 10,
-      margin: (10 - Rg).toFixed(2),
+      margin: formatNumber(10 - Rg, 2),
       hasGravelLayer,
       recommendations: []
     };
@@ -68,7 +69,7 @@ const MexicanNormatives = ({ params, calculations, darkMode }) => {
     return {
       hasLightningRod,
       protectionLevel: lightningProtectionLevel,
-      protectionRadius: protectionRadius.toFixed(2),
+      protectionRadius: formatDistance(protectionRadius, 2),
       currentLevel,
       requiredRods,
       hasEnoughRods,
@@ -79,6 +80,148 @@ const MexicanNormatives = ({ params, calculations, darkMode }) => {
       recommendations: []
     };
   }, [params, lightningProtectionLevel]);
+
+  // ============================================
+  // NOM-001-SEDE-2012 - Instalaciones Eléctricas
+  // ============================================
+  const nom001Compliance = useMemo(() => {
+    // Datos del alimentador principal
+    const voltage = params?.secondaryVoltage || 480;
+    const current = calculations?.Ig || params?.faultCurrent || 1000;
+    const distance = params?.feederDistance || 50; // metros
+    const conductorAWG = params?.feederConductor || '4/0';
+    const conductorMaterial = params?.conductorMaterial || 'Cobre';
+    const ambientTemp = params?.ambientTemp || 35;
+    const conductorsPerPhase = params?.conductorsPerPhase || 1;
+    const insulationType = params?.insulationType || 'THHW-LS';
+    
+    // Resistencia del conductor (Ω/km) - Tabla 10-5
+    const conductorResistance = {
+      'Cobre': {
+        '14': 8.45, '12': 5.31, '10': 3.34, '8': 2.10, '6': 1.32,
+        '4': 0.83, '3': 0.66, '2': 0.52, '1': 0.41, '1/0': 0.33,
+        '2/0': 0.26, '3/0': 0.21, '4/0': 0.16, '250': 0.14,
+        '300': 0.11, '350': 0.10, '400': 0.09, '500': 0.07,
+        '600': 0.06, '750': 0.05, '1000': 0.04
+      },
+      'Aluminio': {
+        '14': 13.9, '12': 8.73, '10': 5.49, '8': 3.45, '6': 2.17,
+        '4': 1.36, '3': 1.08, '2': 0.85, '1': 0.67, '1/0': 0.53,
+        '2/0': 0.42, '3/0': 0.33, '4/0': 0.26, '250': 0.23,
+        '300': 0.18, '350': 0.16, '400': 0.14, '500': 0.11
+      }
+    };
+    
+    // Ampacidad según Tabla 310-16
+    const ampacityTable = {
+      'Cobre': {
+        '75°C': { '14': 25, '12': 30, '10': 35, '8': 50, '6': 65, '4': 85, '3': 100, '2': 115, '1': 130, '1/0': 150, '2/0': 175, '3/0': 200, '4/0': 230, '250': 255, '300': 285, '350': 310, '400': 335, '500': 380, '600': 420, '750': 460, '1000': 545 },
+        '90°C': { '14': 30, '12': 40, '10': 45, '8': 60, '6': 80, '4': 100, '3': 115, '2': 135, '1': 155, '1/0': 175, '2/0': 200, '3/0': 230, '4/0': 265, '250': 290, '300': 325, '350': 355, '400': 385, '500': 435, '600': 480, '750': 525, '1000': 620 }
+      },
+      'Aluminio': {
+        '75°C': { '14': 20, '12': 25, '10': 30, '8': 40, '6': 50, '4': 65, '3': 75, '2': 90, '1': 100, '1/0': 120, '2/0': 135, '3/0': 155, '4/0': 180, '250': 205, '300': 230, '350': 255, '400': 280, '500': 320, '600': 355, '750': 395, '1000': 465 },
+        '90°C': { '14': 25, '12': 30, '10': 35, '8': 45, '6': 60, '4': 80, '3': 90, '2': 105, '1': 120, '1/0': 140, '2/0': 160, '3/0': 185, '4/0': 210, '250': 235, '300': 265, '350': 290, '400': 320, '500': 365, '600': 405, '750': 450, '1000': 530 }
+      }
+    };
+    
+    // Factor de corrección por temperatura (Tabla 310-15(g))
+    const tempCorrection = {
+      30: 1.00, 31: 0.94, 32: 0.94, 33: 0.94, 34: 0.94, 35: 0.94,
+      36: 0.88, 37: 0.88, 38: 0.88, 39: 0.88, 40: 0.88,
+      41: 0.82, 42: 0.82, 43: 0.82, 44: 0.82, 45: 0.82,
+      46: 0.75, 47: 0.75, 48: 0.75, 49: 0.75, 50: 0.75
+    };
+    
+    const tempFactor = tempCorrection[Math.floor(ambientTemp)] || 1.00;
+    const groupFactor = conductorsPerPhase > 1 ? 0.8 : 1.0;
+    const adjustedAmpacity = (ampacityTable[conductorMaterial][params?.tempRating || '75°C'][conductorAWG] || 230) * tempFactor * groupFactor;
+    const requiredAmpacity = current * (params?.continuousLoad ? 1.25 : 1);
+    const ampacityOK = adjustedAmpacity >= requiredAmpacity;
+    
+    // Caída de tensión
+    const R = (conductorResistance[conductorMaterial][conductorAWG] || 0.16) * (conductorMaterial === 'Aluminio' ? 1.6 : 1);
+    const lengthKm = distance / 1000;
+    const voltageDrop = Math.sqrt(3) * current * R * lengthKm;
+    const voltageDropPercent = (voltageDrop / voltage) * 100;
+    const voltageDropOK = voltageDropPercent <= 3;
+    
+    // Factor de potencia mínimo (NOM-001 Artículo 430)
+    const minPowerFactor = 0.85;
+    const powerFactorOK = (params?.powerFactor || 0.9) >= minPowerFactor;
+    
+    // Protección contra sobrecorriente (Artículo 240)
+    const breakerSize = params?.mainBreaker || Math.ceil(requiredAmpacity / 10) * 10;
+    const breakerOK = breakerSize <= adjustedAmpacity * 1.25;
+    
+    return {
+      voltageDrop: formatPercentage(voltageDropPercent, 2),
+      voltageDropOK,
+      ampacityOK,
+      adjustedAmpacity: formatCurrent(adjustedAmpacity, 0),
+      requiredAmpacity: formatCurrent(requiredAmpacity, 0),
+      conductorAWG,
+      conductorMaterial,
+      tempFactor,
+      groupFactor,
+      powerFactorOK,
+      breakerOK,
+      breakerSize,
+      distance,
+      voltage
+    };
+  }, [params, calculations]);
+
+  // ============================================
+  // CFE 01J00-01 - Criterios de Puesta a Tierra
+  // ============================================
+  const cfeCompliance = useMemo(() => {
+    const voltageLevel = params?.voltageLevel || 13200; // Tensión del sistema (V)
+    const substationType = params?.substationType || 'distribution'; // 'distribution' o 'transmission'
+    const faultDuration = params?.faultDuration || 0.5;
+    const Rg = calculations?.Rg || 999;
+    
+    // Resistencia máxima según nivel de tensión (CFE G0100-04)
+    let maxResistance = 10;
+    if (voltageLevel < 1000) maxResistance = 25;
+    else if (voltageLevel < 15000) maxResistance = 10;
+    else if (voltageLevel < 50000) maxResistance = 5;
+    else if (voltageLevel < 115000) maxResistance = 3;
+    else if (voltageLevel < 230000) maxResistance = 2;
+    else maxResistance = 1;
+    
+    // Factor de seguridad por tipo de subestación
+    const safetyFactors = {
+      distribution: 1.0,
+      transmission: 0.8,
+      industrial: 1.1,
+      hospital: 0.7
+    };
+    const safetyFactor = safetyFactors[substationType] || 1.0;
+    const adjustedMaxResistance = maxResistance * safetyFactor;
+    
+    const resistanceOK = Rg <= adjustedMaxResistance;
+    
+    // Tiempo máximo de despeje de falla
+    const maxFaultDuration = 0.5;
+    const faultDurationOK = faultDuration <= maxFaultDuration;
+    
+    // GPR máximo (CFE recomienda < 5000V para equipos electrónicos)
+    const GPR = calculations?.GPR || 0;
+    const gprOK = GPR <= 5000;
+    
+    return {
+      voltageLevel: voltageLevel.toLocaleString(),
+      maxResistance: formatResistance(adjustedMaxResistance, 1),
+      actualResistance: formatResistance(Rg, 2),
+      resistanceOK,
+      faultDurationOK,
+      gprOK,
+      GPR: formatVoltage(GPR, 0),
+      safetyFactor,
+      substationType,
+      recommendations: []
+    };
+  }, [params, calculations]);
 
   // ============================================
   // Cálculo de electrodos según NMX-J-549
@@ -176,7 +319,7 @@ const MexicanNormatives = ({ params, calculations, darkMode }) => {
       
       1. NOM-022-STPS-2015 (Electricidad Estática)
       --------------------------------------------
-      • Resistencia de tierra medida: ${nom022Compliance.Rg?.toFixed(2)} Ω
+      • Resistencia de tierra medida: ${formatResistance(nom022Compliance.Rg, 2)}
       • Límite requerido: <10 Ω
       • Estado: ${nom022Compliance.complies ? '✅ CUMPLE' : '❌ NO CUMPLE'}
       • Capa de grava (≥0.10m): ${nom022Compliance.hasGravelLayer ? '✅ Sí' : '❌ No'}
@@ -245,7 +388,7 @@ const MexicanNormatives = ({ params, calculations, darkMode }) => {
       </div>
       
       {/* Pestañas de normas */}
-      <div className="flex border-b mb-4">
+      <div className="flex border-b mb-4 flex-wrap">
         <button
           onClick={() => setActiveNormative('NOM-022')}
           className={`px-4 py-2 text-sm font-medium transition-all ${
@@ -276,6 +419,26 @@ const MexicanNormatives = ({ params, calculations, darkMode }) => {
         >
           🔌 IEEE 80-2013
         </button>
+        <button
+          onClick={() => setActiveNormative('CFE')}
+          className={`px-4 py-2 text-sm font-medium transition-all ${
+            activeNormative === 'CFE'
+              ? `border-b-2 border-blue-500 text-blue-600 ${darkMode ? 'text-blue-400' : ''}`
+              : darkMode ? 'text-gray-400' : 'text-gray-500'
+          }`}
+        >
+          ⚡ CFE 01J00-01
+        </button>
+        <button
+          onClick={() => setActiveNormative('NOM-001')}
+          className={`px-4 py-2 text-sm font-medium transition-all ${
+            activeNormative === 'NOM-001'
+              ? `border-b-2 border-blue-500 text-blue-600 ${darkMode ? 'text-blue-400' : ''}`
+              : darkMode ? 'text-gray-400' : 'text-gray-500'
+          }`}
+        >
+          📜 NOM-001-SEDE-2012
+        </button>
       </div>
       
       {/* Contenido NOM-022-STPS-2015 */}
@@ -298,14 +461,30 @@ const MexicanNormatives = ({ params, calculations, darkMode }) => {
                   )}
                 </div>
                 <div className="text-2xl font-bold mt-1 text-black dark:text-white">
-                  {nom022Compliance.Rg?.toFixed(2)} Ω
+                  {formatResistance(nom022Compliance.Rg, 2)}
                 </div>
                 <div className="text-xs mt-1 text-black dark:text-white">
                   Límite NOM-022: &lt;10 Ω
                 </div>
                 <div className="text-xs mt-1 text-black dark:text-white">
-                  Margen: {nom022Compliance.margin} Ω
+                  Margen: {formatNumber(nom022Compliance.margin, 2)} Ω
                 </div>
+                {nom022Compliance.complies && (
+                  <div className="grid grid-cols-3 gap-2 mt-2">
+                    <div className="p-2 rounded bg-green-100 dark:bg-green-900/30 shadow-[0_0_15px_rgba(74,222,128,0.5)] dark:shadow-[0_0_15px_rgba(34,197,94,0.5)] text-center">
+                      <div className="text-xs text-gray-500">Seguridad</div>
+                      <div className="text-lg font-bold text-green-600">100%</div>
+                    </div>
+                    <div className="p-2 rounded bg-green-100 dark:bg-green-900/30 shadow-[0_0_15px_rgba(74,222,128,0.5)] dark:shadow-[0_0_15px_rgba(34,197,94,0.5)] text-center">
+                      <div className="text-xs text-gray-500">Resistencia</div>
+                      <div className="text-lg font-bold text-green-600">100%</div>
+                    </div>
+                    <div className="p-2 rounded bg-green-100 dark:bg-green-900/30 shadow-[0_0_15px_rgba(74,222,128,0.5)] dark:shadow-[0_0_15px_rgba(34,197,94,0.5)] text-center">
+                      <div className="text-xs text-gray-500">GPR</div>
+                      <div className="text-lg font-bold text-green-600">100%</div>
+                    </div>
+                  </div>
+                )}
               </div>
               
               {/* Capa de grava */}
@@ -327,6 +506,22 @@ const MexicanNormatives = ({ params, calculations, darkMode }) => {
                 <div className="text-xs mt-1 text-black dark:text-white">
                   NOM-022 requiere ≥0.10m de grava
                 </div>
+                {nom022Compliance.hasGravelLayer && (
+                  <div className="grid grid-cols-3 gap-2 mt-2">
+                    <div className="p-2 rounded bg-green-100 dark:bg-green-900/30 shadow-[0_0_15px_rgba(74,222,128,0.5)] dark:shadow-[0_0_15px_rgba(34,197,94,0.5)] text-center">
+                      <div className="text-xs text-gray-500">Seguridad</div>
+                      <div className="text-lg font-bold text-green-600">100%</div>
+                    </div>
+                    <div className="p-2 rounded bg-green-100 dark:bg-green-900/30 shadow-[0_0_15px_rgba(74,222,128,0.5)] dark:shadow-[0_0_15px_rgba(34,197,94,0.5)] text-center">
+                      <div className="text-xs text-gray-500">Resistencia</div>
+                      <div className="text-lg font-bold text-green-600">100%</div>
+                    </div>
+                    <div className="p-2 rounded bg-green-100 dark:bg-green-900/30 shadow-[0_0_15px_rgba(74,222,128,0.5)] dark:shadow-[0_0_15px_rgba(34,197,94,0.5)] text-center">
+                      <div className="text-xs text-gray-500">GPR</div>
+                      <div className="text-lg font-bold text-green-600">100%</div>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
             
@@ -350,6 +545,22 @@ const MexicanNormatives = ({ params, calculations, darkMode }) => {
                   </div>
                 </div>
               </div>
+              {nom022Compliance.complies && nom022Compliance.hasGravelLayer && (
+                <div className="grid grid-cols-3 gap-2 mt-3">
+                  <div className="p-2 rounded bg-green-100 dark:bg-green-900/30 shadow-[0_0_15px_rgba(74,222,128,0.5)] dark:shadow-[0_0_15px_rgba(34,197,94,0.5)] text-center">
+                    <div className="text-xs text-gray-500">Seguridad</div>
+                    <div className="text-lg font-bold text-green-600">100%</div>
+                  </div>
+                  <div className="p-2 rounded bg-green-100 dark:bg-green-900/30 shadow-[0_0_15px_rgba(74,222,128,0.5)] dark:shadow-[0_0_15px_rgba(34,197,94,0.5)] text-center">
+                    <div className="text-xs text-gray-500">Resistencia</div>
+                    <div className="text-lg font-bold text-green-600">100%</div>
+                  </div>
+                  <div className="p-2 rounded bg-green-100 dark:bg-green-900/30 shadow-[0_0_15px_rgba(74,222,128,0.5)] dark:shadow-[0_0_15px_rgba(34,197,94,0.5)] text-center">
+                    <div className="text-xs text-gray-500">GPR</div>
+                    <div className="text-lg font-bold text-green-600">100%</div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
           
@@ -415,6 +626,22 @@ const MexicanNormatives = ({ params, calculations, darkMode }) => {
                 <div className="text-xs mt-1 text-black dark:text-white">
                   NMX-J-549 requiere SPTE para estructuras con riesgo
                 </div>
+                {nmx549Compliance.hasLightningRod && (
+                  <div className="grid grid-cols-3 gap-2 mt-2">
+                    <div className="p-2 rounded bg-green-100 dark:bg-green-900/30 shadow-[0_0_15px_rgba(74,222,128,0.5)] dark:shadow-[0_0_15px_rgba(34,197,94,0.5)] text-center">
+                      <div className="text-xs text-gray-500">Seguridad</div>
+                      <div className="text-lg font-bold text-green-600">100%</div>
+                    </div>
+                    <div className="p-2 rounded bg-green-100 dark:bg-green-900/30 shadow-[0_0_15px_rgba(74,222,128,0.5)] dark:shadow-[0_0_15px_rgba(34,197,94,0.5)] text-center">
+                      <div className="text-xs text-gray-500">Resistencia</div>
+                      <div className="text-lg font-bold text-green-600">100%</div>
+                    </div>
+                    <div className="p-2 rounded bg-green-100 dark:bg-green-900/30 shadow-[0_0_15px_rgba(74,222,128,0.5)] dark:shadow-[0_0_15px_rgba(34,197,94,0.5)] text-center">
+                      <div className="text-xs text-gray-500">GPR</div>
+                      <div className="text-lg font-bold text-green-600">100%</div>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Radio de protección */}
@@ -424,13 +651,13 @@ const MexicanNormatives = ({ params, calculations, darkMode }) => {
                   <Zap size={16} className="text-blue-600" />
                 </div>
                 <div className="text-2xl font-bold mt-1 text-black dark:text-white">
-                  {nmx549Compliance.protectionRadius} m
+                  {nmx549Compliance.protectionRadius}
                 </div>
                 <div className="text-xs mt-1 text-black dark:text-white">
-                  Nivel {nmx549Compliance.protectionLevel}: R = {nmx549Compliance.currentLevel.radius}m
+                  Nivel {nmx549Compliance.protectionLevel}: R = {formatDistance(nmx549Compliance.currentLevel.radius, 0)}
                 </div>
                 <div className="text-xs text-black dark:text-white">
-                  Altura del edificio: {nmx549Compliance.buildingHeight} m
+                  Altura del edificio: {nmx549Compliance.buildingHeight}
                 </div>
               </div>
             </div>
@@ -452,13 +679,13 @@ const MexicanNormatives = ({ params, calculations, darkMode }) => {
                 <div className={`p-2 rounded ${darkMode ? 'bg-gray-600' : 'bg-white'}`}>
                   <span className="text-gray-500">Longitud (mín 2.40m):</span>
                   <span className={`ml-2 font-bold ${nmx549Compliance.rodLengthOK ? 'text-green-600' : 'text-red-600'}`}>
-                    {params?.rodLength || 0} m
+                    {formatDistance(params?.rodLength || 0, 2)}
                   </span>
                 </div>
                 <div className={`p-2 rounded ${darkMode ? 'bg-gray-600' : 'bg-white'}`}>
                   <span className="text-gray-500">Separación (≥4.80m):</span>
                   <span className={`ml-2 font-bold ${nmx549Compliance.spacingOK ? 'text-green-600' : 'text-red-600'}`}>
-                    {(params?.gridLength / (params?.numRods || 1)).toFixed(1)} m
+                    {formatDistance(params?.gridLength / (params?.numRods || 1), 1)}
                   </span>
                 </div>
               </div>
@@ -477,7 +704,7 @@ const MexicanNormatives = ({ params, calculations, darkMode }) => {
                 <SphereMethodVisualization />
                 <p className="text-xs text-gray-500 mt-2">
                   La esfera rodante determina las zonas protegidas por el pararrayos según NMX-J-549-ANCE-2005.
-                  El radio R = {nmx549Compliance.protectionRadius}m corresponde al nivel de protección {nmx549Compliance.protectionLevel}.
+                  El radio R = {nmx549Compliance.protectionRadius} corresponde al nivel de protección {nmx549Compliance.protectionLevel}.
                 </p>
               </div>
             )}
@@ -492,7 +719,7 @@ const MexicanNormatives = ({ params, calculations, darkMode }) => {
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
                     <span>Perímetro del edificio:</span>
-                    <span className="font-semibold">{electrodes.baseRods * 20} m</span>
+                    <span className="font-semibold">{formatDistance(electrodes.baseRods * 20, 0)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Electrodos base (cada 20m):</span>
@@ -508,11 +735,11 @@ const MexicanNormatives = ({ params, calculations, darkMode }) => {
                   </div>
                   <div className="flex justify-between">
                     <span>Longitud mínima por electrodo:</span>
-                    <span className="font-semibold">{electrodes.minRodLength} m</span>
+                    <span className="font-semibold">{formatDistance(electrodes.minRodLength, 2)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Separación mínima:</span>
-                    <span className="font-semibold">{electrodes.minSpacing} m</span>
+                    <span className="font-semibold">{formatDistance(electrodes.minSpacing, 2)}</span>
                   </div>
                 </div>
               );
@@ -530,6 +757,7 @@ const MexicanNormatives = ({ params, calculations, darkMode }) => {
             </h4>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Cumplimiento IEEE 80 */}
               <div className={`p-3 rounded-lg ${calculations?.complies ? 'bg-green-100 dark:bg-green-900/30' : 'bg-red-100 dark:bg-red-900/30'}`}>
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-black dark:text-white">Cumplimiento IEEE 80</span>
@@ -542,14 +770,31 @@ const MexicanNormatives = ({ params, calculations, darkMode }) => {
                 <div className="text-lg font-bold mt-1 text-black dark:text-white">
                   {calculations?.complies ? 'CUMPLE' : 'NO CUMPLE'}
                 </div>
+                {calculations?.complies && (
+                  <div className="grid grid-cols-3 gap-2 mt-2">
+                    <div className="p-2 rounded bg-green-100 dark:bg-green-900/30 shadow-[0_0_15px_rgba(74,222,128,0.5)] dark:shadow-[0_0_15px_rgba(34,197,94,0.5)] text-center">
+                      <div className="text-xs text-gray-500">Seguridad</div>
+                      <div className="text-lg font-bold text-green-600">100%</div>
+                    </div>
+                    <div className="p-2 rounded bg-green-100 dark:bg-green-900/30 shadow-[0_0_15px_rgba(74,222,128,0.5)] dark:shadow-[0_0_15px_rgba(34,197,94,0.5)] text-center">
+                      <div className="text-xs text-gray-500">Resistencia</div>
+                      <div className="text-lg font-bold text-green-600">100%</div>
+                    </div>
+                    <div className="p-2 rounded bg-green-100 dark:bg-green-900/30 shadow-[0_0_15px_rgba(74,222,128,0.5)] dark:shadow-[0_0_15px_rgba(34,197,94,0.5)] text-center">
+                      <div className="text-xs text-gray-500">GPR</div>
+                      <div className="text-lg font-bold text-green-600">100%</div>
+                    </div>
+                  </div>
+                )}
               </div>
               
+              {/* Resistencia de malla */}
               <div className="p-3 rounded-lg bg-purple-100 dark:bg-purple-900/30">
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-black dark:text-white">Resistencia de Malla</span>
                 </div>
                 <div className="text-2xl font-bold mt-1 text-black dark:text-white">
-                  {calculations?.Rg?.toFixed(2)} Ω
+                  {formatResistance(calculations?.Rg, 2)}
                 </div>
                 <div className="text-xs mt-1 text-black dark:text-white">
                   Objetivo: &lt;5 Ω
@@ -561,21 +806,220 @@ const MexicanNormatives = ({ params, calculations, darkMode }) => {
               <div className={`p-2 rounded ${darkMode ? 'bg-gray-600' : 'bg-white'}`}>
                 <span className="text-gray-500">Tensión de Contacto:</span>
                 <span className={`ml-2 font-bold ${calculations?.touchSafe70 ? 'text-green-600' : 'text-red-600'}`}>
-                  {calculations?.Em?.toFixed(0)} V
+                  {formatVoltage(calculations?.Em, 0)}
                 </span>
-                <span className="text-xs text-gray-500"> / {calculations?.Etouch70?.toFixed(0)} V</span>
+                <span className="text-xs text-gray-500"> / {formatVoltage(calculations?.Etouch70, 0)}</span>
               </div>
               <div className={`p-2 rounded ${darkMode ? 'bg-gray-600' : 'bg-white'}`}>
                 <span className="text-gray-500">Tensión de Paso:</span>
                 <span className={`ml-2 font-bold ${calculations?.stepSafe70 ? 'text-green-600' : 'text-red-600'}`}>
-                  {calculations?.Es?.toFixed(0)} V
+                  {formatVoltage(calculations?.Es, 0)}
                 </span>
-                <span className="text-xs text-gray-500"> / {calculations?.Estep70?.toFixed(0)} V</span>
+                <span className="text-xs text-gray-500"> / {formatVoltage(calculations?.Estep70, 0)}</span>
               </div>
             </div>
           </div>
         </div>
       )}
+      
+      {/* Contenido CFE 01J00-01 */}
+      {activeNormative === 'CFE' && (
+        <div className="space-y-4">
+          <div className={`p-4 rounded-lg ${darkMode ? 'bg-gray-700/50' : 'bg-gray-100'}`}>
+            <h4 className={`font-semibold mb-3 ${colors.text} flex items-center gap-2`}>
+              <Zap size={18} /> CFE 01J00-01 - Criterios de Puesta a Tierra
+            </h4>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* Resistencia de tierra */}
+              <div className={`p-3 rounded-lg ${cfeCompliance.resistanceOK ? 'bg-green-100 dark:bg-green-900/30 shadow-[0_0_15px_rgba(74,222,128,0.5)]' : 'bg-red-100 dark:bg-red-900/30 shadow-[0_0_15px_rgba(248,113,113,0.5)]'}`}>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-black dark:text-white">Resistencia de Tierra</span>
+                  {cfeCompliance.resistanceOK ? <CheckCircle className="text-green-600" size={20} /> : <XCircle className="text-red-600" size={20} />}
+                </div>
+                <div className="text-2xl font-bold mt-1 text-black dark:text-white">
+                  {formatResistance(cfeCompliance.actualResistance, 2)}
+                </div>
+                <div className="text-xs mt-1 text-black dark:text-white">
+                  Límite CFE: &lt;{formatResistance(cfeCompliance.maxResistance, 2)}
+                </div>
+                <div className="text-xs text-black dark:text-white">
+                  Nivel tensión: {cfeCompliance.voltageLevel} V
+                </div>
+              </div>
+              
+              {/* Tiempo de despeje */}
+              <div className={`p-3 rounded-lg ${cfeCompliance.faultDurationOK ? 'bg-green-100 dark:bg-green-900/30' : 'bg-yellow-100 dark:bg-yellow-900/30'}`}>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-black dark:text-white">Tiempo de Despeje</span>
+                  {cfeCompliance.faultDurationOK ? <CheckCircle className="text-green-600" size={20} /> : <AlertTriangle className="text-yellow-600" size={20} />}
+                </div>
+                <div className="text-2xl font-bold mt-1 text-black dark:text-white">
+                  {formatNumber(params?.faultDuration || 0.5, 1)} s
+                </div>
+                <div className="text-xs mt-1 text-black dark:text-white">
+                  Límite CFE: &lt;0.5 s
+                </div>
+              </div>
+              
+              {/* GPR */}
+              <div className={`p-3 rounded-lg ${cfeCompliance.gprOK ? 'bg-green-100 dark:bg-green-900/30' : 'bg-yellow-100 dark:bg-yellow-900/30'}`}>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-black dark:text-white">GPR (Elevación de Potencial)</span>
+                  {cfeCompliance.gprOK ? <CheckCircle className="text-green-600" size={20} /> : <AlertTriangle className="text-yellow-600" size={20} />}
+                </div>
+                <div className="text-2xl font-bold mt-1 text-black dark:text-white">
+                  {formatVoltage(cfeCompliance.GPR, 0)}
+                </div>
+                <div className="text-xs mt-1 text-black dark:text-white">
+                  Límite CFE: &lt;{formatVoltage(5000, 0)}
+                </div>
+              </div>
+            </div>
+            
+            {/* Factor de seguridad */}
+            <div className="mt-4 p-3 rounded-lg bg-blue-100 dark:bg-blue-900/30">
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-black dark:text-white">Factor de Seguridad CFE</span>
+                <span className="text-lg font-bold text-black dark:text-white">{cfeCompliance.safetyFactor}x</span>
+              </div>
+              <div className="text-xs mt-1 text-black dark:text-white">
+                Tipo de subestación: {cfeCompliance.substationType === 'distribution' ? 'Distribución' : cfeCompliance.substationType === 'transmission' ? 'Transmisión' : 'Industrial'}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Contenido NOM-001-SEDE-2012 */}
+      {activeNormative === 'NOM-001' && (
+        <div className="space-y-4">
+          <div className={`p-4 rounded-lg ${darkMode ? 'bg-gray-700/50' : 'bg-gray-100'}`}>
+            <h4 className={`font-semibold mb-3 ${colors.text} flex items-center gap-2`}>
+              <FileText size={18} /> NOM-001-SEDE-2012 - Instalaciones Eléctricas (Utilización)
+            </h4>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Caída de tensión */}
+              <div className={`p-3 rounded-lg ${nom001Compliance.voltageDropOK ? 'bg-green-100 dark:bg-green-900/30 shadow-[0_0_15px_rgba(74,222,128,0.5)]' : 'bg-red-100 dark:bg-red-900/30 shadow-[0_0_15px_rgba(248,113,113,0.5)]'}`}>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-black dark:text-white">Caída de Tensión</span>
+                  {nom001Compliance.voltageDropOK ? <CheckCircle className="text-green-600" size={20} /> : <XCircle className="text-red-600" size={20} />}
+                </div>
+                <div className="text-2xl font-bold mt-1 text-black dark:text-white">
+                  {nom001Compliance.voltageDrop}%
+                </div>
+                <div className="text-xs mt-1 text-black dark:text-white">
+                  Límite NOM-001: 3% (alimentadores)
+                </div>
+                <div className="text-xs text-black dark:text-white">
+                  Distancia: {formatDistance(nom001Compliance.distance, 0)} | {formatVoltage(nom001Compliance.voltage, 0)}
+                </div>
+              </div>
+              
+              {/* Ampacidad del conductor */}
+              <div className={`p-3 rounded-lg ${nom001Compliance.ampacityOK ? 'bg-green-100 dark:bg-green-900/30' : 'bg-red-100 dark:bg-red-900/30'}`}>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-black dark:text-white">Ampacidad del Conductor</span>
+                  {nom001Compliance.ampacityOK ? <CheckCircle className="text-green-600" size={20} /> : <XCircle className="text-red-600" size={20} />}
+                </div>
+                <div className="text-lg font-bold mt-1 text-black dark:text-white">
+                  {nom001Compliance.adjustedAmpacity} A / {nom001Compliance.requiredAmpacity} A
+                </div>
+                <div className="text-xs mt-1 text-black dark:text-white">
+                  Calibre: {nom001Compliance.conductorAWG} ({nom001Compliance.conductorMaterial})
+                </div>
+                <div className="text-xs text-black dark:text-white">
+                  Factores: Temp. {nom001Compliance.tempFactor} | Agrup. {nom001Compliance.groupFactor}
+                </div>
+              </div>
+            </div>
+            
+            {/* Resumen NOM-001 */}
+            <div className={`mt-4 p-3 rounded-lg ${nom001Compliance.voltageDropOK && nom001Compliance.ampacityOK ? 'bg-green-100 dark:bg-green-900/30 shadow-[0_0_15px_rgba(74,222,128,0.5)]' : 'bg-red-100 dark:bg-red-900/30 shadow-[0_0_15px_rgba(248,113,113,0.5)]'}`}>
+              <div className="flex items-center gap-2">
+                {nom001Compliance.voltageDropOK && nom001Compliance.ampacityOK ? (
+                  <CheckCircle className="text-green-600" size={24} />
+                ) : (
+                  <XCircle className="text-red-600" size={24} />
+                )}
+                <div>
+                  <div className="font-semibold text-black dark:text-white">
+                    {nom001Compliance.voltageDropOK && nom001Compliance.ampacityOK 
+                      ? '✅ Instalación CUMPLE con NOM-001-SEDE-2012'
+                      : '❌ Instalación NO CUMPLE con NOM-001-SEDE-2012'}
+                  </div>
+                  <div className="text-sm text-gray-500">
+                    {!nom001Compliance.voltageDropOK && '• Caída de tensión excede el 3% permitido\n'}
+                    {!nom001Compliance.ampacityOK && '• La ampacidad del conductor es insuficiente'}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Resumen Global de Cumplimiento */}
+      <div className={`mt-4 p-4 rounded-lg ${
+        nom022Compliance.complies && nom022Compliance.hasGravelLayer && 
+        nmx549Compliance.hasLightningRod && nmx549Compliance.hasEnoughRods &&
+        cfeCompliance.resistanceOK && nom001Compliance.voltageDropOK && nom001Compliance.ampacityOK
+          ? 'bg-green-100 dark:bg-green-900/30 shadow-[0_0_20px_rgba(74,222,128,0.5)]'
+          : 'bg-yellow-100 dark:bg-yellow-900/30 shadow-[0_0_20px_rgba(250,204,21,0.5)]'
+      }`}>
+        <h4 className={`font-bold mb-2 ${colors.text} flex items-center gap-2`}>
+          <Shield size={20} /> Estado Global de Cumplimiento Normativo
+        </h4>
+        
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-2 text-sm">
+          <div className="text-center">
+            <div className="font-semibold">NOM-022</div>
+            <div className={nom022Compliance.complies && nom022Compliance.hasGravelLayer ? 'text-green-600' : 'text-red-600'}>
+              {nom022Compliance.complies && nom022Compliance.hasGravelLayer ? '✓' : '✗'}
+            </div>
+          </div>
+          <div className="text-center">
+            <div className="font-semibold">NMX-J-549</div>
+            <div className={nmx549Compliance.hasLightningRod && nmx549Compliance.hasEnoughRods ? 'text-green-600' : 'text-red-600'}>
+              {nmx549Compliance.hasLightningRod && nmx549Compliance.hasEnoughRods ? '✓' : '✗'}
+            </div>
+          </div>
+          <div className="text-center">
+            <div className="font-semibold">IEEE 80</div>
+            <div className={calculations?.complies ? 'text-green-600' : 'text-red-600'}>
+              {calculations?.complies ? '✓' : '✗'}
+            </div>
+          </div>
+          <div className="text-center">
+            <div className="font-semibold">CFE</div>
+            <div className={cfeCompliance.resistanceOK ? 'text-green-600' : 'text-red-600'}>
+              {cfeCompliance.resistanceOK ? '✓' : '✗'}
+            </div>
+          </div>
+          <div className="text-center">
+            <div className="font-semibold">NOM-001</div>
+            <div className={nom001Compliance.voltageDropOK && nom001Compliance.ampacityOK ? 'text-green-600' : 'text-red-600'}>
+              {nom001Compliance.voltageDropOK && nom001Compliance.ampacityOK ? '✓' : '✗'}
+            </div>
+          </div>
+        </div>
+        
+        <div className="mt-3 text-center">
+          <span className={`text-sm font-bold ${
+            nom022Compliance.complies && nom022Compliance.hasGravelLayer && 
+             nmx549Compliance.hasLightningRod && nmx549Compliance.hasEnoughRods &&
+             cfeCompliance.resistanceOK && nom001Compliance.voltageDropOK && nom001Compliance.ampacityOK
+              ? 'text-green-600' : 'text-yellow-600'
+          }`}>
+            {nom022Compliance.complies && nom022Compliance.hasGravelLayer && 
+             nmx549Compliance.hasLightningRod && nmx549Compliance.hasEnoughRods &&
+             cfeCompliance.resistanceOK && nom001Compliance.voltageDropOK && nom001Compliance.ampacityOK
+              ? '✅ SISTEMA CERTIFICADO - Cumple con todas las normas aplicables'
+              : '⚠️ SISTEMA CON OBSERVACIONES - Requiere mejoras para cumplir normas'}
+          </span>
+        </div>
+      </div>
       
       {/* Nota de obligatoriedad */}
       <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">

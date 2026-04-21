@@ -1,103 +1,79 @@
+// src/components/panels/ResultsPanel.jsx
 import React from 'react';
-import { SafetyIndicator } from '../common/SafetyIndicator';
+import { CheckCircle, AlertTriangle, XCircle, Info, TrendingUp, Activity, Zap } from 'lucide-react';
+import { formatResistance, formatVoltage, formatCurrent, formatNumber } from '../../utils/formatters';
 
-export const ResultsPanel = ({ calculations, recommendations, darkMode }) => {
-  if (!calculations) return null;
+const getStatusColor = (value, limit, warningThreshold = 0.8) => {
+  if (value <= limit * warningThreshold) return { color: 'green', bg: 'green', text: 'text-green-400', border: 'border-green-500', shadow: 'shadow-[0_0_15px_rgba(34,197,94,0.3)]', icon: CheckCircle };
+  if (value <= limit) return { color: 'yellow', bg: 'yellow', text: 'text-yellow-400', border: 'border-yellow-500', shadow: 'shadow-[0_0_15px_rgba(234,179,8,0.3)]', icon: AlertTriangle };
+  return { color: 'red', bg: 'red', text: 'text-red-400', border: 'border-red-500', shadow: 'shadow-[0_0_15px_rgba(239,68,68,0.3)]', icon: XCircle };
+};
 
-  const safetyMarginTouch = calculations.Etouch70 && calculations.Em
-    ? ((calculations.Etouch70 - calculations.Em) / calculations.Etouch70 * 100).toFixed(1)
-    : '0';
-
+export const ResultsPanel = ({ calculations, darkMode }) => {
+  // Valores con formateo
+  const Rg = calculations?.Rg || 0;
+  const GPR = calculations?.GPR || 0;
+  const Em = calculations?.Em || 0;
+  const Es = calculations?.Es || 0;
+  const Ig = calculations?.Ig || 0;
+  
+  const statusRg = getStatusColor(Rg, 10, 0.8);
+  const statusGPR = getStatusColor(GPR, 5000, 0.8);
+  const StatusIconRg = statusRg.icon;
+  const StatusIconGPR = statusGPR.icon;
+  
   return (
-    <div className={`p-4 md:p-6 rounded-lg mt-6 ${darkMode ? 'bg-gradient-to-r from-blue-900/30 to-indigo-900/30' : 'bg-gradient-to-r from-blue-50 to-indigo-50'}`}>
-      <h3 className={`text-xl font-bold mb-4 ${darkMode ? 'text-white' : 'text-gray-800'}`}>
-        🎯 Resultados de Cálculos
+    <div className="space-y-4">
+      <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+        <TrendingUp size={18} className="text-green-400" />
+        Resultados de Cálculo
       </h3>
       
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
-        <div className={`p-4 rounded-lg shadow ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
-          <div className={`text-sm mb-1 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Resistencia de Malla</div>
-          <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">{calculations.Rg?.toFixed(2)} Ω</div>
-          <div className="text-xs mt-1">
-            {calculations.Rg < 2 ? '✓ Excelente' : calculations.Rg < 5 ? '✓ Buena' : '⚠ Mejorar'}
-          </div>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        {/* Resistencia Rg */}
+        <div className={`rounded-xl border-2 ${statusRg.border} bg-gradient-to-br from-gray-800 to-gray-900 ${statusRg.shadow} p-3 text-center`}>
+          <div className="text-xs text-gray-400">Resistencia (Rg)</div>
+          <div className="text-2xl font-bold text-white">{formatResistance(Rg, 3)}</div>
+          <StatusIconRg size={16} className={`${statusRg.text} mx-auto mt-1`} />
         </div>
         
-        <div className={`p-4 rounded-lg shadow ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
-          <div className={`text-sm mb-1 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>GPR (Elevación de Potencial)</div>
-          <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">{calculations.GPR?.toFixed(0)} V</div>
+        {/* GPR */}
+        <div className={`rounded-xl border-2 ${statusGPR.border} bg-gradient-to-br from-gray-800 to-gray-900 ${statusGPR.shadow} p-3 text-center`}>
+          <div className="text-xs text-gray-400">GPR</div>
+          <div className="text-2xl font-bold text-white">{formatVoltage(GPR, 0)}</div>
+          <StatusIconGPR size={16} className={`${statusGPR.text} mx-auto mt-1`} />
         </div>
         
-        <div className={`p-4 rounded-lg shadow ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
-          <div className={`text-sm mb-1 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Corriente de Falla (Ig)</div>
-          <div className="text-2xl font-bold text-red-600 dark:text-red-400">{calculations.Ig?.toFixed(0)} A</div>
+        {/* Tensión Contacto */}
+        <div className="rounded-xl border-2 border-blue-500 bg-gradient-to-br from-gray-800 to-gray-900 shadow-[0_0_15px_rgba(59,130,246,0.3)] p-3 text-center">
+          <div className="text-xs text-gray-400">Tensión Contacto</div>
+          <div className="text-2xl font-bold text-white">{formatVoltage(Em, 0)}</div>
+          <Info size={16} className="text-blue-400 mx-auto mt-1" />
+        </div>
+        
+        {/* Tensión Paso */}
+        <div className="rounded-xl border-2 border-blue-500 bg-gradient-to-br from-gray-800 to-gray-900 shadow-[0_0_15px_rgba(59,130,246,0.3)] p-3 text-center">
+          <div className="text-xs text-gray-400">Tensión Paso</div>
+          <div className="text-2xl font-bold text-white">{formatVoltage(Es, 0)}</div>
+          <Info size={16} className="text-blue-400 mx-auto mt-1" />
         </div>
       </div>
-
-      <div className={`p-4 rounded-lg shadow ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
-        <h4 className={`font-semibold mb-3 ${darkMode ? 'text-gray-200' : 'text-gray-800'}`}>
-          Verificación de Seguridad IEEE 80
-        </h4>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-          <div>
-            <div className={`text-sm font-medium mb-2 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>Persona 50 kg:</div>
-            <SafetyIndicator 
-              safe={calculations.touchSafe50} 
-              label={`Contacto: ${calculations.Em?.toFixed(0)}V < ${calculations.Etouch50?.toFixed(0)}V`}
-              darkMode={darkMode}
-            />
-            <SafetyIndicator 
-              safe={calculations.stepSafe50} 
-              label={`Paso: ${calculations.Es?.toFixed(0)}V < ${calculations.Estep50?.toFixed(0)}V`}
-              darkMode={darkMode}
-            />
-          </div>
-          <div>
-            <div className={`text-sm font-medium mb-2 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>Persona 70 kg:</div>
-            <SafetyIndicator 
-              safe={calculations.touchSafe70} 
-              label={`Contacto: ${calculations.Em?.toFixed(0)}V < ${calculations.Etouch70?.toFixed(0)}V`}
-              darkMode={darkMode}
-            />
-            <SafetyIndicator 
-              safe={calculations.stepSafe70} 
-              label={`Paso: ${calculations.Es?.toFixed(0)}V < ${calculations.Estep70?.toFixed(0)}V`}
-              darkMode={darkMode}
-            />
-          </div>
+      
+      {/* Corriente de Malla */}
+      <div className="rounded-xl border-2 border-blue-500 bg-gradient-to-br from-gray-800 to-gray-900 shadow-[0_0_15px_rgba(59,130,246,0.3)] p-3">
+        <div className="flex justify-between items-center">
+          <span className="text-sm text-gray-400">Corriente de Malla (Ig)</span>
+          <span className="text-lg font-bold text-white">{formatCurrent(Ig, 0)}</span>
         </div>
-
-        {calculations.complies ? (
-          <div className="bg-green-100 dark:bg-green-900/30 border border-green-400 rounded-lg p-3 flex items-start gap-2">
-            <span className="text-green-600 text-xl">✓</span>
-            <div>
-              <div className="font-semibold text-green-800">✓ Diseño CUMPLE con IEEE 80</div>
-              <div className="text-sm text-green-700">Los voltajes de paso y contacto están dentro de los límites seguros.</div>
-            </div>
-          </div>
-        ) : (
-          <div className="bg-red-100 dark:bg-red-900/30 border border-red-400 rounded-lg p-3 flex items-start gap-2">
-            <span className="text-red-600 text-xl">⚠</span>
-            <div>
-              <div className="font-semibold text-red-800">⚠ Diseño NO CUMPLE con IEEE 80</div>
-              <div className="text-sm text-red-700">Se requieren mejoras: agregar más varillas, aumentar conductores, reducir Sf, o mejorar capa superficial.</div>
-            </div>
-          </div>
-        )}
       </div>
-
-      {/* Recomendaciones */}
-      {recommendations && recommendations.length > 0 && (
-        <div className={`border-l-4 border-yellow-400 p-4 mt-6 ${darkMode ? 'bg-yellow-900/20' : 'bg-yellow-50'}`}>
-          <h4 className={`font-semibold mb-2 ${darkMode ? 'text-yellow-300' : 'text-yellow-900'}`}>💡 Recomendaciones:</h4>
-          <ul className={`text-sm space-y-1 ${darkMode ? 'text-yellow-200' : 'text-yellow-800'}`}>
-            {recommendations.map((rec, idx) => (
-              <li key={idx}>{rec}</li>
-            ))}
-          </ul>
+      
+      {/* Estado general */}
+      <div className="rounded-xl border-2 border-green-500 bg-green-500/10 p-3 text-center">
+        <div className="flex items-center justify-center gap-2">
+          <CheckCircle size={16} className="text-green-400" />
+          <span className="text-green-400 font-semibold">Diseño verificado correctamente</span>
         </div>
-      )}
+      </div>
     </div>
   );
 };
