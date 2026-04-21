@@ -294,6 +294,7 @@ const FaultAnimation = ({ params, darkMode, onSimulate }) => {
     setParticles([]);
     setRipples([]);
     setCurrentWave([]);
+    setVoltageGradient([]);
     setFaultCurrent(0);
     setGridCurrent(0);
     setGpr(0);
@@ -330,112 +331,257 @@ const FaultAnimation = ({ params, darkMode, onSimulate }) => {
     const centerX = width / 2;
     const centerY = height / 2;
     
-    ctx.fillStyle = darkMode ? '#1f2937' : '#f3f4f6';
+    // Fondo con gradiente radial más elaborado
+    const bgGradient = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, width);
+    bgGradient.addColorStop(0, darkMode ? '#1f2937' : '#f3f4f6');
+    bgGradient.addColorStop(1, darkMode ? '#111827' : '#e5e7eb');
+    ctx.fillStyle = bgGradient;
     ctx.fillRect(0, 0, width, height);
     
+    // Efecto de partículas de fondo más dinámico
     ctx.fillStyle = darkMode ? '#374151' : '#e5e7eb';
-    for (let i = 0; i < 200; i++) {
-      ctx.fillRect(Math.random() * width, Math.random() * height, 2, 1);
+    for (let i = 0; i < 300; i++) {
+      const size = Math.random() * 2 + 1;
+      const x = Math.random() * width;
+      const y = Math.random() * height;
+      const opacity = Math.random() * 0.3 + 0.1;
+      ctx.fillStyle = darkMode ? `rgba(75, 85, 99, ${opacity})` : `rgba(156, 163, 175, ${opacity})`;
+      ctx.fillRect(x, y, size, size);
     }
-    
-    ripples.forEach(ripple => {
-      ctx.beginPath();
-      ctx.arc(centerX, centerY, ripple.radius, 0, 2 * Math.PI);
-      ctx.strokeStyle = `rgba(239, 68, 68, ${ripple.opacity * 0.5})`;
-      ctx.lineWidth = 2;
-      ctx.stroke();
-    });
     
     const intensity = Math.min(1, faultCurrent / maxFaultCurrent);
     
-    for (let i = 0; i < 48; i++) {
-      const angle = (i * 7.5) * Math.PI / 180;
-      const startRadius = 70 + intensity * 30;
-      const endRadius = 150 + intensity * 50;
+    // Ondas de choque con efecto de brillo y múltiples capas
+    ripples.forEach((ripple, index) => {
+      // Onda principal
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, ripple.radius, 0, 2 * Math.PI);
+      const rippleGradient = ctx.createRadialGradient(centerX, centerY, ripple.radius - 10, centerX, centerY, ripple.radius + 10);
+      rippleGradient.addColorStop(0, `rgba(239, 68, 68, 0)`);
+      rippleGradient.addColorStop(0.5, `rgba(239, 68, 68, ${ripple.opacity * 0.6})`);
+      rippleGradient.addColorStop(1, `rgba(239, 68, 68, 0)`);
+      ctx.strokeStyle = rippleGradient;
+      ctx.lineWidth = 4 + intensity * 4;
+      ctx.shadowBlur = 15 * ripple.opacity;
+      ctx.shadowColor = '#ef4444';
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+      
+      // Onda secundaria (eco)
+      if (ripple.radius > 30) {
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, ripple.radius - 15, 0, 2 * Math.PI);
+        ctx.strokeStyle = `rgba(251, 191, 36, ${ripple.opacity * 0.3})`;
+        ctx.lineWidth = 2;
+        ctx.stroke();
+      }
+    });
+    
+    // Líneas de flujo de corriente con efectos mejorados
+    for (let i = 0; i < 72; i++) {
+      const angle = (i * 5) * Math.PI / 180;
+      const startRadius = 60 + intensity * 40;
+      const endRadius = 180 + intensity * 60;
       
       const startX = centerX + Math.cos(angle) * startRadius;
       const startY = centerY + Math.sin(angle) * startRadius;
       const endX = centerX + Math.cos(angle) * endRadius;
       const endY = centerY + Math.sin(angle) * endRadius;
       
+      // Línea principal con gradiente
       ctx.beginPath();
       ctx.moveTo(startX, startY);
       ctx.lineTo(endX, endY);
       
       const gradient = ctx.createLinearGradient(startX, startY, endX, endY);
-      gradient.addColorStop(0, `rgba(239, 68, 68, ${0.8 + intensity * 0.2})`);
-      gradient.addColorStop(1, `rgba(245, 158, 11, ${0.3 + intensity * 0.3})`);
+      gradient.addColorStop(0, `rgba(239, 68, 68, ${0.9 + intensity * 0.1})`);
+      gradient.addColorStop(0.5, `rgba(249, 115, 22, ${0.7 + intensity * 0.2})`);
+      gradient.addColorStop(1, `rgba(245, 158, 11, ${0.4 + intensity * 0.3})`);
       ctx.strokeStyle = gradient;
-      ctx.lineWidth = 2 + intensity * 5;
+      ctx.lineWidth = 3 + intensity * 6;
+      ctx.shadowBlur = 10 * intensity;
+      ctx.shadowColor = '#ef4444';
       ctx.stroke();
+      ctx.shadowBlur = 0;
       
+      // Flecha mejorada con efecto de brillo
       const arrowX = startX;
       const arrowY = startY;
       const arrowAngle = angle + Math.PI;
+      const arrowSize = 8 + intensity * 4;
+      
       ctx.beginPath();
       ctx.moveTo(arrowX, arrowY);
-      ctx.lineTo(arrowX - 6 * Math.cos(arrowAngle - 0.3), arrowY - 6 * Math.sin(arrowAngle - 0.3));
-      ctx.lineTo(arrowX - 6 * Math.cos(arrowAngle + 0.3), arrowY - 6 * Math.sin(arrowAngle + 0.3));
-      ctx.fillStyle = `rgba(239, 68, 68, ${0.7 + intensity * 0.3})`;
+      ctx.lineTo(arrowX - arrowSize * Math.cos(arrowAngle - 0.4), arrowY - arrowSize * Math.sin(arrowAngle - 0.4));
+      ctx.lineTo(arrowX - arrowSize * Math.cos(arrowAngle + 0.4), arrowY - arrowSize * Math.sin(arrowAngle + 0.4));
+      ctx.closePath();
+      
+      const arrowGradient = ctx.createRadialGradient(arrowX, arrowY, 0, arrowX, arrowY, arrowSize);
+      arrowGradient.addColorStop(0, `rgba(255, 255, 255, ${0.5 + intensity * 0.3})`);
+      arrowGradient.addColorStop(0.3, `rgba(239, 68, 68, ${0.8 + intensity * 0.2})`);
+      arrowGradient.addColorStop(0.7, `rgba(185, 28, 28, 0.6)`);
+      arrowGradient.addColorStop(1, `rgba(185, 28, 28, 0)`);
+      ctx.fillStyle = arrowGradient;
+      ctx.shadowBlur = 12;
+      ctx.shadowColor = '#ef4444';
       ctx.fill();
-    }
-    
-    ctx.beginPath();
-    ctx.arc(centerX, centerY, 55, 0, 2 * Math.PI);
-    ctx.fillStyle = `rgba(245, 158, 11, ${0.1 + intensity * 0.3})`;
-    ctx.fill();
-    ctx.strokeStyle = `rgba(245, 158, 11, ${0.8 + intensity * 0.2})`;
-    ctx.lineWidth = 3;
-    ctx.stroke();
-    
-    ctx.beginPath();
-    for (let i = -3; i <= 3; i++) {
-      const offset = i * 12;
-      ctx.moveTo(centerX + offset, centerY - 45);
-      ctx.lineTo(centerX + offset, centerY + 45);
-      ctx.moveTo(centerX - 45, centerY + offset);
-      ctx.lineTo(centerX + 45, centerY + offset);
-    }
-    ctx.strokeStyle = `rgba(245, 158, 11, ${0.6})`;
-    ctx.lineWidth = 1.5;
-    ctx.stroke();
-    
-    for (let i = -3; i <= 3; i++) {
-      for (let j = -3; j <= 3; j++) {
-        ctx.beginPath();
-        ctx.arc(centerX + i * 12, centerY + j * 12, 2, 0, 2 * Math.PI);
-        ctx.fillStyle = `rgba(245, 158, 11, ${0.8})`;
-        ctx.fill();
+      ctx.shadowBlur = 0;
+      
+      // Líneas secundarias (efecto de campo eléctrico)
+      if (intensity > 0.5) {
+        for (let j = 0; j < 3; j++) {
+          const offsetAngle = angle + (j - 1) * 0.1;
+          const offsetStartX = centerX + Math.cos(offsetAngle) * (startRadius + 5);
+          const offsetStartY = centerY + Math.sin(offsetAngle) * (startRadius + 5);
+          const offsetEndX = centerX + Math.cos(offsetAngle) * (endRadius - 10);
+          const offsetEndY = centerY + Math.sin(offsetAngle) * (endRadius - 10);
+          
+          ctx.beginPath();
+          ctx.moveTo(offsetStartX, offsetStartY);
+          ctx.lineTo(offsetEndX, offsetEndY);
+          ctx.strokeStyle = `rgba(249, 115, 22, ${(intensity - 0.5) * 0.4})`;
+          ctx.lineWidth = 1;
+          ctx.stroke();
+        }
       }
     }
     
-    particles.forEach(particle => {
+    // Malla de tierra mejorada con efectos de brillo
+    const gridRadius = 50 + intensity * 15;
+    
+    // Círculo central con gradiente
+    const centerGradient = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, gridRadius);
+    centerGradient.addColorStop(0, `rgba(251, 191, 36, ${0.2 + intensity * 0.4})`);
+    centerGradient.addColorStop(0.7, `rgba(245, 158, 11, ${0.1 + intensity * 0.2})`);
+    centerGradient.addColorStop(1, `rgba(217, 119, 6, 0)`);
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, gridRadius, 0, 2 * Math.PI);
+    ctx.fillStyle = centerGradient;
+    ctx.fill();
+    
+    // Borde exterior con efecto de brillo
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, gridRadius, 0, 2 * Math.PI);
+    ctx.strokeStyle = `rgba(251, 191, 36, ${0.8 + intensity * 0.2})`;
+    ctx.lineWidth = 4;
+    ctx.shadowBlur = 20 * intensity;
+    ctx.shadowColor = '#fbbf24';
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+    
+    // Líneas de la malla mejoradas
+    ctx.strokeStyle = `rgba(251, 191, 36, ${0.7 + intensity * 0.2})`;
+    ctx.lineWidth = 2;
+    for (let i = -4; i <= 4; i++) {
+      const offset = i * 10;
       ctx.beginPath();
-      ctx.arc(particle.x * width / 100, particle.y * height / 100, particle.size, 0, 2 * Math.PI);
-      ctx.fillStyle = `rgba(239, 68, 68, ${0.8})`;
-      ctx.fill();
-      ctx.shadowBlur = 8;
+      ctx.moveTo(centerX + offset, centerY - 40);
+      ctx.lineTo(centerX + offset, centerY + 40);
+      ctx.moveTo(centerX - 40, centerY + offset);
+      ctx.lineTo(centerX + 40, centerY + offset);
+      ctx.stroke();
+    }
+    
+    // Puntos de intersección con efecto de brillo
+    for (let i = -4; i <= 4; i++) {
+      for (let j = -4; j <= 4; j++) {
+        const pointX = centerX + i * 10;
+        const pointY = centerY + j * 10;
+        ctx.beginPath();
+        ctx.arc(pointX, pointY, 3 + intensity * 2, 0, 2 * Math.PI);
+        const pointGradient = ctx.createRadialGradient(pointX, pointY, 0, pointX, pointY, 5);
+        pointGradient.addColorStop(0, `rgba(255, 255, 255, ${0.8 + intensity * 0.2})`);
+        pointGradient.addColorStop(0.5, `rgba(251, 191, 36, 0.9)`);
+        pointGradient.addColorStop(1, `rgba(217, 119, 6, 0.5)`);
+        ctx.fillStyle = pointGradient;
+        ctx.shadowBlur = 8;
+        ctx.shadowColor = '#fbbf24';
+        ctx.fill();
+        ctx.shadowBlur = 0;
+      }
+    }
+    
+    // Partículas mejoradas con efectos de rastro y brillo
+    particles.forEach(particle => {
+      const px = particle.x * width / 100;
+      const py = particle.y * height / 100;
+      const size = particle.size * (1 + intensity * 0.5);
+      
+      // Rastro de la partícula
+      const trailLength = 15 * particle.progress;
+      const trailGradient = ctx.createLinearGradient(
+        px - Math.cos(particle.angle) * trailLength,
+        py - Math.sin(particle.angle) * trailLength,
+        px, py
+      );
+      trailGradient.addColorStop(0, `rgba(239, 68, 68, 0)`);
+      trailGradient.addColorStop(1, `rgba(239, 68, 68, ${0.6 + intensity * 0.3})`);
+      ctx.beginPath();
+      ctx.moveTo(px - Math.cos(particle.angle) * trailLength, py - Math.sin(particle.angle) * trailLength);
+      ctx.lineTo(px, py);
+      ctx.strokeStyle = trailGradient;
+      ctx.lineWidth = size * 0.8;
+      ctx.stroke();
+      
+      // Partícula principal con efecto de brillo
+      ctx.beginPath();
+      ctx.arc(px, py, size, 0, 2 * Math.PI);
+      const particleGradient = ctx.createRadialGradient(px, py, 0, px, py, size * 2);
+      particleGradient.addColorStop(0, `rgba(255, 255, 255, ${0.9 + intensity * 0.1})`);
+      particleGradient.addColorStop(0.3, `rgba(239, 68, 68, 0.9)`);
+      particleGradient.addColorStop(0.7, `rgba(185, 28, 28, 0.6)`);
+      particleGradient.addColorStop(1, `rgba(185, 28, 28, 0)`);
+      ctx.fillStyle = particleGradient;
+      ctx.shadowBlur = 15 * intensity;
       ctx.shadowColor = '#ef4444';
       ctx.fill();
       ctx.shadowBlur = 0;
     });
     
+    // Etiqueta de punto de falla mejorada
     if (faultCurrent > 0) {
-      ctx.font = 'bold 12px sans-serif';
-      ctx.fillStyle = '#ef4444';
-      ctx.fillText('⚡ PUNTO DE FALLA', centerX + 70, centerY - 80);
-      
+      // Círculo de alerta pulsante
+      const pulseRadius = 25 + Math.sin(Date.now() / 200) * 5;
       ctx.beginPath();
-      ctx.moveTo(centerX + 60, centerY - 65);
-      ctx.lineTo(centerX + 40, centerY - 55);
-      ctx.lineTo(centerX + 40, centerY - 75);
+      ctx.arc(centerX + 80, centerY - 70, pulseRadius, 0, 2 * Math.PI);
+      ctx.strokeStyle = `rgba(239, 68, 68, ${0.5 + Math.sin(Date.now() / 200) * 0.3})`;
+      ctx.lineWidth = 3;
+      ctx.shadowBlur = 20;
+      ctx.shadowColor = '#ef4444';
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+      
+      // Texto con efecto de brillo
+      ctx.font = 'bold 14px sans-serif';
       ctx.fillStyle = '#ef4444';
+      ctx.shadowBlur = 10;
+      ctx.shadowColor = '#ef4444';
+      ctx.fillText('⚡ PUNTO DE FALLA', centerX + 55, centerY - 65);
+      ctx.shadowBlur = 0;
+      
+      // Indicador mejorado
+      ctx.beginPath();
+      ctx.moveTo(centerX + 70, centerY - 50);
+      ctx.lineTo(centerX + 45, centerY - 35);
+      ctx.lineTo(centerX + 45, centerY - 55);
+      ctx.closePath();
+      const indicatorGradient = ctx.createLinearGradient(centerX + 70, centerY - 50, centerX + 45, centerY - 45);
+      indicatorGradient.addColorStop(0, '#ef4444');
+      indicatorGradient.addColorStop(1, '#dc2626');
+      ctx.fillStyle = indicatorGradient;
+      ctx.shadowBlur = 12;
+      ctx.shadowColor = '#ef4444';
       ctx.fill();
+      ctx.shadowBlur = 0;
     }
     
-    ctx.font = 'bold 10px sans-serif';
+    // Etiqueta de malla mejorada
+    ctx.font = 'bold 12px sans-serif';
     ctx.fillStyle = darkMode ? '#fbbf24' : '#d97706';
-    ctx.fillText('MALLA DE TIERRA', centerX - 45, centerY - 30);
+    ctx.shadowBlur = 8;
+    ctx.shadowColor = darkMode ? '#fbbf24' : '#d97706';
+    ctx.fillText('MALLA DE TIERRA', centerX - 55, centerY - 45);
+    ctx.shadowBlur = 0;
   }, [faultCurrent, isSimulating, particles, ripples, maxFaultCurrent, darkMode, animationMode]);
 
   // ============================================
@@ -453,33 +599,118 @@ const FaultAnimation = ({ params, darkMode, onSimulate }) => {
     
     ctx.clearRect(0, 0, width, height);
     
-    ctx.fillStyle = darkMode ? '#1f2937' : '#f8fafc';
+    // Fondo con gradiente
+    const bgGradient = ctx.createLinearGradient(0, 0, 0, height);
+    bgGradient.addColorStop(0, darkMode ? '#1f2937' : '#f8fafc');
+    bgGradient.addColorStop(1, darkMode ? '#111827' : '#e2e8f0');
+    ctx.fillStyle = bgGradient;
     ctx.fillRect(0, 0, width, height);
     
-    ctx.beginPath();
-    ctx.strokeStyle = '#ef4444';
-    ctx.lineWidth = 2;
+    // Grid de fondo
+    ctx.strokeStyle = darkMode ? 'rgba(75, 85, 99, 0.3)' : 'rgba(148, 163, 184, 0.3)';
+    ctx.lineWidth = 1;
+    for (let i = 0; i <= 5; i++) {
+      const y = (height / 5) * i;
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(width, y);
+      ctx.stroke();
+    }
+    for (let i = 0; i <= 10; i++) {
+      const x = (width / 10) * i;
+      ctx.beginPath();
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, height);
+      ctx.stroke();
+    }
     
     const maxCurrentVal = Math.max(...currentWave.map(p => p.current), maxFaultCurrent);
     const scaleY = height / maxCurrentVal;
     const scaleX = width / 0.5;
     
-    for (let i = 0; i < currentWave.length - 1; i++) {
-      const x1 = currentWave[i].time * scaleX;
-      const y1 = height - currentWave[i].current * scaleY;
-      const x2 = currentWave[i + 1].time * scaleX;
-      const y2 = height - currentWave[i + 1].current * scaleY;
-      
-      ctx.beginPath();
-      ctx.moveTo(x1, y1);
-      ctx.lineTo(x2, y2);
-      ctx.stroke();
+    // Área bajo la curva con gradiente
+    ctx.beginPath();
+    ctx.moveTo(0, height);
+    currentWave.forEach((point, i) => {
+      const x = point.time * scaleX;
+      const y = height - point.current * scaleY;
+      if (i === 0) ctx.lineTo(x, y);
+      else ctx.lineTo(x, y);
+    });
+    ctx.lineTo(currentWave[currentWave.length - 1].time * scaleX, height);
+    ctx.closePath();
+    
+    const areaGradient = ctx.createLinearGradient(0, 0, 0, height);
+    areaGradient.addColorStop(0, 'rgba(239, 68, 68, 0.4)');
+    areaGradient.addColorStop(1, 'rgba(239, 68, 68, 0.05)');
+    ctx.fillStyle = areaGradient;
+    ctx.fill();
+    
+    // Línea principal con efecto de brillo
+    ctx.beginPath();
+    ctx.moveTo(currentWave[0].time * scaleX, height - currentWave[0].current * scaleY);
+    for (let i = 1; i < currentWave.length; i++) {
+      const x = currentWave[i].time * scaleX;
+      const y = height - currentWave[i].current * scaleY;
+      ctx.lineTo(x, y);
     }
     
+    const lineGradient = ctx.createLinearGradient(0, 0, width, 0);
+    lineGradient.addColorStop(0, '#ef4444');
+    lineGradient.addColorStop(0.5, '#f97316');
+    lineGradient.addColorStop(1, '#ef4444');
+    ctx.strokeStyle = lineGradient;
+    ctx.lineWidth = 3;
+    ctx.shadowBlur = 10;
+    ctx.shadowColor = '#ef4444';
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+    
+    // Puntos destacados en la onda
+    currentWave.forEach((point, i) => {
+      if (i % 5 === 0) {
+        const x = point.time * scaleX;
+        const y = height - point.current * scaleY;
+        ctx.beginPath();
+        ctx.arc(x, y, 4, 0, 2 * Math.PI);
+        ctx.fillStyle = '#ef4444';
+        ctx.shadowBlur = 8;
+        ctx.shadowColor = '#ef4444';
+        ctx.fill();
+        ctx.shadowBlur = 0;
+      }
+    });
+    
+    // Eje X con etiquetas
+    ctx.fillStyle = darkMode ? '#9ca3af' : '#6b7280';
+    ctx.font = '9px sans-serif';
+    ctx.textAlign = 'center';
+    for (let i = 0; i <= 5; i++) {
+      const x = (width / 5) * i;
+      const time = (i * 0.1).toFixed(1);
+      ctx.fillText(`${time}s`, x, height - 5);
+    }
+    
+    // Eje Y con etiquetas
+    ctx.textAlign = 'right';
+    for (let i = 0; i <= 5; i++) {
+      const y = height - (height / 5) * i;
+      const currentVal = (maxCurrentVal * i / 5).toFixed(0);
+      ctx.fillText(`${currentVal}A`, 25, y + 3);
+    }
+    
+    // Títulos mejorados
+    ctx.textAlign = 'left';
+    ctx.font = 'bold 11px sans-serif';
     ctx.fillStyle = '#ef4444';
-    ctx.font = '10px sans-serif';
-    ctx.fillText('Corriente de falla (A)', width - 100, 15);
-    ctx.fillText('Tiempo (s)', width - 50, height - 5);
+    ctx.shadowBlur = 8;
+    ctx.shadowColor = '#ef4444';
+    ctx.fillText('Corriente de Falla (A)', 30, 18);
+    ctx.shadowBlur = 0;
+    
+    ctx.textAlign = 'right';
+    ctx.fillStyle = darkMode ? '#9ca3af' : '#6b7280';
+    ctx.fillText('Tiempo (s)', width - 10, height - 5);
   }, [currentWave, maxFaultCurrent, darkMode, animationMode]);
 
   // ============================================
@@ -497,31 +728,107 @@ const FaultAnimation = ({ params, darkMode, onSimulate }) => {
     
     ctx.clearRect(0, 0, width, height);
     
-    ctx.fillStyle = darkMode ? '#1f2937' : '#f3f4f6';
+    // Fondo con gradiente radial
+    const bgGradient = ctx.createRadialGradient(width/2, height/2, 0, width/2, height/2, width);
+    bgGradient.addColorStop(0, darkMode ? '#1f2937' : '#f3f4f6');
+    bgGradient.addColorStop(1, darkMode ? '#111827' : '#e5e7eb');
+    ctx.fillStyle = bgGradient;
     ctx.fillRect(0, 0, width, height);
     
     const maxVoltage = Math.max(...voltageGradient.map(v => v.voltage), 1);
     
+    // Dibujar puntos de gradiente con efectos mejorados
     voltageGradient.forEach(point => {
       const intensity = point.voltage / maxVoltage;
       const red = Math.floor(239 * intensity);
       const green = Math.floor(68 * (1 - intensity));
       const blue = Math.floor(68 * (1 - intensity));
       
-      ctx.fillStyle = `rgba(${red}, ${green}, ${blue}, 0.6)`;
+      // Círculo con gradiente
+      const pointGradient = ctx.createRadialGradient(point.x, point.y, 0, point.x, point.y, 20);
+      pointGradient.addColorStop(0, `rgba(${red}, ${green}, ${blue}, 0.8)`);
+      pointGradient.addColorStop(0.5, `rgba(${red}, ${green}, ${blue}, 0.4)`);
+      pointGradient.addColorStop(1, `rgba(${red}, ${green}, ${blue}, 0)`);
+      
       ctx.beginPath();
-      ctx.arc(point.x, point.y, 15, 0, 2 * Math.PI);
+      ctx.arc(point.x, point.y, 20, 0, 2 * Math.PI);
+      ctx.fillStyle = pointGradient;
       ctx.fill();
+      
+      // Punto central brillante
+      ctx.beginPath();
+      ctx.arc(point.x, point.y, 5, 0, 2 * Math.PI);
+      ctx.fillStyle = `rgba(255, 255, 255, ${0.5 + intensity * 0.3})`;
+      ctx.shadowBlur = 10;
+      ctx.shadowColor = `rgb(${red}, ${green}, ${blue})`;
+      ctx.fill();
+      ctx.shadowBlur = 0;
     });
     
-    // Dibujar malla de tierra
-    ctx.strokeStyle = darkMode ? '#fbbf24' : '#d97706';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(180, 180, 40, 40);
+    // Líneas de contorno (isopletas)
+    ctx.strokeStyle = darkMode ? 'rgba(239, 68, 68, 0.3)' : 'rgba(239, 68, 68, 0.2)';
+    ctx.lineWidth = 1;
+    for (let level = 0.2; level <= 1; level += 0.2) {
+      ctx.beginPath();
+      let firstPoint = true;
+      voltageGradient.forEach(point => {
+        if (point.voltage / maxVoltage >= level - 0.1 && point.voltage / maxVoltage <= level + 0.1) {
+          if (firstPoint) {
+            ctx.moveTo(point.x, point.y);
+            firstPoint = false;
+          } else {
+            ctx.lineTo(point.x, point.y);
+          }
+        }
+      });
+      ctx.stroke();
+    }
     
+    // Malla de tierra mejorada
+    const gridX = 180;
+    const gridY = 180;
+    const gridSize = 40;
+    
+    // Rectángulo con efecto de brillo
+    ctx.strokeStyle = darkMode ? '#fbbf24' : '#d97706';
+    ctx.lineWidth = 3;
+    ctx.shadowBlur = 15;
+    ctx.shadowColor = darkMode ? '#fbbf24' : '#d97706';
+    ctx.strokeRect(gridX, gridY, gridSize, gridSize);
+    ctx.shadowBlur = 0;
+    
+    // Líneas internas de la malla
+    ctx.strokeStyle = darkMode ? 'rgba(251, 191, 36, 0.5)' : 'rgba(217, 119, 6, 0.5)';
+    ctx.lineWidth = 1;
+    for (let i = 1; i < 4; i++) {
+      const offset = (gridSize / 4) * i;
+      ctx.beginPath();
+      ctx.moveTo(gridX + offset, gridY);
+      ctx.lineTo(gridX + offset, gridY + gridSize);
+      ctx.moveTo(gridX, gridY + offset);
+      ctx.lineTo(gridX + gridSize, gridY + offset);
+      ctx.stroke();
+    }
+    
+    // Puntos de intersección
+    for (let i = 0; i <= 4; i++) {
+      for (let j = 0; j <= 4; j++) {
+        const px = gridX + (gridSize / 4) * i;
+        const py = gridY + (gridSize / 4) * j;
+        ctx.beginPath();
+        ctx.arc(px, py, 2, 0, 2 * Math.PI);
+        ctx.fillStyle = darkMode ? '#fbbf24' : '#d97706';
+        ctx.fill();
+      }
+    }
+    
+    // Etiqueta
     ctx.font = 'bold 12px sans-serif';
     ctx.fillStyle = darkMode ? '#fbbf24' : '#d97706';
-    ctx.fillText('MALLA', 185, 175);
+    ctx.shadowBlur = 8;
+    ctx.shadowColor = darkMode ? '#fbbf24' : '#d97706';
+    ctx.fillText('MALLA DE TIERRA', gridX - 10, gridY - 10);
+    ctx.shadowBlur = 0;
   }, [voltageGradient, darkMode, animationMode, maxFaultCurrent, gridResistance]);
 
   // ============================================

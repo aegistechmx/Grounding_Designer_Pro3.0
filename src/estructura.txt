@@ -1,0 +1,261 @@
+Listado de rutas de carpetas
+El número de serie del volumen es 2EEC-E65F
+C:.
+|   App.jsx
+|   estructura.txt
+|   GroundingModule.jsx
+|   GroundingPro.jsx
+|   index.css
+|   index.js
+|   initPdf.js
+|   serviceWorkerRegistration.js
+|   
++---components
+|   |   CurrentAnimation.jsx
+|   |   DashboardPro.jsx
+|   |   DesignComparator.jsx
+|   |   DXFEditor.jsx
+|   |   FEMHeatmap.jsx
+|   |   GroundingGrid3D.jsx
+|   |   GroundingGridSVG.jsx
+|   |   GroundingOptimizer.jsx
+|   |   HeatmapCanvas.jsx
+|   |   HeatmapCanvasPro.jsx
+|   |   HeatmapPro.jsx
+|   |   HeatmapWebGL.jsx
+|   |   index.js
+|   |   ProDashboard.jsx
+|   |   SplitView.jsx
+|   |   
+|   +---ai
+|   |       PredictiveAI.jsx
+|   |       
+|   +---analysis
+|   |       SensitivityCharts.jsx
+|   |       
+|   +---common
+|   |       ConductorSelector.jsx
+|   |       ErrorBoundary.jsx
+|   |       InputField.jsx
+|   |       LoadingSpinner.jsx
+|   |       Logo.jsx
+|   |       SafetyIndicator.jsx
+|   |       Skeleton.jsx
+|   |       SplashScreen.jsx
+|   |       ThermalWarning.jsx
+|   |       Toast.jsx
+|   |       ToastNotifications.jsx
+|   |       
+|   +---comparador
+|   |       ConfigComparator.jsx
+|   |       
+|   +---dashboard
+|   |       DashboardView.jsx
+|   |       KPICard.jsx
+|   |       TrendChart.jsx
+|   |       
+|   +---docs
+|   |       DocumentationViewer.jsx
+|   |       
+|   +---feeder
+|   |       FeederCalculator.jsx
+|   |       
+|   +---layout
+|   |       Header.jsx
+|   |       Sidebar.jsx
+|   |       
+|   +---normatives
+|   |       MexicanNormatives.jsx
+|   |       
+|   +---notifications
+|   |       ToastNotifications.jsx
+|   |       
+|   +---optimization
+|   |       AutoOptimizer.jsx
+|   |       
+|   +---panels
+|   |       DashboardPanel.jsx
+|   |       DesignPanel.jsx
+|   |       FeedersPanel.jsx
+|   |       NormativesPanel.jsx
+|   |       OptimizationPanel.jsx
+|   |       ReportsPanel.jsx
+|   |       ResultsPanel.jsx
+|   |       SensitivityChart.jsx
+|   |       ValidationPanel.jsx
+|   |       VisualizationPanel.jsx
+|   |       
+|   +---reports
+|   |       ComplianceCertificate.jsx
+|   |       ExecutiveReport.jsx
+|   |       MaterialListModal.jsx
+|   |       PDFReport.jsx
+|   |       
+|   +---simulation
+|   |       MultiScenarioSimulation.jsx
+|   |       
+|   +---templates
+|   |       ProjectTemplates.jsx
+|   |       TransformerTemplates.jsx
+|   |       
+|   +---visualizations
+|   |       FaultAnimation.jsx
+|   |       HeatMap.jsx
+|   |       Interactive3DGrid.jsx
+|   |       MapAreaSelector.jsx
+|   |       ProfileView.jsx
+|   |       RealTimeChart.jsx
+|   |       ScenarioSimulator.jsx
+|   |       SensitivityChart.jsx
+|   |       SoilProfile.jsx
+|   |       
+|   \---wizard
+|           SetupWizard.jsx
+|           
++---constants
+|       appConstants.js
+|       defaultParams.js
+|       
++---core
+|       advancedGrid.js
+|       aiAnalysis.js
+|       alerts.js
+|       contours.js
+|       electricField.js
+|       equipmentDetector.js
+|       fault.js
+|       femSimulation.js
+|       femSolver.js
+|       geoSpatialEngine.js
+|       gridEngine.js
+|       groundingEngine.js
+|       heatmapEngine.js
+|       heatmapEnginePro.js
+|       ieee80.js
+|       ieee80Engine.js
+|       index.js
+|       interpolation.js
+|       narrativeAIEngine.js
+|       narrativeEngine.js
+|       optimizationEngine.js
+|       premiumReport.js
+|       professionalReportEngine.js
+|       realHeatmapEngine.js
+|       reportEngine.js
+|       reportModel.js
+|       safety.js
+|       safetyAdvanced.js
+|       scaleEngine.js
+|       scoreEngine.js
+|       sensitivityInsights.js
+|       soilModel.js
+|       solver.js
+|       technicalMemoryEngine.js
+|       validationEngine.js
+|       vectorGridEngine.js
+|       
++---data
+|       viakonData.js
+|       
++---engine
+|       optimizerNSGA2.js
+|       
++---export
+|       cadExporter.js
+|       dxfExporter.js
+|       dxfPro.js
+|       
++---hooks
+|       index.js
+|       useDebounce.js
+|       useErrorHandler.js
+|       useGroundingCalculator.js
+|       useLoadingState.js
+|       useLocalStorage.js
+|       useModal.js
+|       useNotification.js
+|       useOptimization.js
+|       useResponsive.js
+|       useSensitivityAnalysis.js
+|       
++---import
+|       dxfImporter.js
+|       
++---routes
+|       index.jsx
+|       
++---store
+|       useStore.js
+|       
++---styles
+|       themes.css
+|       
++---utils
+|   |   aiRecommender.js
+|   |   auditLogger.js
+|   |   chartGeneratorPro.js
+|   |   chartJSGenerator.js
+|   |   chartPowerBI.js
+|   |   codeValidator.js
+|   |   conductorThermalCheck.js
+|   |   conductorThermalCheck.ts
+|   |   correctedResistivity.js
+|   |   debugUtils.js
+|   |   digitalSignature.js
+|   |   dxfContourExport.js
+|   |   dxfImporter.js
+|   |   equipotentialCheck.js
+|   |   errorHandlingUtils.js
+|   |   errorTestUtils.js
+|   |   excelExport.js
+|   |   exportCAD.js
+|   |   exportDXF.js
+|   |   exportSimulation.js
+|   |   groundGridOptimizer.js
+|   |   groundingMath_clean.js
+|   |   groundingMath_clean.ts
+|   |   groundingMath_simple.js
+|   |   i18n.js
+|   |   kpiCards.js
+|   |   loggerUtils.js
+|   |   materialList.js
+|   |   multiLayerSoil.js
+|   |   pdfCFE.js
+|   |   pdfExecutive.js
+|   |   pdfExportWithLogo.js
+|   |   pdfFullPro.js
+|   |   pdfGenerator.js
+|   |   pdfPowerBI.js
+|   |   pdfProfessionalCFE.js
+|   |   pdfTechnicalMemory.js
+|   |   pdfWithCharts.js
+|   |   performanceUtils.js
+|   |   reportGenerator.js
+|   |   responsiveStyles.css
+|   |   seasonalVariation.js
+|   |   signature.js
+|   |   soilTreatment.js
+|   |   storageUtils.js
+|   |   temperatureCorrection.js
+|   |   theme.js
+|   |   trafficLight.js
+|   |   transferredVoltage.js
+|   |   validationUtils.js
+|   |   wordExport.js
+|   |   
+|   \---__tests__
+|           conductorThermalCheck.test.js
+|           groundingMath_clean.test.js
+|           
++---visual
+|       GridRenderer.jsx
+|       HeatmapCanvas.jsx
+|       
++---webgl
+|       HeatmapRenderer.js
+|       ParticleFlow.js
+|       Shaders.js
+|       
+\---workers
+        groundingWorker.js
+        
