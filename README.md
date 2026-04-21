@@ -247,4 +247,3 @@ Este software es propiedad de Proyectos Integrales.
 **Desarrollado por:** Proyectos Integrales
 **Versión:** 2.0
 **Última actualización:** 2026
-
