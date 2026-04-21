@@ -180,7 +180,7 @@ export const dominates = (a, b) => {
 };
 
 // optimizerNSGA2.js - Función nonDominatedSort corregida
-function nonDominatedSort(population) {
+export function nonDominatedSort(population) {
     // Validación: asegurar que population existe y es un array
     if (!population || !Array.isArray(population) || population.length === 0) {
         console.warn('nonDominatedSort: población vacía o inválida', population);
@@ -264,8 +264,6 @@ function nonDominatedSort(population) {
     
     return { fronts, ranks };
 }
-
-export const nonDominatedSort = nonDominatedSort;
 
 export const crowdingDistance = (front) => {
   const objectives = ['cost', 'resistance'];
