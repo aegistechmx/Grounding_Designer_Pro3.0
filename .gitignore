@@ -1,6 +1,10 @@
-node_modules
-node_modules
-node_modules
-node_modules
-node_modules
-node_modules
+node_modules/
+dist/
+build/
+*.exe
+*.dmg
+*.pkg
+*.deb
+*.rpm
+*.AppImage
+electron/
