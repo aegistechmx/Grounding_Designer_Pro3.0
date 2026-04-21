@@ -4,22 +4,45 @@
     <meta charset="utf-8" />
     <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#000000" />
-    <meta name="description" content="Calculadora de mallas de tierra IEEE 80" />
+    <meta name="theme-color" content="#2563eb" />
+    <meta name="description" content="Grounding Designer Pro - Diseño de Mallas de Tierra según IEEE 80" />
     
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
+    
+    <!-- Apple Touch Icons -->
+    <link rel="apple-touch-icon" href="%PUBLIC_URL%/LOGO.png" />
+    
+    <!-- Mobile Web App Capable -->
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="Grounding Pro" />
+
     <!-- Content Security Policy para producción -->
     <% if (process.env.NODE_ENV === 'production') { %>
-    <meta 
-      http-equiv="Content-Security-Policy" 
-      content="default-src 'self'; 
-               script-src 'self' 'unsafe-inline' 'unsafe-eval'; 
-               style-src 'self' 'unsafe-inline'; 
-               img-src 'self' data:; 
-               font-src 'self' data:;"
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self';
+               script-src 'self' 'unsafe-inline' 'unsafe-eval';
+               style-src 'self' 'unsafe-inline';
+               img-src 'self' data: https://*.tile.openstreetmap.org https://*.basemaps.cartocdn.com;
+               font-src 'self' data: https://fonts.googleapis.com;
+               connect-src 'self' https://*.tile.openstreetmap.org https://*.basemaps.cartocdn.com;"
     />
     <% } %>
+
+    <title>Grounding Designer Pro - Diseño de Mallas de Tierra IEEE 80</title>
     
-    <title>Calculadora de Mallas IEEE 80</title>
+    <!-- Inter Font for Professional Typography -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Solución rápida para Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        darkMode: 'class'
+      }
+    </script>
 </head>
 <body>
     <noscript>Necesitas habilitar JavaScript para ejecutar esta aplicación.</noscript>
