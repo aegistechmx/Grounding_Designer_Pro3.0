@@ -48,6 +48,69 @@ const HeatmapCanvas = ({
     return data;
   };
   
+  // Compute risk grid based on IEEE 80 permissible voltages
+  const computeRiskGrid = (gridValues, permissible) => {
+    const riskGrid = [];
+    for (let i = 0; i < gridValues.length; i++) {
+      riskGrid[i] = [];
+      for (let j = 0; j < gridValues[i].length; j++) {
+        const v = gridValues[i][j];
+        const margin = (permissible - v) / permissible;
+        let level = 'safe';
+        if (margin < 0) level = 'danger';
+        else if (margin < 0.2) level = 'warning';
+        riskGrid[i][j] = { v, margin, level };
+      }
+    }
+    return riskGrid;
+  };
+  
+  // Count dangerous zones
+  const countDangerZones = (riskGrid) => {
+    let count = 0;
+    for (let i = 0; i < riskGrid.length; i++) {
+      for (let j = 0; j < riskGrid[i].length; j++) {
+        if (riskGrid[i][j].level === 'danger') {
+          count++;
+        }
+      }
+    }
+    return count;
+  };
+  
+  // Draw risk overlay on canvas
+  const drawRiskOverlay = (ctx, riskGrid, cell) => {
+    for (let i = 0; i < riskGrid.length; i++) {
+      for (let j = 0; j < riskGrid[i].length; j++) {
+        const { level } = riskGrid[i][j];
+        if (level === 'danger') {
+          ctx.fillStyle = 'rgba(255,0,0,0.4)';
+        } else if (level === 'warning') {
+          ctx.fillStyle = 'rgba(255,165,0,0.3)';
+        } else {
+          continue;
+        }
+        ctx.fillRect(i * cell, j * cell, cell, cell);
+      }
+    }
+  };
+  
+  // Find max voltage point for highlighting
+  const findMaxVoltagePoint = (riskGrid) => {
+    let maxV = -Infinity;
+    let maxPoint = null;
+    for (let i = 0; i < riskGrid.length; i++) {
+      for (let j = 0; j < riskGrid[i].length; j++) {
+        const v = riskGrid[i][j].v;
+        if (v > maxV) {
+          maxV = v;
+          maxPoint = { i, j, v };
+        }
+      }
+    }
+    return maxPoint;
+  };
+  
   // Zoom handler
   const handleWheel = (e) => {
     e.preventDefault();
