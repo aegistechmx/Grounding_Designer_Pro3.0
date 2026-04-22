@@ -1,6 +1,15 @@
 /**
  * IEEE 80 Service - Professional implementation of IEEE 80 standard calculations
- * Provides standardized methods for grounding system analysis
+ * 
+ * DEPRECATED: This service is deprecated as of architectural refactoring
+ * All new code should use UnifiedEngine directly
+ * 
+ * Migration guide:
+ * - Use new UnifiedEngine(input).analyze(options) instead of IEEE80Service.calculate(input)
+ * - Use UnifiedEngine.getSourceOfTruth() to check which method is being used
+ * - See UnifiedEngine documentation for available options
+ * 
+ * Kept for backward compatibility with existing code
  */
 
 import GroundingCalculator from '../application/GroundingCalculator.js';

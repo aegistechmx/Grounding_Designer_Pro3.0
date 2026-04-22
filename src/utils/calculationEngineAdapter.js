@@ -1,6 +1,15 @@
 /**
  * Calculation Engine Adapter - Bridge between new professional engine and existing codebase
- * Provides backward compatibility while leveraging the new calculation engine
+ * 
+ * DEPRECATED: This adapter is deprecated as of architectural refactoring
+ * All new code should use UnifiedEngine directly
+ * 
+ * Migration guide:
+ * - Use new UnifiedEngine(input).analyze(options) instead of CalculationEngineAdapter.calculate(params)
+ * - Use UnifiedEngine.getSourceOfTruth() to check which method is being used
+ * - See UnifiedEngine documentation for available options
+ * 
+ * Kept for backward compatibility with existing code
  */
 
 import GroundingCalculator from '../application/GroundingCalculator.js';

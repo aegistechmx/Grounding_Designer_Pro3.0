@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Arranque Estrella - KM2</title>
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        background-color: #f4f4f4;
+        margin: 20px;
+    }
+    h1 {
+        text-align: center;
+    }
+    .container {
+        max-width: 900px;
+        margin: auto;
+        background: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 0 10px rgba(0,0,0,0.2);
+    }
+    img {
+        width: 100%;
+        border-radius: 10px;
+    }
+    ul {
+        line-height: 1.6;
+    }
+    .box {
+        background: #eef;
+        padding: 15px;
+        border-left: 5px solid #3366cc;
+        margin-top: 20px;
+    }
+</style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Arranque Estrella - Contactor KM2</h1>
+
+    <h2>Diagrama</h2>
+    <img src="image.png" alt="Diagrama estrella-triángulo">
+
+    <div class="box">
+        <h2>Cómo se conecta KM2 (Estrella)</h2>
+        <ul>
+            <li><strong>Entradas (parte superior):</strong></li>
+            <ul>
+                <li>T10 → Polo 1</li>
+                <li>T11 → Polo 2</li>
+                <li>T12 → Polo 3</li>
+            </ul>
+
+            <li><strong>Salidas (parte inferior):</strong></li>
+            <ul>
+                <li>Unir los 3 terminales entre sí (puentes)</li>
+                <li>No se conectan a ninguna otra línea</li>
+            </ul>
+        </ul>
+
+        <p><strong>Funcionamiento:</strong><br>
+        Cuando el contactor KM2 se energiza, une T10, T11 y T12 formando el punto estrella.</p>
+    </div>
+
+</div>
+
+</body>
+</html>

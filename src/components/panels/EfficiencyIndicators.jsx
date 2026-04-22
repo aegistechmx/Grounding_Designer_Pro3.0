@@ -38,7 +38,7 @@ export const EfficiencyIndicators = ({ params, darkMode }) => {
         </div>
         <div className="bg-gray-700/50 rounded-lg p-3 text-center">
           <div className="flex items-center justify-center gap-1 mb-1">
-            <TrendingDown size={12} className="text-purple-400" />
+            <TrendingDown size={12} className="text-blue-400" />
             <span className="text-xs text-gray-400">Configuración</span>
           </div>
           <div className="text-xl font-bold text-white">{config}</div>

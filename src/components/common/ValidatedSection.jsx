@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { ValidationBadge } from './ValidationBadge';
+import { TEXT_COLORS, ACCENT_COLORS, BORDERS, SPACING, TYPOGRAPHY, SHADOWS, TRANSITIONS, BG_COLORS } from '../../constants/designTokens';
 
 export const ValidatedSection = ({ 
   title, 
@@ -13,36 +14,58 @@ export const ValidatedSection = ({
 }) => {
   const [expanded, setExpanded] = useState(defaultExpanded);
   
-  const statusColors = {
-    success: 'border-green-500',
-    warning: 'border-yellow-500',
-    error: 'border-red-500',
-    info: 'border-blue-500'
+  const statusConfig = {
+    success: { 
+      border: 'border-green-500', 
+      bg: 'bg-gray-800',
+      iconColor: ACCENT_COLORS.green,
+      shadow: SHADOWS.success
+    },
+    warning: { 
+      border: 'border-yellow-500', 
+      bg: 'bg-gray-800',
+      iconColor: ACCENT_COLORS.yellow,
+      shadow: SHADOWS.warning
+    },
+    error: { 
+      border: 'border-red-500', 
+      bg: 'bg-gray-800',
+      iconColor: ACCENT_COLORS.red,
+      shadow: SHADOWS.error
+    },
+    info: { 
+      border: 'border-blue-500', 
+      bg: 'bg-gray-800',
+      iconColor: ACCENT_COLORS.blue,
+      shadow: SHADOWS.glow.blue
+    }
   };
   
-  const statusShadows = {
-    success: 'shadow-[0_0_15px_rgba(34,197,94,0.2)]',
-    warning: 'shadow-[0_0_15px_rgba(234,179,8,0.2)]',
-    error: 'shadow-[0_0_15px_rgba(239,68,68,0.2)]',
-    info: 'shadow-[0_0_15px_rgba(59,130,246,0.2)]'
-  };
+  const config = statusConfig[status] || statusConfig.info;
   
   return (
-    <div className={`rounded-xl border-2 ${statusColors[status]} bg-gradient-to-br from-gray-800 to-gray-900 ${statusShadows[status]} overflow-hidden transition-all duration-300`}>
+    <div 
+      className={`p-4 rounded-lg border ${darkMode ? 'bg-blue-900/20 border-blue-700' : 'bg-blue-50 border-blue-200'} overflow-hidden transition-all duration-300`}
+      style={{
+        boxShadow: darkMode ? '0 0 15px rgba(59, 130, 246, 0.3), inset 0 0 8px rgba(59, 130, 246, 0.15)' : '0 0 15px rgba(59, 130, 246, 0.2), inset 0 0 8px rgba(59, 130, 246, 0.1)'
+      }}
+    >
       <button
         onClick={() => setExpanded(!expanded)}
-        className="w-full px-4 py-3 flex justify-between items-center hover:bg-white/5 transition-colors"
+        className="w-full flex justify-between items-center transition-colors"
       >
-        <div className="flex items-center gap-3">
-          {Icon && <Icon size={18} className={`text-${status === 'success' ? 'green' : status === 'warning' ? 'yellow' : status === 'error' ? 'red' : 'blue'}-400`} />}
-          <h3 className="font-semibold text-white">{title}</h3>
+        <div className="flex items-center gap-2">
+          {Icon && <Icon size={16} className={darkMode ? 'text-blue-300' : 'text-blue-800'} />}
+          <h4 className={`font-semibold ${darkMode ? 'text-blue-300' : 'text-blue-800'}`}>
+            {title}
+          </h4>
           <ValidationBadge status={status} size="sm" />
         </div>
-        {expanded ? <ChevronUp size={18} className="text-gray-400" /> : <ChevronDown size={18} className="text-gray-400" />}
+        {expanded ? <ChevronUp size={18} className={darkMode ? 'text-blue-300' : 'text-blue-800'} /> : <ChevronDown size={18} className={darkMode ? 'text-blue-300' : 'text-blue-800'} />}
       </button>
       
       {expanded && (
-        <div className="px-4 pb-4 pt-2 border-t border-white/10">
+        <div className="mt-3">
           {children}
         </div>
       )}

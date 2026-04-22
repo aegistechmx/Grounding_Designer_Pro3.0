@@ -153,7 +153,7 @@ const ComplianceCertificate = ({ params, calculations, darkMode }) => {
         </div>
         <div className={`p-2 rounded ${darkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>
           <div className="text-xs text-gray-500">GPR</div>
-          <div className="text-xl font-bold text-purple-600">{GPR}</div>
+          <div className="text-xl font-bold text-blue-600">{GPR}</div>
         </div>
         <div className={`p-2 rounded ${darkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>
           <div className="text-xs text-gray-500">Contacto (Em)</div>

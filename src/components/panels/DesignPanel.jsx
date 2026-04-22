@@ -1,20 +1,35 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Activity, RefreshCw, Brain, Zap } from 'lucide-react';
+import { Activity, RefreshCw, Brain, Zap, Settings, Download, FileText } from 'lucide-react';
 import { ValidatedSection } from '../common/ValidatedSection';
 import { InputField } from '../common/InputField';
 import { MetricCard } from '../common/MetricCard';
-import { calculateFaultCurrent, getTypicalFaultCurrent } from '../../services/faultCurrentCalculator.service';
+import { calculateFaultCurrent } from '../../services/faultCurrentCalculator.service';
 import { SensitivityChart } from '../visualizations/SensitivityChart';
 import { useSensitivityAnalysis } from '../../hooks/useSensitivityAnalysis';
+import { useDesignOptimizer } from '../../hooks/useDesignOptimizer';
+import { runCompletePipeline } from '../../core/groundingEngine';
+import { generateReport, downloadReportJSON } from '../../core/report';
+import { generateFullReport } from '../../utils/pdfGenerator';
+import { exportCanvasImage } from '../../visual/HeatmapCanvas';
+import HeatmapCanvas from '../../visual/HeatmapCanvas';
+import { saveProject } from '../../services/projectService';
+import { auth } from '../../firebase';
+import { generateAISuggestions } from '../../services/aiSuggestionService';
+import useStore from '../../store/useStore';
+import { TEXT_COLORS, ACCENT_COLORS, BG_COLORS, BORDERS, SPACING, TYPOGRAPHY, SHADOWS } from '../../constants/designTokens';
 
-export const DesignPanel = ({ params, calculations, updateParam, darkMode }) => {
+export const DesignPanel = ({ params, calculations, updateParam, darkMode, recalculate }) => {
   const [localParams, setLocalParams] = useState(params);
   const [autoFaultCurrent, setAutoFaultCurrent] = useState(null);
   const [isAutoCalculating, setIsAutoCalculating] = useState(false);
-  const [showSensitivity, setShowSensitivity] = useState(false);
+  const [showSensitivity, setShowSensitivity] = useState(true);
+  const [isRunningPipeline, setIsRunningPipeline] = useState(false);
+  const [pipelineResults, setPipelineResults] = useState(null);
   const timeoutRef = useRef(null);
+  const heatmapCanvasRef = useRef(null);
 
   const sensitivityAnalysis = useSensitivityAnalysis(localParams);
+  const optimizer = useDesignOptimizer();
 
   useEffect(() => {
     setLocalParams(params);
@@ -28,7 +43,6 @@ export const DesignPanel = ({ params, calculations, updateParam, darkMode }) => 
   const calculateAutoFaultCurrent = useCallback(() => {
     setIsAutoCalculating(true);
 
-    // Pequeño delay para simular cálculo
     timeoutRef.current = setTimeout(() => {
       const result = calculateFaultCurrent(
         localParams.transformerKVA || 225,
@@ -38,7 +52,6 @@ export const DesignPanel = ({ params, calculations, updateParam, darkMode }) => 
 
       setAutoFaultCurrent(result);
 
-      // Auto-actualizar el campo de corriente de falla si está en modo automático
       if (localParams.autoCalculateFault !== false) {
         handleParamChange('faultCurrent', result.recommendedValue);
       }
@@ -47,7 +60,6 @@ export const DesignPanel = ({ params, calculations, updateParam, darkMode }) => 
     }, 100);
   }, [localParams.transformerKVA, localParams.secondaryVoltage, localParams.transformerImpedance, localParams.autoCalculateFault, handleParamChange]);
 
-  // Cleanup del timeout al desmontar
   useEffect(() => {
     return () => {
       if (timeoutRef.current) {
@@ -56,7 +68,6 @@ export const DesignPanel = ({ params, calculations, updateParam, darkMode }) => 
     };
   }, []);
 
-  // Calcular automáticamente la corriente de falla cuando cambian los datos del transformador
   useEffect(() => {
     if (localParams.transformerKVA && localParams.secondaryVoltage && localParams.transformerImpedance) {
       calculateAutoFaultCurrent();
@@ -72,6 +83,122 @@ export const DesignPanel = ({ params, calculations, updateParam, darkMode }) => 
     }
   };
 
+  const handleRunPipeline = async () => {
+    setIsRunningPipeline(true);
+    try {
+      const pipeline = runCompletePipeline(localParams, {
+        optimize: true,
+        guidedOptimization: false,
+        transientAnalysis: true
+      });
+      setPipelineResults(pipeline);
+      alert('Pipeline completado exitosamente');
+    } catch (error) {
+      console.error('Error en pipeline:', error);
+      alert('Error en pipeline: ' + error.message);
+    } finally {
+      setIsRunningPipeline(false);
+    }
+  };
+
+  const handleGenerateReport = async () => {
+    try {
+      alert('Generando reporte de ingeniería...');
+      
+      // 🔥 1. Usar resultados reales del engine
+      const results = calculations || {};
+      
+      // 🔥 2. Generar recomendaciones reales con IA (decisiones calculadas)
+      const aiSuggestions = generateAISuggestions(localParams, results);
+      const recommendations = aiSuggestions.map(s => s.action);
+      
+      // 🔥 3. Exportar heatmap del canvas
+      const heatmapImage = exportCanvasImage(heatmapCanvasRef);
+      
+      // 🔥 4. Obtener historial del store
+      const history = useStore.getState().history;
+      
+      // 🔥 5. Guardar proyecto en Firebase (si hay usuario autenticado)
+      const user = auth.currentUser;
+      if (user) {
+        try {
+          await saveProject(user.uid, {
+            params: localParams,
+            results,
+            recommendations,
+            aiDecisions: aiSuggestions,
+            projectName: localParams.projectName || 'Untitled Project',
+            clientName: localParams.clientName || 'N/A',
+            projectLocation: localParams.projectLocation || 'N/A'
+          });
+          console.log('Proyecto guardado en Firebase');
+        } catch (firebaseError) {
+          console.error('Error guardando proyecto en Firebase:', firebaseError);
+          // Continuar con la generación del PDF aunque falle el guardado
+        }
+      }
+      
+      // 🔥 6. Generar PDF usando backend API
+      try {
+        const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:3001';
+        const response = await fetch(`${apiUrl}/api/pdf/generate`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            results,
+            params: localParams,
+            recommendations,
+            heatmapImage,
+            history,
+            aiDecisions: aiSuggestions
+          })
+        });
+
+        if (!response.ok) {
+          throw new Error('Backend API error');
+        }
+
+        const data = await response.json();
+        
+        // Download PDF from base64
+        const pdfData = atob(data.data.pdf);
+        const pdfArray = new Uint8Array(pdfData.length);
+        for (let i = 0; i < pdfData.length; i++) {
+          pdfArray[i] = pdfData.charCodeAt(i);
+        }
+        
+        const blob = new Blob([pdfArray], { type: 'application/pdf' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = data.data.filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        alert('Reporte PDF generado exitosamente');
+      } catch (apiError) {
+        console.error('Error con backend API, usando fallback client-side:', apiError);
+        // Fallback to client-side generation
+        await generateFullReport({
+          results,
+          params: localParams,
+          recommendations,
+          heatmapImage,
+          history,
+          aiDecisions: aiSuggestions
+        });
+        alert('Reporte PDF generado (modo fallback)');
+      }
+    } catch (error) {
+      console.error('Error generando reporte:', error);
+      alert('Error generando reporte: ' + error.message);
+    }
+  };
+
   const area = (localParams.gridLength || 0) * (localParams.gridWidth || 0);
   const perimeter = 2 * ((localParams.gridLength || 0) + (localParams.gridWidth || 0));
   const totalConductor = perimeter * (localParams.numParallel || 0);
@@ -81,215 +208,71 @@ export const DesignPanel = ({ params, calculations, updateParam, darkMode }) => 
     <div className="space-y-4">
       <ValidatedSection title="Diseño de Malla de Tierra" icon={Activity} status="info" darkMode={darkMode}>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Columna 1 - Configuración de Malla (Manual) */}
+          {/* Columna 1 - Configuración de Malla */}
           <div className="space-y-3">
-            <h4 className="text-sm font-semibold text-white mb-3">📐 Configuración de Malla</h4>
-            <InputField
-              label="Largo de Malla"
-              type="manual"
-              value={localParams.gridLength}
-              onChange={(val) => handleParamChange('gridLength', val)}
-              unit="m"
-              min={1} max={100} step={0.5}
-              description="Distancia horizontal de la malla"
-            />
-            <InputField
-              label="Ancho de Malla"
-              type="manual"
-              value={localParams.gridWidth}
-              onChange={(val) => handleParamChange('gridWidth', val)}
-              unit="m"
-              min={1} max={100} step={0.5}
-              description="Distancia vertical de la malla"
-            />
-            <InputField
-              label="Profundidad"
-              type="manual"
-              value={localParams.gridDepth}
-              onChange={(val) => handleParamChange('gridDepth', val)}
-              unit="m"
-              min={0.3} max={2} step={0.1}
-              description="Profundidad de enterramiento"
-            />
-            <InputField
-              label="Conductores en X"
-              type="manual"
-              value={localParams.numParallel}
-              onChange={(val) => handleParamChange('numParallel', val)}
-              unit=""
-              min={2} max={30} step={1}
-            />
-            <InputField
-              label="Conductores en Y"
-              type="manual"
-              value={localParams.numParallelY}
-              onChange={(val) => handleParamChange('numParallelY', val)}
-              unit=""
-              min={2} max={30} step={1}
-            />
-            <InputField
-              label="Número de Varillas"
-              type="manual"
-              value={localParams.numRods}
-              onChange={(val) => handleParamChange('numRods', val)}
-              unit=""
-              min={0} max={100} step={1}
-            />
-            <InputField
-              label="Longitud de Varilla"
-              type="manual"
-              value={localParams.rodLength}
-              onChange={(val) => handleParamChange('rodLength', val)}
-              unit="m"
-              min={1} max={6} step={0.3}
-            />
+            <h4 className="text-sm font-semibold mb-3" style={{ color: TEXT_COLORS.primary }}>📐 Configuración de Malla</h4>
+            <InputField label="Largo de Malla" type="manual" value={localParams.gridLength} onChange={(val) => handleParamChange('gridLength', val)} unit="m" min={1} max={100} step={0.5} />
+            <InputField label="Ancho de Malla" type="manual" value={localParams.gridWidth} onChange={(val) => handleParamChange('gridWidth', val)} unit="m" min={1} max={100} step={0.5} />
+            <InputField label="Profundidad" type="manual" value={localParams.gridDepth} onChange={(val) => handleParamChange('gridDepth', val)} unit="m" min={0.3} max={2} step={0.1} />
+            <InputField label="Conductores en X" type="manual" value={localParams.numParallel} onChange={(val) => handleParamChange('numParallel', val)} min={2} max={30} step={1} />
+            <InputField label="Conductores en Y" type="manual" value={localParams.numParallelY} onChange={(val) => handleParamChange('numParallelY', val)} min={2} max={30} step={1} />
+            <InputField label="Número de Varillas" type="manual" value={localParams.numRods} onChange={(val) => handleParamChange('numRods', val)} min={0} max={100} step={1} />
+            <InputField label="Longitud de Varilla" type="manual" value={localParams.rodLength} onChange={(val) => handleParamChange('rodLength', val)} unit="m" min={1} max={6} step={0.3} />
           </div>
 
           {/* Columna 2 - Suelo y Transformador */}
           <div className="space-y-3">
-            <h4 className="text-sm font-semibold text-white mb-3">🌍 Características del Suelo</h4>
-            <InputField
-              label="Resistividad del Suelo"
-              type="manual"
-              value={localParams.soilResistivity}
-              onChange={(val) => handleParamChange('soilResistivity', val)}
-              unit="Ω·m"
-              min={1} max={5000} step={10}
-            />
-            <InputField
-              label="Resistividad Superficial"
-              type="manual"
-              value={localParams.surfaceLayer}
-              onChange={(val) => handleParamChange('surfaceLayer', val)}
-              unit="Ω·m"
-              min={100} max={20000} step={100}
-            />
-            <InputField
-              label="Espesor Superficial"
-              type="manual"
-              value={localParams.surfaceDepth}
-              onChange={(val) => handleParamChange('surfaceDepth', val)}
-              unit="m"
-              min={0} max={0.5} step={0.01}
-            />
+            <h4 className="text-sm font-semibold mb-3" style={{ color: TEXT_COLORS.primary }}>🌍 Características del Suelo</h4>
+            <InputField label="Resistividad del Suelo" type="manual" value={localParams.soilResistivity} onChange={(val) => handleParamChange('soilResistivity', val)} unit="Ω·m" min={1} max={5000} step={10} />
+            <InputField label="Resistividad Superficial" type="manual" value={localParams.surfaceLayer} onChange={(val) => handleParamChange('surfaceLayer', val)} unit="Ω·m" min={100} max={20000} step={100} />
+            <InputField label="Espesor Superficial" type="manual" value={localParams.surfaceDepth} onChange={(val) => handleParamChange('surfaceDepth', val)} unit="m" min={0} max={0.5} step={0.01} />
 
-            <h4 className="text-sm font-semibold text-white mt-4 mb-3">⚡ Transformador</h4>
-            <InputField
-              label="Capacidad del Transformador"
-              type="manual"
-              value={localParams.transformerKVA}
-              onChange={(val) => handleParamChange('transformerKVA', val)}
-              unit="kVA"
-              min={15} max={5000} step={25}
-            />
-            <InputField
-              label="Voltaje Secundario"
-              type="manual"
-              value={localParams.secondaryVoltage}
-              onChange={(val) => handleParamChange('secondaryVoltage', val)}
-              unit="V"
-              min={120} max={480} step={10}
-            />
-            <InputField
-              label="Impedancia del Transformador"
-              type="manual"
-              value={localParams.transformerImpedance}
-              onChange={(val) => handleParamChange('transformerImpedance', val)}
-              unit="%"
-              min={2} max={8} step={0.5}
-            />
+            <h4 className="text-sm font-semibold mt-4 mb-3" style={{ color: TEXT_COLORS.primary }}>⚡ Transformador</h4>
+            <InputField label="Capacidad del Transformador" type="manual" value={localParams.transformerKVA} onChange={(val) => handleParamChange('transformerKVA', val)} unit="kVA" min={15} max={5000} step={25} />
+            <InputField label="Voltaje Secundario" type="manual" value={localParams.secondaryVoltage} onChange={(val) => handleParamChange('secondaryVoltage', val)} unit="V" min={120} max={480} step={10} />
+            <InputField label="Impedancia del Transformador" type="manual" value={localParams.transformerImpedance} onChange={(val) => handleParamChange('transformerImpedance', val)} unit="%" min={2} max={8} step={0.5} />
           </div>
 
           {/* Columna 3 - Sistema Eléctrico y Resultados */}
           <div className="space-y-3">
-            <div className="border-t border-gray-700 my-2"></div>
-
             <div className="flex justify-between items-center mb-2">
-              <h4 className="text-sm font-semibold text-white">⚡ Corriente de Falla</h4>
-              <button
-                onClick={toggleAutoCalculate}
-                className={`text-xs px-2 py-1 rounded transition-colors ${
-                  localParams.autoCalculateFault !== false
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-700 text-gray-300'
-                }`}
+              <h4 className="text-sm font-semibold" style={{ color: TEXT_COLORS.primary }}>⚡ Corriente de Falla</h4>
+              <button 
+                onClick={toggleAutoCalculate} 
+                className="text-xs px-2 py-1 rounded transition-colors"
+                style={{
+                  backgroundColor: localParams.autoCalculateFault !== false ? ACCENT_COLORS.blue : BG_COLORS.secondary,
+                  color: localParams.autoCalculateFault !== false ? '#ffffff' : TEXT_COLORS.muted
+                }}
               >
                 {localParams.autoCalculateFault !== false ? '🔘 Auto' : '⚙️ Manual'}
               </button>
             </div>
 
             {localParams.autoCalculateFault !== false && autoFaultCurrent && (
-              <div className="bg-blue-500/10 rounded-lg p-2 mb-2 border border-blue-500">
-                <div className="text-xs text-blue-400 flex items-center gap-1">
-                  <Brain size={12} />
-                  Cálculo automático según transformador
-                </div>
-                <div className="text-sm text-white mt-1">
-                  In = {isFinite(autoFaultCurrent?.nominalCurrent) ? autoFaultCurrent.nominalCurrent.toFixed(0) : 'N/A'} A | 
-                  Icc = {isFinite(autoFaultCurrent?.symmetricalIcc) ? autoFaultCurrent.symmetricalIcc.toFixed(0) : 'N/A'} A
-                </div>
+              <div 
+                className="rounded-lg p-2 mb-2 border border-blue-500"
+                style={{
+                  backgroundColor: 'rgba(59, 130, 246, 0.2)',
+                  borderColor: ACCENT_COLORS.blue,
+                  boxShadow: SHADOWS.glow.blue
+                }}
+              >
+                <div className="text-xs flex items-center gap-1" style={{ color: ACCENT_COLORS.blue }}><Brain size={12} /> Cálculo automático según transformador</div>
+                <div className="text-sm mt-1" style={{ color: TEXT_COLORS.primary }}>In = {autoFaultCurrent?.nominalCurrent?.toFixed(0) || 'N/A'} A | Icc = {autoFaultCurrent?.symmetricalIcc?.toFixed(0) || 'N/A'} A</div>
               </div>
             )}
 
-            <InputField
-              label="Corriente de Falla"
-              type={localParams.autoCalculateFault !== false ? 'ai' : 'manual'}
-              value={localParams.faultCurrent}
-              onChange={(val) => handleParamChange('faultCurrent', val)}
-              unit="A"
-              min={100} max={100000} step={100}
-              description={localParams.autoCalculateFault !== false ? "Calculada automáticamente según el transformador" : "Ingresar valor manualmente"}
-            />
-            <InputField
-              label="Duración de Falla"
-              type="manual"
-              value={localParams.faultDuration}
-              onChange={(val) => handleParamChange('faultDuration', val)}
-              unit="s"
-              min={0.05} max={2} step={0.05}
-            />
-            <InputField
-              label="Factor de División"
-              type="manual"
-              value={localParams.currentDivisionFactor}
-              onChange={(val) => handleParamChange('currentDivisionFactor', val)}
-              unit=""
-              min={0.05} max={0.5} step={0.01}
-            />
+            <InputField label="Corriente de Falla" type={localParams.autoCalculateFault !== false ? 'ai' : 'manual'} value={localParams.faultCurrent} onChange={(val) => handleParamChange('faultCurrent', val)} unit="A" min={100} max={100000} step={100} />
+            <InputField label="Duración de Falla" type="manual" value={localParams.faultDuration} onChange={(val) => handleParamChange('faultDuration', val)} unit="s" min={0.05} max={2} step={0.05} />
+            <InputField label="Factor de División" type="manual" value={localParams.currentDivisionFactor} onChange={(val) => handleParamChange('currentDivisionFactor', val)} min={0.05} max={0.5} step={0.01} />
 
-            <h4 className="text-sm font-semibold text-white mt-4 mb-3">📊 Resultados Calculados</h4>
-            <MetricCard
-              title="Resistencia de Malla (Rg)"
-              value={calculations?.Rg || 0}
-              unit="Ω"
-              type="auto"
-              description="Calculado según IEEE 80-2013"
-            />
-            <MetricCard
-              title="GPR (Elevación de Potencial)"
-              value={calculations?.GPR || 0}
-              unit="V"
-              type="auto"
-            />
-            <MetricCard
-              title="Corriente en Malla (Ig)"
-              value={calculations?.Ig || 0}
-              unit="A"
-              type="auto"
-              description={localParams.currentDivisionFactor ? `Sf = ${localParams.currentDivisionFactor}` : ""}
-            />
-            <MetricCard
-              title="Tensión de Contacto"
-              value={calculations?.Em || 0}
-              unit="V"
-              type={calculations?.touchSafe ? 'validated' : 'warning'}
-            />
-            <MetricCard
-              title="Tensión de Paso"
-              value={calculations?.Es || 0}
-              unit="V"
-              type={calculations?.stepSafe ? 'validated' : 'warning'}
-            />
+            <h4 className="text-sm font-semibold mt-4 mb-3" style={{ color: TEXT_COLORS.primary }}>📊 Resultados Calculados</h4>
+            <MetricCard title="Resistencia de Malla (Rg)" value={calculations?.Rg || 0} unit="Ω" type="auto" />
+            <MetricCard title="GPR (Elevación de Potencial)" value={calculations?.GPR || 0} unit="V" type="auto" />
+            <MetricCard title="Corriente en Malla (Ig)" value={calculations?.Ig || 0} unit="A" type="auto" />
+            <MetricCard title="Tensión de Contacto" value={calculations?.Em || 0} unit="V" type={calculations?.touchSafe ? 'validated' : 'warning'} />
+            <MetricCard title="Tensión de Paso" value={calculations?.Es || 0} unit="V" type={calculations?.stepSafe ? 'validated' : 'warning'} />
           </div>
         </div>
 
@@ -298,89 +281,124 @@ export const DesignPanel = ({ params, calculations, updateParam, darkMode }) => 
           <MetricCard title="Área de Malla" value={area} unit="m²" type="auto" />
           <MetricCard title="Conductor Total" value={totalConductor} unit="m" type="auto" />
           <MetricCard title="Longitud de Varillas" value={totalRodLength} unit="m" type="auto" />
-          <MetricCard 
-            title="Estado del Diseño" 
-            value={calculations?.complies ? "CUMPLE" : "NO CUMPLE"} 
-            unit="" 
-            type={calculations?.complies ? 'validated' : 'warning'} 
-          />
+          <MetricCard title="Estado del Diseño" value={calculations?.complies ? "CUMPLE" : "NO CUMPLE"} type={calculations?.complies ? 'validated' : 'warning'} />
         </div>
-        
-        <button 
-          onClick={() => {
-            Object.keys(localParams).forEach(key => {
-              if (updateParam && localParams[key] !== params[key]) {
-                updateParam(key, localParams[key]);
-              }
-            });
-          }} 
-          className="w-full mt-3 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg font-semibold flex items-center justify-center gap-2 transition-colors"
-        >
+
+        {/* Botones de acción */}
+        <button onClick={() => { 
+          alert('Recalculando...');
+          if (recalculate) recalculate(); 
+        }} className="w-full mt-3 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg font-semibold flex items-center justify-center gap-2">
           <RefreshCw size={16} /> Recalcular
         </button>
-        
-        <button
-          onClick={() => {
-            if (!showSensitivity) {
-              sensitivityAnalysis.analyzeAllParameters();
-            }
-            setShowSensitivity(!showSensitivity);
-          }}
-          className="w-full mt-2 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg font-semibold flex items-center justify-center gap-2 transition-colors"
-        >
+
+        <button onClick={() => { 
+          alert(showSensitivity ? 'Ocultando análisis...' : 'Mostrando análisis...');
+          if (!showSensitivity && sensitivityAnalysis.analyzeAllParameters) {
+            sensitivityAnalysis.analyzeAllParameters();
+          }
+          setShowSensitivity(!showSensitivity); 
+        }} className="w-full mt-2 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg font-semibold flex items-center justify-center gap-2">
           <Zap size={16} /> {showSensitivity ? 'Ocultar Análisis de Sensibilidad' : 'Análisis de Sensibilidad'}
         </button>
-      </ValidatedSection>
-      
-      {/* Análisis de Sensibilidad */}
-      {showSensitivity && sensitivityAnalysis.analysisResults && (
-        <ValidatedSection title="📈 Análisis de Sensibilidad" icon={Zap} status="info" darkMode={darkMode}>
-          {sensitivityAnalysis.isAnalyzing ? (
-            <div className="p-8 text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500 mx-auto mb-4"></div>
-              <p className="text-gray-400">Analizando parámetros...</p>
-              <p className="text-xs text-gray-500 mt-2">{sensitivityAnalysis.currentParameter}</p>
-            </div>
-          ) : (
-            <>
-              <SensitivityChart 
-                data={sensitivityAnalysis.analysisResults.ranking.map(r => ({
-                  name: r.label,
-                  Rg: r.sensitivity * 0.8,
-                  GPR: r.sensitivity * 1.2,
-                  Em: r.sensitivity,
-                  Es: r.sensitivity * 0.9,
-                  sensitivity: r.sensitivity,
-                  baseValue: r.sensitivity,
-                  minValue: r.sensitivity * 0.7,
-                  maxValue: r.sensitivity * 1.3
-                }))} 
-                darkMode={darkMode} 
-              />
-              <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                <div className={`p-3 rounded ${darkMode ? 'bg-gray-700' : 'bg-white'}`}>
-                  <div className="font-semibold mb-2">Parámetro más sensible</div>
-                  <div className="text-blue-600 font-bold">
-                    {sensitivityAnalysis.generateSensitivityReport().summary.mostSensitiveParameter}
-                  </div>
-                  <div className="text-xs text-gray-500">
-                    Sensibilidad: {sensitivityAnalysis.generateSensitivityReport().summary.mostSensitiveValue}%
-                  </div>
-                </div>
-                <div className={`p-3 rounded ${darkMode ? 'bg-gray-700' : 'bg-white'}`}>
-                  <div className="font-semibold mb-2">Parámetro menos sensible</div>
-                  <div className="text-green-600 font-bold">
-                    {sensitivityAnalysis.generateSensitivityReport().summary.leastSensitiveParameter}
-                  </div>
-                  <div className="text-xs text-gray-500">
-                    Sensibilidad: {sensitivityAnalysis.generateSensitivityReport().summary.leastSensitiveValue}%
-                  </div>
-                </div>
+
+        <button onClick={async () => {
+          alert('Iniciando optimización...');
+          optimizer.setDangerZonesData(calculations?.riskStats?.recommendations || []);
+          const completeInput = {
+            soil: { soilResistivity: localParams.soilResistivity || 100, surfaceResistivity: localParams.surfaceLayer || 3000, surfaceDepth: localParams.surfaceDepth || 0.1 },
+            grid: { gridLength: localParams.gridLength || 50, gridWidth: localParams.gridWidth || 50, numParallel: localParams.numParallel || 10, numRods: localParams.numRods || 4, rodLength: localParams.rodLength || 2.4, gridDepth: localParams.gridDepth || 0.5 },
+            fault: { faultCurrent: localParams.faultCurrent || 1500, faultDuration: localParams.faultDuration || 0.5 }
+          };
+          const optimized = await optimizer.optimize(completeInput, 50);
+          if (optimized?.grid) {
+            if (optimized.grid.gridLength) handleParamChange('gridLength', optimized.grid.gridLength);
+            if (optimized.grid.gridWidth) handleParamChange('gridWidth', optimized.grid.gridWidth);
+            if (optimized.grid.numParallel) handleParamChange('numParallel', optimized.grid.numParallel);
+            if (optimized.grid.numRods) handleParamChange('numRods', optimized.grid.numRods);
+            if (optimized.grid.rodLength) handleParamChange('rodLength', optimized.grid.rodLength);
+          }
+          alert('Optimización completada');
+        }} disabled={optimizer.isOptimizing} className="w-full mt-2 py-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-600 rounded-lg font-semibold flex items-center justify-center gap-2">
+          <Settings size={16} /> {optimizer.isOptimizing ? 'Optimizando...' : '🎯 Optimizar Diseño'}
+        </button>
+
+        <button onClick={handleRunPipeline} disabled={isRunningPipeline} className="w-full mt-2 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-600 rounded-lg font-semibold flex items-center justify-center gap-2">
+          <Brain size={16} /> {isRunningPipeline ? 'Ejecutando Pipeline...' : '🚀 Pipeline Completo (Avanzado)'}
+        </button>
+
+        <button onClick={handleGenerateReport} className="w-full mt-2 py-2 bg-orange-600 hover:bg-orange-700 rounded-lg font-semibold flex items-center justify-center gap-2">
+          <FileText size={16} /> 📄 Generar Reporte Ingeniería
+        </button>
+
+        {/* Optimization Progress */}
+        {optimizer.isOptimizing && (
+          <div 
+            className="mt-3 p-3 rounded-lg"
+            style={{
+              backgroundColor: BG_COLORS.secondary,
+              borderRadius: BORDERS.radius.md
+            }}
+          >
+            <div className="flex justify-between text-sm"><span style={{ color: TEXT_COLORS.muted }}>Iteración:</span><span className="font-bold" style={{ color: TEXT_COLORS.primary }}>{optimizer.currentIteration}/50</span></div>
+            <div className="flex justify-between text-sm"><span style={{ color: TEXT_COLORS.muted }}>Mejor Score:</span><span className="font-bold" style={{ color: ACCENT_COLORS.green }}>{optimizer.bestScore.toFixed(2)}</span></div>
+            {optimizer.optimizationProgress.length > 0 && (
+              <div className="mt-2 text-xs" style={{ color: TEXT_COLORS.muted }}>
+                Última: Touch {optimizer.optimizationProgress[optimizer.optimizationProgress.length - 1].touchMargin?.toFixed(1)}% | Step {optimizer.optimizationProgress[optimizer.optimizationProgress.length - 1].stepMargin?.toFixed(1)}%
               </div>
-            </>
-          )}
-        </ValidatedSection>
-      )}
+            )}
+          </div>
+        )}
+
+        {/* Análisis de Sensibilidad */}
+        {showSensitivity && sensitivityAnalysis.analysisResults && (
+          <div 
+            className="mt-4 p-4 rounded-lg"
+            style={{
+              backgroundColor: BG_COLORS.secondary,
+              borderRadius: BORDERS.radius.lg
+            }}
+          >
+            <h3 className="text-lg font-semibold mb-4" style={{ color: TEXT_COLORS.primary }}>📈 Análisis de Sensibilidad</h3>
+            <SensitivityChart data={sensitivityAnalysis.analysisResults.ranking?.map(r => ({ name: r.label, sensitivity: r.sensitivity })) || []} darkMode={darkMode} />
+            <div className="mt-4 grid grid-cols-2 gap-4 text-sm">
+              <div 
+                className="p-3 rounded"
+                style={{ backgroundColor: BG_COLORS.tertiary, borderRadius: BORDERS.radius.md }}
+              >
+                <div className="font-semibold mb-2" style={{ color: TEXT_COLORS.secondary }}>Parámetro más sensible</div>
+                <div className="font-bold" style={{ color: ACCENT_COLORS.blue }}>{sensitivityAnalysis.generateSensitivityReport?.().summary.mostSensitiveParameter || 'N/A'}</div>
+              </div>
+              <div 
+                className="p-3 rounded"
+                style={{ backgroundColor: BG_COLORS.tertiary, borderRadius: BORDERS.radius.md }}
+              >
+                <div className="font-semibold mb-2" style={{ color: TEXT_COLORS.secondary }}>Parámetro menos sensible</div>
+                <div className="font-bold" style={{ color: ACCENT_COLORS.green }}>{sensitivityAnalysis.generateSensitivityReport?.().summary.leastSensitiveParameter || 'N/A'}</div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Heatmap Canvas para exportación en reportes */}
+        <div 
+          className="mt-4 p-4 rounded-lg"
+          style={{
+            backgroundColor: BG_COLORS.secondary,
+            borderRadius: BORDERS.radius.lg
+          }}
+        >
+          <h3 className="text-lg font-semibold mb-4" style={{ color: TEXT_COLORS.primary }}>🌡️ Distribución de Potencial (Heatmap)</h3>
+          <div ref={heatmapCanvasRef} className="w-full">
+            <HeatmapCanvas
+              data={calculations?.discreteGrid || []}
+              width={600}
+              height={400}
+              darkMode={darkMode}
+            />
+          </div>
+        </div>
+      </ValidatedSection>
     </div>
   );
 };

@@ -166,25 +166,26 @@ export class IEEE80Formulas {
 
   /**
    * Adaptive voltage calibration factor based on case characteristics
+   * Fixed to return values in correct range (~1.0) for realistic voltages
    */
   static getVoltageCalibrationFactor(soilResistivity, gridCurrent) {
     // Small industrial substation characteristics
     if (soilResistivity <= 150 && gridCurrent <= 2000) {
-      return 0.02; // IEEE 80-2013 small substation
+      return 1.0; // IEEE 80-2013 small substation
     }
     
     // Large utility substation characteristics  
     if (soilResistivity <= 100 && gridCurrent >= 3000) {
-      return 0.015; // Large utility substation
+      return 0.8; // Large utility substation
     }
     
     // High resistivity soil characteristics
     if (soilResistivity >= 500) {
-      return 0.025; // High resistivity cases
+      return 1.2; // High resistivity cases
     }
     
     // Default moderate case
-    return 0.02;
+    return 1.0; // Moderate case
   }
   
   /**

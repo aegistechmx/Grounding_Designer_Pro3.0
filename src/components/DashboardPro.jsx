@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import GroundingGridSVG from './GroundingGridSVG';
 import HeatmapCanvas from './HeatmapCanvas';
 import DesignComparator from './DesignComparator';
-import { generatePDFWithHeatmap } from '../utils/pdfGenerator';
+import { generatePDFWithHeatmap } from '../utils/export/pdfGenerator';
 import { exportDXF } from '../export/dxfExporter';
 import { quickOptimize } from '../engine/optimizerNSGA2';
 import { Loader, FileText, Download, Zap, TrendingUp, DollarSign, Shield, AlertCircle } from 'lucide-react';
@@ -117,7 +117,7 @@ const DashboardPro = ({ params, calculations, gridData, darkMode, onApplyOptimiz
         <div className="flex gap-2">
           <button
             onClick={handleExportPDF}
-            className="px-3 py-1.5 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700 flex items-center gap-1"
+            className="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 flex items-center gap-1"
           >
             <FileText size={14} /> PDF
           </button>
@@ -162,44 +162,79 @@ const DashboardPro = ({ params, calculations, gridData, darkMode, onApplyOptimiz
       
       {/* Métricas rápidas */}
       {calculations && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <div className={`p-3 rounded-lg text-center ${darkMode ? 'bg-gray-800' : 'bg-gray-100'}`}>
-            <Shield size={20} className="mx-auto mb-1 text-blue-500" />
-            <div className="text-xl font-bold">{isFinite(calculations.Rg) ? calculations.Rg?.toFixed(2) : 'N/A'}</div>
-            <div className="text-xs text-gray-500">Resistencia</div>
-          </div>
-          <div className={`p-3 rounded-lg text-center ${darkMode ? 'bg-gray-800' : 'bg-gray-100'}`}>
-            <Zap size={20} className="mx-auto mb-1 text-yellow-500" />
-            <div className="text-xl font-bold">{isFinite(calculations.GPR) ? calculations.GPR?.toFixed(0) : 'N/A'} V</div>
-            <div className="text-xs text-gray-500">GPR</div>
-          </div>
-          <div className={`p-3 rounded-lg text-center ${darkMode ? 'bg-gray-800' : 'bg-gray-100'}`}>
-            <TrendingUp size={20} className="mx-auto mb-1 text-green-500" />
-            <div className="text-xl font-bold">{isFinite(calculations.Em) ? calculations.Em?.toFixed(0) : 'N/A'} V</div>
-            <div className="text-xs text-gray-500">Contacto</div>
-          </div>
-          <div className={`p-3 rounded-lg text-center ${darkMode ? 'bg-gray-800' : 'bg-gray-100'}`}>
-            <DollarSign size={20} className="mx-auto mb-1 text-purple-500" />
-            <div className="text-xl font-bold">
-              ${(((calculations.totalConductor || 0) * 12 + (params?.numRods || 0) * 25)).toLocaleString()}
+        <div className={`p-4 rounded-lg border ${darkMode ? 'bg-blue-900/20 border-blue-700' : 'bg-blue-50 border-blue-200'}`} style={{ boxShadow: darkMode ? '0 0 15px rgba(59, 130, 246, 0.3), inset 0 0 8px rgba(59, 130, 246, 0.15)' : '0 0 15px rgba(59, 130, 246, 0.2), inset 0 0 8px rgba(59, 130, 246, 0.1)' }}>
+          <h4 className={`font-semibold mb-3 flex items-center gap-2 ${darkMode ? 'text-blue-300' : 'text-blue-800'}`}>
+            <Shield size={16} /> � Métricas Rápidas
+          </h4>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-xs">
+            <div className={`p-2 rounded ${darkMode ? 'bg-blue-900/30' : 'bg-blue-100'}`}>
+              <div className={`font-semibold mb-1 ${darkMode ? 'text-blue-300' : 'text-blue-700'}`}>Resistencia (Rg)</div>
+              <div className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-blue-900'}`}>{isFinite(calculations.Rg) ? calculations.Rg?.toFixed(2) : 'N/A'} Ω</div>
             </div>
-            <div className="text-xs text-gray-500">Costo estimado</div>
+            <div className={`p-2 rounded ${darkMode ? 'bg-blue-900/30' : 'bg-blue-100'}`}>
+              <div className={`font-semibold mb-1 ${darkMode ? 'text-blue-300' : 'text-blue-700'}`}>GPR</div>
+              <div className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-blue-900'}`}>{isFinite(calculations.GPR) ? calculations.GPR?.toFixed(0) : 'N/A'} V</div>
+            </div>
+            <div className={`p-2 rounded ${darkMode ? 'bg-blue-900/30' : 'bg-blue-100'}`}>
+              <div className={`font-semibold mb-1 ${darkMode ? 'text-blue-300' : 'text-blue-700'}`}>Contacto (Em)</div>
+              <div className={`text-lg font-bold ${calculations.touchSafe70 ? 'text-green-400' : 'text-red-400'}`}>{isFinite(calculations.Em) ? calculations.Em?.toFixed(0) : 'N/A'} V</div>
+            </div>
+            <div className={`p-2 rounded ${darkMode ? 'bg-blue-900/30' : 'bg-blue-100'}`}>
+              <div className={`font-semibold mb-1 ${darkMode ? 'text-blue-300' : 'text-blue-700'}`}>Paso (Es)</div>
+              <div className={`text-lg font-bold ${calculations.stepSafe70 ? 'text-green-400' : 'text-red-400'}`}>{isFinite(calculations.Es) ? calculations.Es?.toFixed(0) : 'N/A'} V</div>
+            </div>
+            <div className={`p-2 rounded ${darkMode ? 'bg-blue-900/30' : 'bg-blue-100'}`}>
+              <div className={`font-semibold mb-1 ${darkMode ? 'text-blue-300' : 'text-blue-700'}`}>Costo estimado</div>
+              <div className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-blue-900'}`}>${(((calculations.totalConductor || 0) * 12 + (params?.numRods || 0) * 25)).toLocaleString()}</div>
+            </div>
+            <div className={`p-2 rounded ${darkMode ? 'bg-blue-900/30' : 'bg-blue-100'}`}>
+              <div className={`font-semibold mb-1 ${darkMode ? 'text-blue-300' : 'text-blue-700'}`}>Estado</div>
+              <div className={`text-lg font-bold ${calculations.complies ? 'text-green-400' : 'text-red-400'}`}>{calculations.complies ? 'Cumple' : 'No cumple'}</div>
+            </div>
+          </div>
+          <div className={`mt-3 p-2 rounded ${darkMode ? 'bg-blue-900/40' : 'bg-blue-200'}`}>
+            <p className={`text-xs flex items-start gap-2 ${darkMode ? 'text-blue-200' : 'text-blue-800'}`}>
+              <Shield size={12} className="flex-shrink-0 mt-0.5" />
+              <span>
+                <strong>💡 Resumen del diseño:</strong> El sistema de puesta a tierra {calculations.complies ? 'cumple' : 'no cumple'} con los requisitos de seguridad IEEE Std 80.
+              </span>
+            </p>
+          </div>
+          <div className={`mt-2 p-2 rounded ${darkMode ? 'bg-blue-900/40' : 'bg-blue-200'}`}>
+            <p className={`text-xs ${darkMode ? 'text-blue-200' : 'text-blue-800'}`}>
+              <strong>📐 Verificación:</strong> Tensiones de contacto y paso {calculations.complies ? 'dentro' : 'fuera'} de los límites tolerables según IEEE 80-2013.
+            </p>
           </div>
         </div>
       )}
       
       {/* Estado de cumplimiento */}
       {calculations && (
-        <div className={`p-3 rounded-lg ${calculations.complies ? 'bg-green-100 dark:bg-green-900/30' : 'bg-red-100 dark:bg-red-900/30'}`}>
-          <div className="flex items-center gap-2">
-            {calculations.complies ? (
-              <Shield size={18} className="text-green-600" />
-            ) : (
-              <AlertCircle size={18} className="text-red-600" />
-            )}
-            <span className="font-medium">
-              {calculations.complies ? '✓ Diseño cumple con IEEE 80' : '✗ Diseño no cumple con IEEE 80'}
-            </span>
+        <div className={`p-4 rounded-lg border ${darkMode ? 'bg-blue-900/20 border-blue-700' : 'bg-blue-50 border-blue-200'}`} style={{ boxShadow: darkMode ? '0 0 15px rgba(59, 130, 246, 0.3), inset 0 0 8px rgba(59, 130, 246, 0.15)' : '0 0 15px rgba(59, 130, 246, 0.2), inset 0 0 8px rgba(59, 130, 246, 0.1)' }}>
+          <h4 className={`font-semibold mb-3 flex items-center gap-2 ${darkMode ? 'text-blue-300' : 'text-blue-800'}`}>
+            <Shield size={16} /> 📋 Estado de Cumplimiento
+          </h4>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-xs">
+            <div className={`p-2 rounded ${darkMode ? 'bg-blue-900/30' : 'bg-blue-100'}`}>
+              <div className={`font-semibold mb-1 ${darkMode ? 'text-blue-300' : 'text-blue-700'}`}>Contacto (Em)</div>
+              <div className={`text-lg font-bold ${calculations.touchSafe70 ? 'text-green-400' : 'text-red-400'}`}>{isFinite(calculations.Em) ? calculations.Em?.toFixed(0) : 'N/A'} V</div>
+            </div>
+            <div className={`p-2 rounded ${darkMode ? 'bg-blue-900/30' : 'bg-blue-100'}`}>
+              <div className={`font-semibold mb-1 ${darkMode ? 'text-blue-300' : 'text-blue-700'}`}>Límite permisible</div>
+              <div className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-blue-900'}`}>{isFinite(calculations.Etouch70) ? calculations.Etouch70?.toFixed(0) : 'N/A'} V</div>
+            </div>
+            <div className={`p-2 rounded ${darkMode ? 'bg-blue-900/30' : 'bg-blue-100'}`}>
+              <div className={`font-semibold mb-1 ${darkMode ? 'text-blue-300' : 'text-blue-700'}`}>Estado</div>
+              <div className={`text-lg font-bold ${calculations.complies ? 'text-green-400' : 'text-red-400'}`}>{calculations.complies ? '✓ CUMPLE' : '✗ NO CUMPLE'}</div>
+            </div>
+          </div>
+          <div className={`mt-3 p-2 rounded ${darkMode ? 'bg-blue-900/40' : 'bg-blue-200'}`}>
+            <p className={`text-xs flex items-start gap-2 ${darkMode ? 'text-blue-200' : 'text-blue-800'}`}>
+              <Shield size={12} className="flex-shrink-0 mt-0.5" />
+              <span>
+                <strong>💡 Verificación IEEE Std 80:</strong> El diseño {calculations.complies ? 'cumple' : 'no cumple'} con los requisitos de seguridad para tensiones de contacto y paso.
+              </span>
+            </p>
           </div>
         </div>
       )}

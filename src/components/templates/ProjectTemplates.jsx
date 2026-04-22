@@ -71,8 +71,8 @@ const templates = {
       surfaceLayer: 5000,
       surfaceDepth: 0.15
     },
-    color: 'bg-purple-500',
-    textColor: 'text-purple-600'
+    color: 'bg-blue-700',
+    textColor: 'text-blue-800'
   },
   substation: {
     name: 'Subestación',
@@ -259,7 +259,7 @@ const ProjectTemplates = ({ onSelectTemplate, darkMode, onClose, onCustomTemplat
     const colors = {
       'Vivienda': 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300',
       'Comercio': 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300',
-      'Industria': 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300',
+      'Industria': 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300',
       'Energía': 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300',
       'Salud': 'bg-teal-100 text-teal-800 dark:bg-teal-900/30 dark:text-teal-300',
       'Telecom': 'bg-cyan-100 text-cyan-800 dark:bg-cyan-900/30 dark:text-cyan-300',

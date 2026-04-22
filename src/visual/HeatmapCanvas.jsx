@@ -17,7 +17,8 @@ const HeatmapCanvas = ({
   const canvasRef = useRef(null);
   
   // Zoom + Pan state
-  const [view, setView] = useState({ scale: 1, offsetX: 0, offsetY: 0 });
+  const viewRef = useRef({ scale: 1, offsetX: 0, offsetY: 0 });
+  const [zoomLevel, setZoomLevel] = useState(1);
   const [dragging, setDragging] = useState(false);
   const [last, setLast] = useState({ x: 0, y: 0 });
   
@@ -115,11 +116,12 @@ const HeatmapCanvas = ({
   const handleWheel = (e) => {
     e.preventDefault();
     const zoomFactor = 1.1;
-    const newScale = e.deltaY < 0 ? view.scale * zoomFactor : view.scale / zoomFactor;
-    setView(v => ({
-      ...v,
+    const newScale = e.deltaY < 0 ? viewRef.current.scale * zoomFactor : viewRef.current.scale / zoomFactor;
+    viewRef.current = {
+      ...viewRef.current,
       scale: Math.min(Math.max(newScale, 0.5), 5)
-    }));
+    };
+    setZoomLevel(viewRef.current.scale);
   };
   
   // Pan handlers
@@ -132,11 +134,12 @@ const HeatmapCanvas = ({
     if (!dragging) return;
     const dx = e.clientX - last.x;
     const dy = e.clientY - last.y;
-    setView(v => ({
-      ...v,
-      offsetX: v.offsetX + dx,
-      offsetY: v.offsetY + dy
-    }));
+    
+    viewRef.current = {
+      ...viewRef.current,
+      offsetX: viewRef.current.offsetX + dx,
+      offsetY: viewRef.current.offsetY + dy
+    };
     setLast({ x: e.clientX, y: e.clientY });
   };
   
@@ -145,8 +148,8 @@ const HeatmapCanvas = ({
   // Slice handler
   const handleSliceClick = (e) => {
     const rect = canvasRef.current.getBoundingClientRect();
-    const x = (e.clientX - rect.left - view.offsetX) / view.scale;
-    const y = (e.clientY - rect.top - view.offsetY) / view.scale;
+    const x = (e.clientX - rect.left - viewRef.current.offsetX) / viewRef.current.scale;
+    const y = (e.clientY - rect.top - viewRef.current.offsetY) / viewRef.current.scale;
     
     const newSlice = {
       mode: slice.mode === 'none' ? 'x' : (slice.mode === 'x' ? 'y' : 'none'),
@@ -172,7 +175,7 @@ const HeatmapCanvas = ({
     ctx.fillRect(0, 0, w, h);
     
     // Apply zoom/pan transform
-    ctx.setTransform(view.scale, 0, 0, view.scale, view.offsetX, view.offsetY);
+    ctx.setTransform(viewRef.current.scale, 0, 0, viewRef.current.scale, viewRef.current.offsetX, viewRef.current.offsetY);
     
     // Encontrar valores mínimos y máximos
     const potentials = data.map(d => isFinite(d.potential) ? d.potential : 0);
@@ -307,10 +310,11 @@ const HeatmapCanvas = ({
         ctx.strokeStyle = '#000000';
         ctx.lineWidth = 1;
         ctx.stroke();
+        console.timeEnd("render");
       }
     }
     
-  }, [data, interpolationPower, smoothingLevel, showContours, numContours, contourThickness, view, slice]);
+  }, [data, interpolationPower, smoothingLevel, showContours, numContours, contourThickness, slice]);
 
   const handleClick = (e) => {
     if (!canvasRef.current || !onPointClick) return;
@@ -355,7 +359,7 @@ const HeatmapCanvas = ({
           handleClick(e);
           handleSliceClick(e);
         }}
-        onWheel={handleWheel}
+        onWheel={(e) => handleWheel(e)}
         onMouseDown={onMouseDown}
         onMouseMove={onMouseMove}
         onMouseUp={onMouseUp}
@@ -365,10 +369,21 @@ const HeatmapCanvas = ({
         Low &nbsp;&nbsp; Medium &nbsp;&nbsp; High
       </div>
       <div className="absolute top-2 left-2 bg-black/70 text-white text-xs px-2 py-1 rounded">
-        Zoom: {view.scale.toFixed(2)}x | Slice: {slice.mode}
+        Zoom: {zoomLevel.toFixed(2)}x | Slice: {slice.mode}
       </div>
     </div>
   );
+};
+
+// Export function for PDF generation
+export const exportCanvasImage = (canvasRef) => {
+  if (!canvasRef || !canvasRef.current) return null;
+  try {
+    return canvasRef.current.toDataURL("image/png");
+  } catch (error) {
+    console.error('Error exporting canvas:', error);
+    return null;
+  }
 };
 
 export default HeatmapCanvas;

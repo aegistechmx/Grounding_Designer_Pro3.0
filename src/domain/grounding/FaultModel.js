@@ -1,10 +1,11 @@
 /**
  * Fault Model - Professional calculation engine for fault current and voltage calculations
  * Implements IEEE 80 standard fault calculations with full traceability
+ * 
+ * CONSOLIDATED: Uses IEEE80Formulas as single source of truth for IEEE 80 factors
  */
 
 import IEEE80Formulas from './IEEE80Formulas.js';
-import IEEE80PracticalFactors from './IEEE80PracticalFactors.js';
 
 class FaultModel {
   constructor(input) {
@@ -407,74 +408,94 @@ class FaultModel {
   }
 
   /**
-   * Get complete fault analysis with IEEE 80 practical factors
+   * Get complete fault analysis using IEEE80Formulas (single source of truth)
    */
   analyze(gridResistance, geometricFactor, soilResistivity, surfaceLayerResistivity = null, gridGeometry = null) {
     const gridCurrent = this.calculateGridCurrent();
     const gpr = this.calculateGPR(gridResistance);
     
-    // Use IEEE 80 practical factors for voltage calculations
-    let stepVoltage, touchVoltage, factorAnalysis = null;
+    // Calculate surface layer factor using IEEE80Formulas
+    const surfaceLayerFactor = surfaceLayerResistivity ? 
+      IEEE80Formulas.calculateSurfaceLayerFactor(
+        soilResistivity,
+        surfaceLayerResistivity,
+        0.1 // Assume 100mm surface layer thickness
+      ) : 1.0;
     
+    // Calculate geometric factors using IEEE80Formulas
+    let Ks, Km;
     if (gridGeometry) {
-      // Calculate surface layer factor
-      const surfaceLayerFactor = surfaceLayerResistivity ? 
-        this.calculateSurfaceLayerFactor(surfaceLayerResistivity) : 1.0;
-      
-      // Use enhanced IEEE 80 practical factors
-      const voltages = IEEE80PracticalFactors.calculateEnhancedVoltages(
+      const { length, width, numParallelX, numParallelY, gridDepth } = gridGeometry;
+      Ks = IEEE80Formulas.calculateStepGeometricFactor(length, width, numParallelX, numParallelY, gridDepth);
+      Km = IEEE80Formulas.calculateTouchGeometricFactor(length, width, numParallelX, numParallelY, gridDepth);
+    } else if (geometricFactor) {
+      Ks = geometricFactor.Ks;
+      Km = geometricFactor.Km;
+    } else {
+      // Default factors if no geometry provided
+      Ks = 1.0;
+      Km = 1.5;
+    }
+    
+    // Calculate total conductor length
+    const totalConductorLength = gridGeometry ? 
+      (gridGeometry.length * gridGeometry.numParallelY + gridGeometry.width * (gridGeometry.numParallelX - 1)) : 100;
+    
+    // Calculate voltages using IEEE80Formulas
+    const stepVoltage = IEEE80Formulas.calculateStepVoltage(
+      soilResistivity,
+      gridCurrent,
+      Ks,
+      totalConductorLength,
+      surfaceLayerFactor
+    );
+    
+    const touchVoltage = IEEE80Formulas.calculateTouchVoltage(
+      soilResistivity,
+      gridCurrent,
+      Km,
+      totalConductorLength,
+      surfaceLayerFactor
+    );
+    
+    // Factor analysis
+    const factorAnalysis = {
+      Ks,
+      Km,
+      surfaceLayerFactor,
+      stepToTouchRatio: touchVoltage / stepVoltage
+    };
+    
+    this.addTrace('ieee80_formulas', {
+      formula: 'E = (rho × Ig × K × Cs) / L',
+      inputs: {
         soilResistivity,
         gridCurrent,
-        gridGeometry,
+        Ks,
+        Km,
+        totalConductorLength,
         surfaceLayerFactor
-      );
-      
-      stepVoltage = voltages.stepVoltage;
-      touchVoltage = voltages.touchVoltage;
-      factorAnalysis = {
-        Ki: voltages.Ki,
-        Ks: voltages.Ks,
-        Km: voltages.Km,
-        Ebase: voltages.Ebase,
-        stepToTouchRatio: voltages.stepToTouchRatio
-      };
-      
-      this.addTrace('ieee80_practical_factors', {
-        formula: 'E = Ebase × K × Ki',
-        inputs: {
-          soilResistivity,
-          gridCurrent,
-          surfaceLayerFactor,
-          gridGeometry
-        },
-        factors: {
-          Ki: voltages.Ki,
-          Ks: voltages.Ks,
-          Km: voltages.Km,
-          Ebase: voltages.Ebase
-        },
-        result: {
-          stepVoltage,
-          touchVoltage
-        }
-      });
-    } else {
-      // Fallback to original simplified calculations
-      stepVoltage = this.calculateStepVoltage(gridResistance, geometricFactor, soilResistivity);
-      touchVoltage = this.calculateTouchVoltage(gridResistance, geometricFactor, soilResistivity);
-    }
+      },
+      result: {
+        stepVoltage,
+        touchVoltage
+      }
+    });
     
     const transferredVoltage = this.calculateTransferredVoltage(gpr);
     
-    const permissibleTouch = this.calculatePermissibleTouchVoltage(
-      this.input.faultDuration, 
-      this.input.bodyWeight, 
-      surfaceLayerResistivity
+    // Use IEEE80Formulas for permissible voltages
+    const permissibleTouch = IEEE80Formulas.calculatePermissibleTouchVoltage(
+      this.input.bodyWeight,
+      this.input.faultDuration,
+      surfaceLayerFactor,
+      surfaceLayerResistivity || soilResistivity
     );
-    const permissibleStep = this.calculatePermissibleStepVoltage(
-      this.input.faultDuration, 
-      this.input.bodyWeight, 
-      surfaceLayerResistivity
+    const permissibleStep = IEEE80Formulas.calculatePermissibleStepVoltage(
+      this.input.bodyWeight,
+      this.input.faultDuration,
+      surfaceLayerFactor,
+      surfaceLayerResistivity || soilResistivity
     );
     
     const safetyMargins = this.calculateSafetyMargins(

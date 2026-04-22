@@ -7,8 +7,8 @@ import IEEE80Formulas from './IEEE80Formulas.js';
 
 class SoilModel {
   constructor(input) {
+    this.traceability = []; // Initialize traceability BEFORE validateInput
     this.input = this.validateInput(input);
-    this.traceability = []; // Always initialize traceability
   }
 
   /**

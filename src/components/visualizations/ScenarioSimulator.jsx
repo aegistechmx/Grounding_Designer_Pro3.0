@@ -117,7 +117,7 @@ export const ScenarioSimulator = ({ baseParams, darkMode }) => {
           </button>
           <button
             onClick={exportResults}
-            className="px-3 py-1 bg-purple-600 text-white rounded-md text-sm flex items-center gap-1 hover:bg-purple-700"
+            className="px-3 py-1 bg-blue-800 text-white rounded-md text-sm flex items-center gap-1 hover:bg-blue-900"
           >
             <Download size={14} /> Exportar
           </button>

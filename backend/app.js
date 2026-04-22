@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import calculateRoute from './routes/calculate.js';
+import pdfRoutes from './routes/pdf.routes.js';
 import { securityHeaders, createRateLimiter, calculationRateLimiter, corsOptions } from './middleware/security.js';
 import { sanitizeInput } from './middleware/validation.js';
 import { requestLogger, errorLogger, performanceMonitor, requestIdMiddleware } from './middleware/logging.js';
@@ -26,6 +27,7 @@ app.use(errorLogger);
 
 // Routes
 app.use('/api/calculate', calculateRoute);
+app.use('/api/pdf', pdfRoutes);
 
 // Health check endpoint
 app.get('/health', (req, res) => {

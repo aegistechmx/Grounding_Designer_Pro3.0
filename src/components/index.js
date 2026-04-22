@@ -26,4 +26,4 @@ export { ProjectTemplates, TransformerTemplates } from './templates';
 export { DocumentationViewer } from './docs';
 
 // Reports
-export { ComplianceCertificate, ExecutiveReport, MaterialListModal, PDFReport } from './reports';
+export { ComplianceCertificate, MaterialListModal, PDFReport } from './reports';

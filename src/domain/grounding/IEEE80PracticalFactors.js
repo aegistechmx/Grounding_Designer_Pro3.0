@@ -1,7 +1,16 @@
 /**
  * IEEE 80 Practical Geometric Factors
- * Real-world implementation based on IEEE 80 standard
- * Captures non-uniform field effects, mesh geometry, and depth effects
+ * 
+ * DEPRECATED: This module is deprecated as of architectural refactoring
+ * All IEEE 80 formulas have been consolidated into IEEE80Formulas.js
+ * 
+ * Please use IEEE80Formulas as the single source of truth for IEEE 80 calculations
+ * 
+ * Migration guide:
+ * - Use IEEE80Formulas.calculateStepGeometricFactor() instead of calculateStepFactor()
+ * - Use IEEE80Formulas.calculateTouchGeometricFactor() instead of calculateMeshFactor()
+ * - Use IEEE80Formulas.calculateStepVoltage() instead of calculateVoltages().stepVoltage
+ * - Use IEEE80Formulas.calculateTouchVoltage() instead of calculateVoltages().touchVoltage
  */
 
 class IEEE80PracticalFactors {

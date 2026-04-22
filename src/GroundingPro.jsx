@@ -117,7 +117,7 @@ const GroundingPro = ({ params, darkMode }) => {
           <button
             onClick={handleCopyReport}
             disabled={!report}
-            className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:bg-gray-400"
+            className="px-4 py-2 bg-blue-800 text-white rounded-lg hover:bg-blue-900 disabled:bg-gray-400"
           >
             📋 Copiar Reporte
           </button>
@@ -135,7 +135,7 @@ const GroundingPro = ({ params, darkMode }) => {
             </div>
             <div className={`p-4 rounded-lg text-center ${darkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>
               <div className="text-sm text-gray-500">GPR</div>
-              <div className="text-2xl font-bold text-purple-600">{formatVoltage(results.validation.GPR, 0)}</div>
+              <div className="text-2xl font-bold text-blue-800">{formatVoltage(results.validation.GPR, 0)}</div>
             </div>
             <div className={`p-4 rounded-lg text-center ${darkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>
               <div className="text-sm text-gray-500">Em (Contacto)</div>

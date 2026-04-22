@@ -23,9 +23,20 @@ export const VisualizationPanel = ({ params, calculations, darkMode, updateParam
   const [numContours, setNumContours] = useState(10);
   const [contourThickness, setContourThickness] = useState(2);
   
+  // Professional Analysis Mode State
+  const [analysisMode, setAnalysisMode] = useState('discrete'); // 'discrete' | 'analytical' | 'overlay' | 'difference'
+  const [overlayOpacity, setOverlayOpacity] = useState(0.5);
+  
   // Slice/Profile State
   const [slice, setSlice] = useState({ mode: 'none', position: 0 });
   const [profileData, setProfileData] = useState([]);
+  
+  // Risk Stats State
+  const [riskStats, setRiskStats] = useState({ dangerCount: 0, maxVoltage: 0, status: 'SAFE', recommendations: [] });
+
+  const handleRiskStatsChange = (stats) => {
+    setRiskStats(stats);
+  };
 
   const handleSliceChange = (newSlice) => {
     setSlice(newSlice);
@@ -41,7 +52,7 @@ export const VisualizationPanel = ({ params, calculations, darkMode, updateParam
           const x = (i / resolution) * 30 - 15;
           const y = (j / resolution) * 30 - 15;
           const distance = Math.sqrt(x * x + y * y);
-          const potential = (calculations?.touchVoltage || 500) * Math.exp(-distance / 3) + (calculations?.stepVoltage || 300) * 0.3;
+          const potential = (calculations?.Em || 500) * Math.exp(-distance / 3) + (calculations?.Es || 300) * 0.3;
           gridValues[i][j] = potential;
         }
       }
@@ -143,7 +154,46 @@ export const VisualizationPanel = ({ params, calculations, darkMode, updateParam
             darkMode={darkMode}
           />
           
-          {calculations && calculations.touchVoltage && (
+          {/* 🎯 Professional Analysis Mode Controls */}
+          <div className="mt-4 p-3 rounded-lg bg-gray-700">
+            <h4 className="text-white font-semibold mb-3">🔬 Professional Analysis Mode</h4>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs text-gray-400 mb-1 block">Analysis Mode</label>
+                <select
+                  value={analysisMode}
+                  onChange={(e) => setAnalysisMode(e.target.value)}
+                  className="w-full bg-gray-600 text-white rounded px-2 py-1 text-sm"
+                >
+                  <option value="discrete">🔵 Discrete (Solver)</option>
+                  <option value="analytical">🟢 Analytical (IEEE)</option>
+                  <option value="overlay">🎯 Overlay (Both)</option>
+                  <option value="difference">🔴 Difference (Debug)</option>
+                </select>
+              </div>
+              <div>
+                <label className="text-xs text-gray-400 mb-1 block">Overlay Opacity</label>
+                <input
+                  type="range"
+                  min="0"
+                  max="1"
+                  step="0.1"
+                  value={overlayOpacity}
+                  onChange={(e) => setOverlayOpacity(parseFloat(e.target.value))}
+                  className="w-full"
+                />
+                <span className="text-xs text-gray-400">{Math.round(overlayOpacity * 100)}%</span>
+              </div>
+            </div>
+            <div className="mt-2 text-xs text-gray-400">
+              {analysisMode === 'discrete' && '🔵 Shows discrete solver results (source of truth)'}
+              {analysisMode === 'analytical' && '🟢 Shows analytical IEEE model for comparison'}
+              {analysisMode === 'overlay' && '🎯 Overlay: discrete heatmap + analytical contours'}
+              {analysisMode === 'difference' && '🔴 Difference: red = discrete > analytical, blue = discrete < analytical'}
+            </div>
+          </div>
+          
+          {calculations && calculations.Em && (
             <>
               <HeatmapCanvas
                 data={generateSampleData(calculations)}
@@ -155,7 +205,44 @@ export const VisualizationPanel = ({ params, calculations, darkMode, updateParam
                 numContours={numContours}
                 contourThickness={contourThickness}
                 onSliceChange={handleSliceChange}
+                onRiskStatsChange={handleRiskStatsChange}
+                permissibleVoltage={calculations.permissible?.Etouch70 || 50}
+                discreteGrid={calculations?.discreteGrid || null}
+                analyticalGrid={calculations?.analyticalGrid || null}
+                mode={analysisMode}
+                overlayOpacity={overlayOpacity}
               />
+              <div className="mt-4 p-3 rounded-lg bg-gray-700">
+                <h4 className="text-white font-semibold mb-2">🛡️ IEEE 80 Risk Analysis</h4>
+                <div className="flex gap-4 text-sm">
+                  <span className={`font-bold ${riskStats.status === 'UNSAFE' ? 'text-red-400' : 'text-green-400'}`}>
+                    Status: {riskStats.status}
+                  </span>
+                  <span className="text-gray-300">
+                    Danger Zones: {riskStats.dangerCount}
+                  </span>
+                  <span className="text-gray-300">
+                    Max Voltage: {riskStats.maxVoltage.toFixed(1)}V
+                  </span>
+                </div>
+              </div>
+              {riskStats.recommendations && riskStats.recommendations.length > 0 && (
+                <div className="mt-4 p-3 rounded-lg bg-gray-700">
+                  <h4 className="text-white font-semibold mb-3">🎯 Engineering Recommendations</h4>
+                  {riskStats.recommendations.map((rec, idx) => (
+                    <div key={idx} className="mb-3 p-2 bg-gray-600 rounded">
+                      <p className="text-yellow-400 font-semibold text-sm mb-2">
+                        {rec.title} ({rec.count} zones)
+                      </p>
+                      <ul className="list-disc ml-4 text-xs text-gray-300 space-y-1">
+                        {rec.sample.actions.map((action, i) => (
+                          <li key={i}>{action}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  ))}
+                </div>
+              )}
               {profileData.length > 0 && (
                 <div className="mt-4">
                   <ProfileChart data={profileData} mode={slice.mode} />
@@ -177,8 +264,8 @@ export const VisualizationPanel = ({ params, calculations, darkMode, updateParam
 function generateSampleData(calculations) {
   const data = [];
   const gridSize = 10;
-  const touchVoltage = calculations.touchVoltage || 500;
-  const stepVoltage = calculations.stepVoltage || 300;
+  const Em = calculations.Em || 500;
+  const Es = calculations.Es || 300;
   
   for (let i = 0; i < gridSize; i++) {
     for (let j = 0; j < gridSize; j++) {
@@ -186,7 +273,7 @@ function generateSampleData(calculations) {
       const y = j - gridSize / 2;
       const distance = Math.sqrt(x * x + y * y);
       
-      const potential = touchVoltage * Math.exp(-distance / 3) + stepVoltage * 0.3;
+      const potential = Em * Math.exp(-distance / 3) + Es * 0.3;
       
       data.push({
         x: x,

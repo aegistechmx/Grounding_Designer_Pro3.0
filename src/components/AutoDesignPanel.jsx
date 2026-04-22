@@ -97,7 +97,7 @@ const AutoDesignPanel = ({ onDesignApplied, darkMode }) => {
         className={`w-full py-3 rounded-lg font-semibold transition-all flex items-center justify-center gap-2 ${
           isDesigning
             ? 'bg-gray-400 cursor-not-allowed'
-            : 'bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white'
+            : 'bg-blue-600 hover:bg-blue-700 text-white'
         }`}
       >
         {isDesigning ? (
@@ -115,41 +115,55 @@ const AutoDesignPanel = ({ onDesignApplied, darkMode }) => {
       
       {result && (
         <div className="mt-6 space-y-4">
-          <div className="bg-green-100 dark:bg-green-900/30 p-4 rounded-lg border border-green-500">
-            <h3 className="font-bold text-lg mb-2 flex items-center gap-2">
-              <CheckCircle className="text-green-600" />
-              Diseño Óptimo Encontrado
-            </h3>
-            
-            <div className="grid grid-cols-2 gap-3 text-sm">
-              <div>
-                <span className="text-gray-500">Conductores:</span>
-                <span className="ml-2 font-bold">{result.design.numParallelX} x {result.design.numParallelY}</span>
+          <div className={`p-4 rounded-lg border ${darkMode ? 'bg-green-900/20 border-green-700' : 'bg-green-50 border-green-200'}`} style={{ boxShadow: darkMode ? '0 0 15px rgba(34, 197, 94, 0.3), inset 0 0 8px rgba(34, 197, 94, 0.15)' : '0 0 15px rgba(34, 197, 94, 0.2), inset 0 0 8px rgba(34, 197, 94, 0.1)' }}>
+            <h4 className={`font-semibold mb-3 flex items-center gap-2 ${darkMode ? 'text-green-300' : 'text-green-800'}`}>
+              <CheckCircle size={16} /> ✅ Diseño Óptimo Encontrado
+            </h4>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-xs">
+              <div className={`p-2 rounded ${darkMode ? 'bg-green-900/30' : 'bg-green-100'}`}>
+                <div className={`font-semibold mb-1 ${darkMode ? 'text-green-300' : 'text-green-700'}`}>Conductores</div>
+                <div className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-green-900'}`}>{result.design.numParallelX} x {result.design.numParallelY}</div>
               </div>
-              <div>
-                <span className="text-gray-500">Varillas:</span>
-                <span className="ml-2 font-bold">{result.design.numRods} x {formatDistance(result.design.rodLength, 0)}</span>
+              <div className={`p-2 rounded ${darkMode ? 'bg-green-900/30' : 'bg-green-100'}`}>
+                <div className={`font-semibold mb-1 ${darkMode ? 'text-green-300' : 'text-green-700'}`}>Varillas</div>
+                <div className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-green-900'}`}>{result.design.numRods} x {formatDistance(result.design.rodLength, 0)}</div>
               </div>
-              <div>
-                <span className="text-gray-500">Dimensiones:</span>
-                <span className="ml-2 font-bold">{formatDistance(result.design.gridLength, 0)} x {formatDistance(result.design.gridWidth, 0)}</span>
+              <div className={`p-2 rounded ${darkMode ? 'bg-green-900/30' : 'bg-green-100'}`}>
+                <div className={`font-semibold mb-1 ${darkMode ? 'text-green-300' : 'text-green-700'}`}>Dimensiones</div>
+                <div className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-green-900'}`}>{formatDistance(result.design.gridLength, 0)} x {formatDistance(result.design.gridWidth, 0)}</div>
               </div>
-              <div>
-                <span className="text-gray-500">Costo estimado:</span>
-                <span className="ml-2 font-bold text-green-600">{formatNumber(result.report.cost.total, 0)} MXN</span>
+              <div className={`p-2 rounded ${darkMode ? 'bg-green-900/30' : 'bg-green-100'}`}>
+                <div className={`font-semibold mb-1 ${darkMode ? 'text-green-300' : 'text-green-700'}`}>Costo estimado</div>
+                <div className={`text-lg font-bold ${darkMode ? 'text-green-400' : 'text-green-700'}`}>{formatNumber(result.report.cost.total, 0)} MXN</div>
+              </div>
+              <div className={`p-2 rounded ${darkMode ? 'bg-green-900/30' : 'bg-green-100'}`}>
+                <div className={`font-semibold mb-1 ${darkMode ? 'text-green-300' : 'text-green-700'}`}>Tiempo</div>
+                <div className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-green-900'}`}>{formatNumber(result.executionTime / 1000, 1)} s</div>
+              </div>
+              <div className={`p-2 rounded ${darkMode ? 'bg-green-900/30' : 'bg-green-100'}`}>
+                <div className={`font-semibold mb-1 ${darkMode ? 'text-green-300' : 'text-green-700'}`}>Estado</div>
+                <div className={`text-lg font-bold ${darkMode ? 'text-green-400' : 'text-green-700'}`}>Cumple</div>
               </div>
             </div>
-            
+            <div className={`mt-3 p-2 rounded ${darkMode ? 'bg-green-900/40' : 'bg-green-200'}`}>
+              <p className={`text-xs flex items-start gap-2 ${darkMode ? 'text-green-200' : 'text-green-800'}`}>
+                <CheckCircle size={12} className="flex-shrink-0 mt-0.5" />
+                <span>
+                  <strong>💡 Optimización completada:</strong> El diseño cumple con CFE + NOM en {formatNumber(result.executionTime / 1000, 1)} segundos
+                </span>
+              </p>
+            </div>
+            <div className={`mt-2 p-2 rounded ${darkMode ? 'bg-green-900/40' : 'bg-green-200'}`}>
+              <p className={`text-xs ${darkMode ? 'text-green-200' : 'text-green-800'}`}>
+                <strong>📐 Algoritmo:</strong> Optimización automática basada en IEEE Std 80 y normas CFE.
+              </p>
+            </div>
             <button
               onClick={applyDesign}
-              className="mt-3 w-full bg-green-600 hover:bg-green-700 py-2 rounded font-semibold"
+              className="mt-3 w-full bg-green-600 hover:bg-green-700 py-2 rounded font-semibold text-white"
             >
               Aplicar este diseño
             </button>
-          </div>
-          
-          <div className="text-xs text-gray-500 text-center">
-            Optimización completada en {formatNumber(result.executionTime / 1000, 1)} segundos
           </div>
         </div>
       )}

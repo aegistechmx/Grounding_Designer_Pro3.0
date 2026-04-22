@@ -101,7 +101,7 @@ const MaterialListModal = ({ materialList, darkMode, onClose, onExport }) => {
                 <div className="text-xs text-gray-500">Conductor total</div>
               </div>
               <div>
-                <div className="text-2xl font-bold text-purple-600">{numRods} und</div>
+                <div className="text-2xl font-bold text-blue-600">{numRods} und</div>
                 <div className="text-xs text-gray-500">Varillas de {rodLength}</div>
               </div>
               <div>

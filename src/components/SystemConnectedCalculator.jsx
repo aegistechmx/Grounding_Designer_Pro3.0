@@ -188,7 +188,7 @@ const SystemConnectedCalculator = () => {
               
               <button
                 onClick={handleExportPDF}
-                className="w-full bg-purple-600 hover:bg-purple-700 py-2 rounded font-semibold flex items-center justify-center gap-2"
+                className="w-full bg-blue-600 hover:bg-blue-700 py-2 rounded font-semibold flex items-center justify-center gap-2"
               >
                 <FileText size={16} />
                 Exportar PDF

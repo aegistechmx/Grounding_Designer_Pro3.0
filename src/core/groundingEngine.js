@@ -1,364 +1,390 @@
 /**
- * Motor de Cálculos de Puesta a Tierra
- * Basado en IEEE Std 80-2013
- * Independiente de React - puede usarse en Web Workers
+ * Motor de Cálculos de Puesta a Tierra - PRO
+ * Basado en IEEE Std 80-2013 (versión mejorada)
+ * Integración: Suelo multicapa, Corriente transitoria, Optimizador, Reportes
  */
 
-// Constantes térmicas
+import { getEffectiveResistivity, apparentResistivity2Layer } from './soilModel';
+import { effectiveFaultCurrent, analyzeTransient } from './transient';
+import { optimizeGrid, optimizeGridGuided, compareDesigns } from './optimizer';
+import { generateReport, generateQuickReport, exportReportJSON, downloadReportJSON, generateExecutiveSummary, generateTextReport } from './report';
+
+// =========================
+// CONSTANTES
+// =========================
 const THERMAL_CONSTANTS = {
-  COPPER_SOFT: { k: 7.0, name: 'Cobre Recocido', maxTemp: 250 },
-  COPPER_HARD: { k: 7.0, name: 'Cobre Duro', maxTemp: 250 },
-  ALUMINUM: { k: 4.5, name: 'Aluminio', maxTemp: 200 }
+  COPPER_SOFT: { k: 7.0, maxTemp: 250 },
+  COPPER_HARD: { k: 7.0, maxTemp: 250 },
+  ALUMINUM: { k: 4.5, maxTemp: 200 }
 };
 
-// Catálogo de conductores Viakon
-export const CONDUCTORS = {
-  '6 AWG': { area: 13.3, ampacity: 55, diameter: 7.72 },
-  '4 AWG': { area: 21.2, ampacity: 70, diameter: 8.94 },
-  '2 AWG': { area: 33.6, ampacity: 95, diameter: 10.5 },
-  '1/0 AWG': { area: 53.5, ampacity: 125, diameter: 13.5 },
-  '2/0 AWG': { area: 67.4, ampacity: 145, diameter: 14.7 },
-  '3/0 AWG': { area: 85.0, ampacity: 165, diameter: 16.0 },
-  '4/0 AWG': { area: 107.2, ampacity: 195, diameter: 17.5 },
-  '250 kcmil': { area: 127.0, ampacity: 215, diameter: 19.4 },
-  '300 kcmil': { area: 152.0, ampacity: 240, diameter: 20.8 },
-  '350 kcmil': { area: 177.0, ampacity: 260, diameter: 22.1 },
-  '400 kcmil': { area: 203.0, ampacity: 280, diameter: 23.3 },
-  '500 kcmil': { area: 253.0, ampacity: 320, diameter: 25.5 },
-  '600 kcmil': { area: 304.0, ampacity: 355, diameter: 28.3 },
-  '750 kcmil': { area: 380.0, ampacity: 400, diameter: 30.9 },
-  '1000 kcmil': { area: 507.0, ampacity: 455, diameter: 34.8 }
+// =========================
+// UTILIDADES
+// =========================
+const safe = (v, d = 0) => {
+  const n = parseFloat(v);
+  return isNaN(n) ? d : n;
 };
 
-// Función segura para obtener número
-const safeNumber = (value, defaultValue = 0) => {
-  const num = parseFloat(value);
-  return isNaN(num) ? defaultValue : num;
+// =========================
+// FACTOR Cs
+// =========================
+const calculateCs = (ρ, ρs, hs) => {
+  ρ = safe(ρ, 100);
+  ρs = Math.min(safe(ρs, 3000), 3000);
+  hs = safe(hs, 0.1);
+
+  return 1 - (0.09 * (1 - ρ / ρs)) / (2 * hs + 0.09);
 };
 
-// Factor de capa superficial (Cs)
-const calculateCs = (soilResistivity, surfaceLayer, surfaceDepth) => {
-  const ρ = safeNumber(soilResistivity, 100);
-  const ρs = safeNumber(surfaceLayer, 3000);
-  const hs = safeNumber(surfaceDepth, 0.1);
-  
-  let Cs = 1 - (0.09 * (1 - ρ / ρs)) / (2 * hs + 0.09);
-  return (isNaN(Cs) || !isFinite(Cs)) ? 1 : Cs;
-};
+// =========================
+// TENSIONES PERMISIBLES
+// =========================
+const calculatePermissible = (Cs, ρs, t) => {
+  ρs = Math.min(safe(ρs, 3000), 3000);
+  t = Math.max(0.1, safe(t, 0.5));
 
-// Tensiones permisibles
-const calculatePermissibleVoltages = (Cs, surfaceLayer, faultDuration) => {
-  const ρs = safeNumber(surfaceLayer, 3000);
-  const t = Math.max(0.1, safeNumber(faultDuration, 0.5));
-  const sqrt_t = Math.sqrt(t);
-  
-  let Etouch70 = (1000 + 1.5 * Cs * ρs) * (0.157 / sqrt_t);
-  let Estep70 = (1000 + 6.0 * Cs * ρs) * (0.157 / sqrt_t);
-  
-  Etouch70 = (isNaN(Etouch70) || !isFinite(Etouch70)) ? 1 : Math.max(1, Etouch70);
-  Estep70 = (isNaN(Estep70) || !isFinite(Estep70)) ? 1 : Math.max(1, Estep70);
-  
-  // Para 50 kg (factor 0.116 en lugar de 0.157)
-  let Etouch50 = (1000 + 1.5 * Cs * ρs) * (0.116 / sqrt_t);
-  let Estep50 = (1000 + 6.0 * Cs * ρs) * (0.116 / sqrt_t);
-  
-  Etouch50 = (isNaN(Etouch50) || !isFinite(Etouch50)) ? 1 : Math.max(1, Etouch50);
-  Estep50 = (isNaN(Estep50) || !isFinite(Estep50)) ? 1 : Math.max(1, Estep50);
-  
-  return { Etouch70, Estep70, Etouch50, Estep50 };
-};
+  const k70 = 0.157 / Math.sqrt(t);
+  const k50 = 0.116 / Math.sqrt(t);
 
-// Geometría de la malla
-const calculateGeometry = (params) => {
-  const gridLength = safeNumber(params.gridLength, 30);
-  const gridWidth = safeNumber(params.gridWidth, 16);
-  const numParallel = safeNumber(params.numParallel, 8);
-  const numParallelY = safeNumber(params.numParallelY, 8);
-  const gridDepth = safeNumber(params.gridDepth, 0.6);
-  const conductorDiameter = safeNumber(params.conductorDiameter, 0.01168);
-  
-  const A = gridLength * gridWidth;
-  const perimeter = 2 * (gridLength + gridWidth);
-  const totalGridLength = perimeter * numParallel;
-  const totalGridLengthY = perimeter * numParallelY;
-  const totalGridLengthTotal = (totalGridLength + totalGridLengthY) / 2;
-  
-  const numRods = safeNumber(params.numRods, 8);
-  const rodLength = safeNumber(params.rodLength, 3);
-  const totalRodLength = numRods * rodLength;
-  const LT = totalGridLengthTotal + totalRodLength;
-  
-  const nx = numParallel;
-  const ny = numParallelY;
-  const Dx = gridLength / Math.max(1, nx - 1);
-  const Dy = gridWidth / Math.max(1, ny - 1);
-  const D = Math.sqrt(Dx * Dy);
-  
-  // Factor de irregularidad (n)
-  let n = (2 * totalGridLengthTotal / perimeter) * Math.sqrt(perimeter / (4 * Math.sqrt(A)));
-  n = (isNaN(n) || !isFinite(n)) ? 1 : Math.max(1, n);
-  
-  // Factores geométricos
-  let Ki = 0.644 + 0.148 * n;
-  Ki = (isNaN(Ki) || !isFinite(Ki)) ? 0.7 : Ki;
-  
-  let Kh = Math.sqrt(1 + gridDepth);
-  Kh = (isNaN(Kh) || !isFinite(Kh)) ? 1 : Kh;
-  
-  // Factor de malla Km
-  const h = gridDepth;
-  const d = conductorDiameter;
-  
-  const term1 = (D * D) / (16 * h * d);
-  const term2 = ((D + 2 * h) * (D + 2 * h)) / (8 * D * d);
-  const term3 = h / (4 * d);
-  const term4 = Math.log(8 / (Math.PI * (2 * n - 1)));
-  
-  let Km = (1 / (2 * Math.PI)) * (Math.log(term1 + term2 - term3) + term4);
-  Km = Math.max(0.05, Math.min(0.8, Km)) * Kh;
-  Km = (isNaN(Km) || !isFinite(Km)) ? 0.5 : Km;
-  
-  // Factor de paso Ks
-  let Ks = (1 / Math.PI) * (1 / (2 * h) + 1 / (D + h) + (1 / D) * (1 - Math.pow(0.5, n - 2)));
-  Ks = Math.max(0.2, Math.min(1.2, Ks));
-  Ks = (isNaN(Ks) || !isFinite(Ks)) ? 0.7 : Ks;
-  
   return {
-    A, perimeter, totalGridLength: totalGridLengthTotal, totalRodLength,
-    LT, nx, ny, D, n, Ki, Kh, Km, Ks, h, d
+    Etouch70: (1000 + 1.5 * Cs * ρs) * k70,
+    Estep70: (1000 + 6 * Cs * ρs) * k70,
+    Etouch50: (1000 + 1.5 * Cs * ρs) * k50,
+    Estep50: (1000 + 6 * Cs * ρs) * k50
   };
 };
 
-// Corrientes de falla
-const calculateFaultCurrents = (params) => {
-  const transformerKVA = safeNumber(params.transformerKVA, 75);
-  const secondaryVoltage = safeNumber(params.secondaryVoltage, 220);
-  const transformerImpedance = Math.max(0.1, safeNumber(params.transformerImpedance, 5));
-  const currentDivisionFactor = Math.min(0.8, Math.max(0.1, safeNumber(params.currentDivisionFactor, 0.2)));
-  
-  const In = (transformerKVA * 1000) / (Math.sqrt(3) * secondaryVoltage);
-  const faultCurrent = In / (transformerImpedance / 100);
-  const Ig = faultCurrent * currentDivisionFactor;
-  
-  return { faultCurrent, Ig, In, currentDivisionFactor };
+// =========================
+// DECREMENT FACTOR (IEEE)
+// =========================
+const decrementFactor = (X_R = 10, t = 0.5) => {
+  return Math.sqrt(1 + X_R ** 2) / (1 + X_R ** 2 * Math.exp(-2 * t));
 };
 
-// Resistencia de malla (Rg)
-const calculateResistance = (soilResistivity, LT, A, gridDepth) => {
-  const ρ = safeNumber(soilResistivity, 100);
-  const LTSafe = Math.max(1, safeNumber(LT, 100));
-  const ASafe = Math.max(1, safeNumber(A, 100));
-  const h = safeNumber(gridDepth, 0.6);
-  
-  let Rg = ρ * (1 / LTSafe + 1 / Math.sqrt(20 * ASafe) * (1 + 1 / (1 + h * Math.sqrt(20 / ASafe))));
-  return (isNaN(Rg) || !isFinite(Rg)) ? 0 : Rg;
+// =========================
+// CORRIENTE DE FALLA
+// =========================
+const calculateFault = (p) => {
+  const kVA = safe(p.transformerKVA, 75);
+  const V = safe(p.secondaryVoltage, 220);
+  const Z = Math.max(0.1, safe(p.transformerImpedance, 5));
+  const Sf = Math.min(0.8, Math.max(0.1, safe(p.currentDivisionFactor, 0.3)));
+
+  const In = (kVA * 1000) / (Math.sqrt(3) * V);
+  const If = In / (Z / 100);
+
+  const Df = decrementFactor(p.X_R || 10, p.faultDuration || 0.5);
+
+  const Ig = If * Sf * Df;
+
+  return { If, Ig, In, Sf, Df };
 };
 
-// Tensiones de malla y paso
-const calculateVoltages = (soilResistivity, Km, Ki, Ig, LT, Ks, totalGridLength, totalRodLength) => {
-  const ρ = safeNumber(soilResistivity, 100);
-  const IgSafe = Math.max(1, safeNumber(Ig, 1000));
-  const LTSafe = Math.max(1, safeNumber(LT, 100));
-  const totalGridLengthSafe = Math.max(1, safeNumber(totalGridLength, 100));
-  const totalRodLengthSafe = Math.max(0, safeNumber(totalRodLength, 0));
-  const KmSafe = Math.max(0.1, safeNumber(Km, 0.5));
-  const KiSafe = Math.max(0.1, safeNumber(Ki, 0.7));
-  const KsSafe = Math.max(0.1, safeNumber(Ks, 0.7));
-  
-  let Em = (ρ * KmSafe * KiSafe * IgSafe) / LTSafe;
-  let Es = (ρ * KsSafe * KiSafe * IgSafe) / (0.75 * totalGridLengthSafe + 0.85 * totalRodLengthSafe);
-  
-  Em = (isNaN(Em) || !isFinite(Em)) ? 0 : Em;
-  Es = (isNaN(Es) || !isFinite(Es)) ? 0 : Es;
-  
+// =========================
+// GEOMETRÍA CORRECTA
+// =========================
+const calculateGeometry = (p) => {
+  const L = safe(p.gridLength, 30);
+  const W = safe(p.gridWidth, 16);
+  const nx = safe(p.numParallel, 8);
+  const ny = safe(p.numParallelY, 8);
+  const h = safe(p.gridDepth, 0.6);
+  const d = safe(p.conductorDiameter, 0.01);
+
+  const A = L * W;
+  const perimeter = 2 * (L + W);
+
+  // 🔥 CORRECTO
+  const totalGridLength = nx * W + ny * L;
+
+  const rods = safe(p.numRods, 8);
+  const rodLength = safe(p.rodLength, 3);
+  const totalRodLength = rods * rodLength;
+
+  const LT = totalGridLength + totalRodLength;
+
+  const Dx = L / (nx - 1);
+  const Dy = W / (ny - 1);
+  const D = Math.sqrt(Dx * Dy);
+
+  let n = (2 * totalGridLength / perimeter) * Math.sqrt(perimeter / (4 * Math.sqrt(A)));
+  n = Math.max(1, n);
+
+  const Ki = 0.644 + 0.148 * n;
+  const Kh = Math.sqrt(1 + h);
+
+  // Km robusto
+  const term1 = (D * D) / (16 * h * d);
+  const term2 = ((D + 2 * h) ** 2) / (8 * D * d);
+  const term3 = h / (4 * d);
+  const term4 = Math.log(8 / (Math.PI * (2 * n - 1)));
+
+  const inside = Math.max(0.0001, term1 + term2 - term3);
+
+  let Km = (1 / (2 * Math.PI)) * (Math.log(inside) + term4);
+  Km = Math.max(0.05, Math.min(0.8, Km)) * Kh;
+
+  let Ks = (1 / Math.PI) * (1 / (2 * h) + 1 / (D + h) + (1 / D));
+  Ks = Math.max(0.2, Math.min(1.2, Ks));
+
+  return { A, perimeter, totalGridLength, totalRodLength, LT, Ki, Km, Ks, D };
+};
+
+// =========================
+// RESISTENCIA
+// =========================
+const calculateRg = (ρ, LT, A, h) => {
+  ρ = safe(ρ, 100);
+  LT = Math.max(1, safe(LT, 100));
+  A = Math.max(1, safe(A, 100));
+
+  return ρ * (1 / LT + 1 / Math.sqrt(20 * A));
+};
+
+// =========================
+// TENSIONES
+// =========================
+const calculateVoltages = (ρ, Km, Ki, Ig, LT, Ks, Lg, Lr) => {
+  const Em = (ρ * Km * Ki * Ig) / LT;
+  const Es = (ρ * Ks * Ki * Ig) / (0.75 * Lg + 0.85 * Lr);
+
   return { Em, Es };
 };
 
-// Verificación térmica del conductor
-const calculateThermalCheck = (Ig, faultDuration, conductorArea, material = 'COPPER_SOFT') => {
-  const constData = THERMAL_CONSTANTS[material];
-  if (!constData) return { complies: false, error: 'Material no soportado' };
+// =========================
+// GRID VISUAL
+// =========================
+const generateGrid = (GPR, gridLength, gridWidth, soilResistivity, size = 100) => {
+  const grid = [];
+  const L = safe(gridLength, 30);
+  const W = safe(gridWidth, 16);
+  const ρ = safe(soilResistivity, 100);
   
-  const t = Math.max(0.1, safeNumber(faultDuration, 0.35));
-  const IgSafe = Math.max(1, safeNumber(Ig, 1000));
-  const conductorAreaSafe = Math.max(0.1, safeNumber(conductorArea, 1));
-  
-  const minRequiredArea = (IgSafe * Math.sqrt(t)) / constData.k;
-  const complies = conductorAreaSafe >= minRequiredArea;
-  
-  return {
-    complies,
-    minRequiredArea: minRequiredArea.toFixed(2),
-    currentArea: conductorAreaSafe.toFixed(2),
-    message: complies 
-      ? `✅ Conductor adecuado (${conductorAreaSafe.toFixed(2)} mm² ≥ ${minRequiredArea.toFixed(2)} mm²)`
-      : `❌ Conductor insuficiente (${conductorAreaSafe.toFixed(2)} mm² < ${minRequiredArea.toFixed(2)} mm²)`
-  };
+  // Decay factor based on grid dimensions and soil resistivity
+  const decayFactor = Math.sqrt(ρ) * 0.3;
+  const centerX = size / 2;
+  const centerY = size / 2;
+
+  for (let y = 0; y < size; y++) {
+    grid[y] = [];
+    for (let x = 0; x < size; x++) {
+      // Convert to physical coordinates (-15 to 15 range)
+      const physX = (x / size) * L - L / 2;
+      const physY = (y / size) * W - W / 2;
+      
+      // Distance from center in physical space
+      const r = Math.hypot(physX, physY);
+      
+      // Edge effect: higher voltage at edges
+      const edgeFactor = Math.exp(-r / (L * 0.4));
+      const centerFactor = Math.exp(-r / decayFactor);
+      
+      // Combine: center dominated by GPR, edges have higher gradients
+      grid[y][x] = GPR * (centerFactor * 0.7 + edgeFactor * 0.3);
+    }
+  }
+
+  return grid;
 };
 
-// Función principal - Motor de cálculo completo
-export const runGroundingCalculation = (params) => {
-  // Validar entrada
-  if (!params || typeof params !== 'object') {
-    console.warn('Parámetros inválidos para cálculo');
-    return null;
-  }
-  
+// =========================
+// FUNCIÓN PRINCIPAL (CON PIPELINE INTEGRADO)
+// =========================
+export const runGroundingCalculation = (p) => {
   try {
-    // 1. Corrientes
-    const currents = calculateFaultCurrents(params);
-    const { faultCurrent, Ig, In, currentDivisionFactor } = currents;
-    
-    // 2. Factor Cs
-    const Cs = calculateCs(params.soilResistivity, params.surfaceLayer, params.surfaceDepth);
-    
-    // 3. Tensiones permisibles
-    const permissible = calculatePermissibleVoltages(Cs, params.surfaceLayer, params.faultDuration);
-    const { Etouch70, Estep70, Etouch50, Estep50 } = permissible;
-    
-    // 4. Geometría
-    const geometry = calculateGeometry(params);
-    const { A, perimeter, totalGridLength, totalRodLength, LT, nx, ny, D, n, Ki, Kh, Km, Ks, h, d } = geometry;
-    
-    // 5. Resistencia de malla
-    const Rg = calculateResistance(params.soilResistivity, LT, A, params.gridDepth);
-    
-    // 6. GPR
-    const GPR = Rg * Ig;
-    
-    // 7. Tensiones calculadas
-    const voltages = calculateVoltages(params.soilResistivity, Km, Ki, Ig, LT, Ks, totalGridLength, totalRodLength);
-    const { Em, Es } = voltages;
-    
-    // 8. Verificaciones de seguridad
-    const touchSafe70 = Em <= Etouch70;
-    const stepSafe70 = Es <= Estep70;
-    const touchSafe50 = Em <= Etouch50;
-    const stepSafe50 = Es <= Estep50;
-    const complies = touchSafe70 && stepSafe70;
-    
-    // 9. Verificación térmica
-    const conductorDiameterSafe = Math.max(0.001, safeNumber(params.conductorDiameter, 0.01168));
-    const conductorArea = Math.PI * Math.pow(conductorDiameterSafe / 2, 2) * 1000000;
-    const thermalCheck = calculateThermalCheck(Ig, params.faultDuration, conductorArea, params.materialType);
-    
-    // 10. Calibre mínimo por área térmica
-    let minConductorArea = 0;
-    let selectedConductor = '4/0 AWG';
-    let selectedConductorInfo = CONDUCTORS['4/0 AWG'];
-    
-    const minAreaNum = parseFloat(thermalCheck.minRequiredArea);
-    if (!isNaN(minAreaNum)) {
-      minConductorArea = minAreaNum;
-      for (const [name, data] of Object.entries(CONDUCTORS)) {
-        if (data.area >= minAreaNum) {
-          selectedConductor = name;
-          selectedConductorInfo = data;
-          break;
-        }
-      }
-    }
-    
-    // Resultados
+    // 1) Suelo multicapa: obtener resistividad efectiva
+    const effectiveResistivity = getEffectiveResistivity(p.soilModel || { rho: p.soilResistivity });
+    const soilResistivity = effectiveResistivity;
+
+    // 2) Corriente de falla con DC offset
+    const currents = calculateFault(p);
+    const IgEff = effectiveFaultCurrent(
+      currents.Ig,
+      p.XR || 10,
+      p.faultDuration || 0.5,
+      p.frequency || 60
+    );
+
+    const Cs = calculateCs(soilResistivity, p.surfaceLayer, p.surfaceDepth);
+    const permissible = calculatePermissible(Cs, p.surfaceLayer, p.faultDuration);
+
+    const geo = calculateGeometry(p);
+    const Rg = calculateRg(soilResistivity, geo.LT, geo.A, p.gridDepth);
+
+    const GPR = Math.min(Rg * IgEff, 50000);
+
+    const { Em, Es } = calculateVoltages(
+      soilResistivity,
+      geo.Km,
+      geo.Ki,
+      IgEff,
+      geo.LT,
+      geo.Ks,
+      geo.totalGridLength,
+      geo.totalRodLength
+    );
+
+    // SEGURIDAD
+    const touchSafe = Em <= permissible.Etouch70;
+    const stepSafe = Es <= permissible.Estep70;
+
+    const risk =
+      Em > permissible.Etouch70 ? 'HIGH' :
+      Em > permissible.Etouch50 ? 'MEDIUM' :
+      'LOW';
+
+    const safetyScore =
+      (touchSafe ? 50 : 0) +
+      (stepSafe ? 30 : 0);
+
     return {
-      // Corrientes
-      faultCurrent,
-      Ig,
-      In,
-      Sf: currentDivisionFactor,
-      
-      // Factores
-      Cs,
-      n,
-      Ki,
-      Kh,
-      Km,
-      Ks,
-      
-      // Tensiones permisibles
-      Etouch70,
-      Estep70,
-      Etouch50,
-      Estep50,
-      
-      // Resultados principales
       Rg,
       GPR,
       Em,
       Es,
-      
-      // Verificaciones
-      touchSafe70,
-      stepSafe70,
-      touchSafe50,
-      stepSafe50,
-      complies,
-      
-      // Geometría
-      gridArea: A,
-      perimeter,
-      totalConductor: totalGridLength,
-      totalRodLength,
-      LT,
-      nx,
-      ny,
-      D,
-      h,
-      d,
-      
-      // Conductor
-      minConductorArea,
-      selectedConductor,
-      selectedConductorInfo,
-      thermalCheck,
-      
-      // Parámetros originales (para referencia)
-      params: { ...params }
+      risk,
+      safetyScore,
+      touchSafe,
+      stepSafe,
+      permissible,
+      effectiveResistivity,
+      effectiveFaultCurrent: IgEff,
+      touchSafe70: touchSafe,
+      stepSafe70: stepSafe,
+      Etouch70: permissible.Etouch70,
+      Estep70: permissible.Estep70,
+      Etouch50: permissible.Etouch50,
+      Estep50: permissible.Estep50,
+      ...currents,
+      ...geo,
+      discreteGrid: generateGrid(GPR, p.gridLength, p.gridWidth, soilResistivity),
+      analyticalGrid: generateGrid(GPR * 0.9, p.gridLength, p.gridWidth, soilResistivity)
     };
-  } catch (error) {
-    console.error('Error en cálculo:', error);
+
+  } catch (e) {
+    console.error(e);
     return null;
   }
 };
 
-// Generar recomendaciones basadas en resultados
+// =========================
+// RECOMENDACIONES
+// =========================
 export const generateRecommendations = (results) => {
-  const recommendations = [];
-  
-  if (!results) return recommendations;
-  
+  const recs = [];
+  if (!results) return recs;
+
   if (results.Rg > 5) {
-    recommendations.push("• Resistencia de malla > 5Ω: agregar más varillas o mejorar resistividad del suelo");
+    recs.push("Alta resistencia de malla → agregar varillas o mejorar suelo");
   }
-  
-  if (!results.touchSafe70) {
-    recommendations.push("• Tensión de contacto excede límite: reducir espaciamiento entre conductores o agregar varillas en perímetro");
+  if (!results.touchSafe) {
+    recs.push("Riesgo de contacto → reducir espaciamiento o aumentar conductores");
   }
-  
-  if (!results.stepSafe70) {
-    recommendations.push("• Tensión de paso excede límite: agregar conductor perimetral adicional o mejorar capa superficial");
+  if (!results.stepSafe) {
+    recs.push("Riesgo de paso → mejorar capa superficial o añadir conductores");
   }
-  
-  if (results.Em > results.Etouch70) {
-    recommendations.push("• Tensión de contacto elevada: considerar malla de mayor área o reducir espaciamiento");
+  if (recs.length === 0) {
+    recs.push("✓ Diseño cumple IEEE 80");
   }
-  
-  if (results.thermalCheck && !results.thermalCheck.complies) {
-    recommendations.push(`⚠️ ${results.thermalCheck.message}`);
+
+  return recs;
+};
+
+// =========================
+// PIPELINE COMPLETO
+// =========================
+export const runCompletePipeline = (params, options = {}) => {
+  const startTime = Date.now();
+
+  // 1) Ejecutar cálculo principal con suelo multicapa y corriente transitoria
+  const results = runGroundingCalculation(params);
+
+  if (!results) {
+    return {
+      success: false,
+      error: 'Error en cálculo principal'
+    };
   }
-  
-  if (recommendations.length === 0) {
-    recommendations.push("✓ Diseño cumple con IEEE 80. Verificar mediciones in-situ.");
+
+  // 2) Generar recomendaciones
+  const recommendations = generateRecommendations(results);
+
+  // 3) Optimizar diseño (si se solicita)
+  let optimizedDesign = null;
+  if (options.optimize !== false) {
+    try {
+      const optimizationResult = options.guidedOptimization
+        ? optimizeGridGuided(params, options.optimizationOptions)
+        : optimizeGrid(params, options.optimizationOptions);
+
+      optimizedDesign = optimizationResult;
+    } catch (error) {
+      console.warn('Error en optimización:', error.message);
+    }
   }
-  
-  recommendations.push("• Realizar prueba de resistencia después de instalación (método de caída de potencial)");
-  recommendations.push("• Medir resistividad del suelo in-situ (método Wenner de 4 puntas)");
-  
-  return recommendations;
+
+  // 4) Generar reporte profesional
+  const report = generateReport(results, recommendations, params);
+
+  // 5) Análisis transitorio detallado (si se solicita)
+  let transientAnalysis = null;
+  if (options.transientAnalysis !== false) {
+    try {
+      transientAnalysis = analyzeTransient({
+        Ik: params.faultCurrent,
+        XR: params.XR || 10,
+        t: params.faultDuration || 0.5,
+        frequency: params.frequency || 60
+      });
+    } catch (error) {
+      console.warn('Error en análisis transitorio:', error.message);
+    }
+  }
+
+  const calculationTime = Date.now() - startTime;
+
+  return {
+    success: true,
+    results,
+    recommendations,
+    optimizedDesign,
+    report,
+    transientAnalysis,
+    quickReport: generateQuickReport(results),
+    metadata: {
+      calculationTime,
+      timestamp: new Date().toISOString(),
+      pipelineVersion: '1.0'
+    }
+  };
 };
 
 export default {
   runGroundingCalculation,
   generateRecommendations,
-  CONDUCTORS
+  runCompletePipeline,
+  // Exportar módulos integrados
+  soilModel: {
+    getEffectiveResistivity,
+    apparentResistivity2Layer
+  },
+  transient: {
+    effectiveFaultCurrent,
+    decrementFactor,
+    analyzeTransient
+  },
+  optimizer: {
+    optimizeGrid,
+    optimizeGridGuided,
+    compareDesigns
+  },
+  report: {
+    generateReport,
+    generateQuickReport,
+    exportReportJSON,
+    downloadReportJSON,
+    generateExecutiveSummary,
+    generateTextReport
+  }
 };

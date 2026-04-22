@@ -1,30 +1,24 @@
 /**
- * Sistema de partículas GPU para animación de corriente
+ * Sistema de partículas para animación de corriente
  * Flujo siguiendo gradiente de campo eléctrico
+ * Adaptado para trabajar con gradient field simple (2D array)
  */
 
 export class ParticleFlow {
-  constructor(canvas, numParticles = 2000) {
+  constructor(canvas, numParticles = 500, engineeringMode = false, riskThresholds = null) {
     this.canvas = canvas;
     this.numParticles = numParticles;
-    this.gl = canvas.getContext('webgl2') || canvas.getContext('webgl');
     this.particles = [];
     this.flowField = null;
+    this.fieldWidth = 0;
+    this.fieldHeight = 0;
+    this.engineeringMode = engineeringMode;
+    this.riskThresholds = riskThresholds || {
+      high: 500,    // V/m or V for high risk
+      medium: 250   // V/m or V for medium risk
+    };
     
-    if (this.gl) {
-      this.initGL();
-      this.initParticles();
-    } else {
-      this.initParticles();
-    }
-  }
-  
-  initGL() {
-    const gl = this.gl;
-    gl.viewport(0, 0, this.canvas.width, this.canvas.height);
-    gl.clearColor(0, 0, 0, 0);
-    gl.enable(gl.BLEND);
-    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+    this.initParticles();
   }
   
   initParticles() {
@@ -32,120 +26,127 @@ export class ParticleFlow {
       this.particles.push({
         x: Math.random() * this.canvas.width,
         y: Math.random() * this.canvas.height,
-        vx: (Math.random() - 0.5) * 2,
-        vy: (Math.random() - 0.5) * 2,
-        life: Math.random(),
-        speed: 0.5 + Math.random() * 2
+        vx: 0,
+        vy: 0,
+        life: Math.random() * 100,
+        speed: 0.5 + Math.random() * 1.5
       });
     }
   }
   
   setFlowField(field) {
     this.flowField = field;
+    this.fieldHeight = field.length;
+    this.fieldWidth = field[0]?.length || 0;
   }
   
-  update(deltaTime) {
+  update(deltaTime = 0.016) {
+    const scaleX = this.fieldWidth / this.canvas.width;
+    const scaleY = this.fieldHeight / this.canvas.height;
+    const maxMag = this.flowField?.maxMagnitude || 1;
+
     for (const p of this.particles) {
       if (this.flowField) {
-        // Obtener dirección del campo en la posición de la partícula
-        const fx = this.sampleField(this.flowField.ex, p.x, p.y);
-        const fy = this.sampleField(this.flowField.ey, p.x, p.y);
+        // Convert canvas coordinates to field coordinates
+        const fieldX = Math.floor(p.x * scaleX);
+        const fieldY = Math.floor(p.y * scaleY);
         
-        p.vx += fx * deltaTime * p.speed;
-        p.vy += fy * deltaTime * p.speed;
+        // Get velocity from gradient field
+        const v = this.flowField?.[fieldY]?.[fieldX];
         
-        // Limitar velocidad máxima
-        const maxSpeed = 5;
-        const speed = Math.hypot(p.vx, p.vy);
-        if (speed > maxSpeed) {
-          p.vx = (p.vx / speed) * maxSpeed;
-          p.vy = (p.vy / speed) * maxSpeed;
+        if (v) {
+          if (this.engineeringMode) {
+            // Engineering mode: constant speed, direction only
+            const constantSpeed = 2;
+            p.vx = v.dirX * constantSpeed;
+            p.vy = v.dirY * constantSpeed;
+          } else {
+            // Visual mode: speed proportional to gradient magnitude
+            const speedFactor = Math.min(1, v.mag / maxMag) * 3;
+            p.vx = v.dirX * speedFactor;
+            p.vy = v.dirY * speedFactor;
+          }
         }
       }
       
-      // Actualizar posición
-      p.x += p.vx * deltaTime;
-      p.y += p.vy * deltaTime;
+      // Update position
+      p.x += p.vx * deltaTime * 50;
+      p.y += p.vy * deltaTime * 50;
       
-      // Rebote en bordes
-      if (p.x < 0 || p.x > this.canvas.width) p.vx *= -0.9;
-      if (p.y < 0 || p.y > this.canvas.height) p.vy *= -0.9;
+      // Decrease life
+      p.life -= deltaTime * 0.5;
       
-      // Regenerar partículas muertas
-      p.life -= deltaTime * 0.2;
+      // Respawn dead particles or out of bounds
       if (p.life <= 0 || p.x < 0 || p.x > this.canvas.width || p.y < 0 || p.y > this.canvas.height) {
         p.x = Math.random() * this.canvas.width;
         p.y = Math.random() * this.canvas.height;
-        p.vx = (Math.random() - 0.5) * 2;
-        p.vy = (Math.random() - 0.5) * 2;
-        p.life = 1;
+        p.vx = 0;
+        p.vy = 0;
+        p.life = 50 + Math.random() * 50;
       }
     }
   }
   
-  sampleField(field, x, y) {
-    if (!field || !field.data || !field.width || !field.height) return 0;
-    const xi = Math.floor(x);
-    const yi = Math.floor(y);
-    if (xi >= 0 && xi < field.width && yi >= 0 && yi < field.height) {
-      const idx = yi * field.width + xi;
-      return field.data[idx] !== undefined ? field.data[idx] : 0;
-    }
-    return 0;
-  }
-  
-  render() {
-    if (!this.gl) {
-      this.renderCanvas2D();
-      return;
-    }
-    this.renderWebGL();
-  }
-  
-  renderCanvas2D() {
-    const ctx = this.canvas.getContext('2d');
-    ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-    
+  render(ctx) {
+    const maxMag = this.flowField?.maxMagnitude || 1;
+    const scaleX = this.fieldWidth / this.canvas.width;
+    const scaleY = this.fieldHeight / this.canvas.height;
+
     for (const p of this.particles) {
+      const speed = Math.hypot(p.vx, p.vy);
+      const alpha = (p.life / 100) * 0.8;
+      
+      let r, g, b, intensity;
+
+      if (this.engineeringMode) {
+        // Engineering mode: color based on risk thresholds
+        const fieldX = Math.floor(p.x * scaleX);
+        const fieldY = Math.floor(p.y * scaleY);
+        const v = this.flowField?.[fieldY]?.[fieldX];
+        
+        const mag = v?.mag || 0;
+        
+        // Risk-based coloring
+        if (mag >= this.riskThresholds.high) {
+          // High risk - red
+          r = 255;
+          g = 0;
+          b = 0;
+          intensity = 1;
+        } else if (mag >= this.riskThresholds.medium) {
+          // Medium risk - orange
+          r = 255;
+          g = 165;
+          b = 0;
+          intensity = 0.7;
+        } else {
+          // Safe - green
+          r = 0;
+          g = 255;
+          b = 0;
+          intensity = 0.4;
+        }
+      } else {
+        // Visual mode: cyan for fast, blue for slow
+        intensity = Math.min(1, speed / 3);
+        r = Math.floor(0);
+        g = Math.floor(255 * intensity);
+        b = Math.floor(255);
+      }
+      
       ctx.beginPath();
-      ctx.arc(p.x, p.y, 2, 0, Math.PI * 2);
-      ctx.fillStyle = `rgba(255, 100, 0, ${p.life * 0.8})`;
+      ctx.arc(p.x, p.y, 1.5 + intensity, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(${r},${g},${b},${alpha})`;
       ctx.fill();
     }
-  }
-  
-  renderWebGL() {
-    // Implementación WebGL para renderizado eficiente
-    const gl = this.gl;
-    gl.clear(gl.COLOR_BUFFER_BIT);
-    // Renderizado de partículas con instancing
-    this.renderCanvas2D(); // Fallback por ahora
   }
   
   resize(width, height) {
     this.canvas.width = width;
     this.canvas.height = height;
-    if (this.gl) {
-      this.gl.viewport(0, 0, width, height);
-    }
   }
   
   destroy() {
-    if (this.gl) {
-      // Limpiar recursos WebGL
-      if (this.vertexBuffer) {
-        this.gl.deleteBuffer(this.vertexBuffer);
-      }
-      if (this.program) {
-        this.gl.deleteProgram(this.program);
-      }
-      if (this.vertexShader) {
-        this.gl.deleteShader(this.vertexShader);
-      }
-      if (this.fragmentShader) {
-        this.gl.deleteShader(this.fragmentShader);
-      }
-    }
     this.particles = [];
     this.flowField = null;
   }

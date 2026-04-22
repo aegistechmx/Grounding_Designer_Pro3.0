@@ -2,8 +2,6 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useGroundingCalculator } from './hooks/useGroundingCalculator';
 import { Header, Sidebar, DesignPanel, DashboardPanel, VisualizationPanel, ValidationPanel, OptimizationPanel, NormativesPanel, ReportsPanel, ResultsPanel, PredictiveAI, ScenarioSimulator, ToastNotifications, SetupWizard, TransformerTemplates, DocumentationViewer } from './components';
 import { ProjectManager } from './components/Projects/ProjectManager';
-import SensitivityChart from './components/analysis/SensitivityCharts';
-import { useSensitivityAnalysis } from './hooks/useSensitivityAnalysis';
 import { projectStorageService } from './services/projectStorage.service';
 import './utils/export/pdfFullPro';
 
@@ -22,15 +20,14 @@ const App = () => {
     removeNotification,
     saveProfile,
     loadProfile,
-    resetToDefaults
+    resetToDefaults,
+    recalculate
   } = useGroundingCalculator();
 
-  const sensitivityAnalysis = useSensitivityAnalysis(params);
   const [showWizard, setShowWizard] = useState(false);
   const [showTemplates, setShowTemplates] = useState(false);
   const [showDocs, setShowDocs] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [showSensitivity, setShowSensitivity] = useState(false);
   const [showScenarios, setShowScenarios] = useState(false);
 
   const handleLoadProject = (project) => {
@@ -63,12 +60,6 @@ const App = () => {
     setActiveTab('design');
   };
 
-  useEffect(() => {
-    if (calculations && !sensitivityAnalysis.analysisResults && !sensitivityAnalysis.isAnalyzing) {
-      sensitivityAnalysis.analyzeAllParameters();
-    }
-  }, [calculations, sensitivityAnalysis]);
-
   const handleKeyDown = useCallback((e) => {
     if (e.ctrlKey && e.key === 's') {
       e.preventDefault();
@@ -99,7 +90,7 @@ const App = () => {
   const renderActivePanel = () => {
     switch (activeTab) {
       case 'design':
-        return <DesignPanel params={params} calculations={calculations} updateParam={updateParam} darkMode={darkMode} />;
+        return <DesignPanel params={params} calculations={calculations} updateParam={updateParam} darkMode={darkMode} recalculate={recalculate} />;
       case 'dashboard':
         return <DashboardPanel params={params} calculations={calculations} darkMode={darkMode} />;
       case 'visualization':
@@ -164,30 +155,6 @@ const App = () => {
               
               {activeTab === 'design' && (
                 <div className="mt-8 space-y-4">
-                {sensitivityAnalysis.analysisResults && (
-                  <div className={`p-4 rounded-lg ${darkMode ? 'bg-gray-800' : 'bg-gray-100'}`}>
-                    <h3 className="text-lg font-semibold mb-4">📈 Análisis de Sensibilidad</h3>
-                    <SensitivityChart 
-                      data={sensitivityAnalysis.getSensitivityChartData()} 
-                      darkMode={darkMode} 
-                    />
-                    <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                      <div className={`p-3 rounded ${darkMode ? 'bg-gray-700' : 'bg-white'}`}>
-                        <div className="font-semibold mb-2">Parámetro más sensible</div>
-                        <div className="text-blue-600 font-bold">
-                          {sensitivityAnalysis.generateSensitivityReport().summary.mostSensitiveParameter}
-                        </div>
-                      </div>
-                      <div className={`p-3 rounded ${darkMode ? 'bg-gray-700' : 'bg-white'}`}>
-                        <div className="font-semibold mb-2">Parámetro menos sensible</div>
-                        <div className="text-green-600 font-bold">
-                          {sensitivityAnalysis.generateSensitivityReport().summary.leastSensitiveParameter}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-                
                 <div className={`p-4 rounded-lg ${darkMode ? 'bg-gray-800' : 'bg-gray-100'}`}>
                   <h3 className="text-lg font-semibold mb-4">🎲 Simulación de Escenarios</h3>
                   <ScenarioSimulator baseParams={params} darkMode={darkMode} />

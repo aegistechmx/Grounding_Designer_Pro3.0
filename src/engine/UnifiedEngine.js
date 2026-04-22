@@ -1,0 +1,1 @@
+import { validationPipeline } from './pipelines/validationPipeline.js';

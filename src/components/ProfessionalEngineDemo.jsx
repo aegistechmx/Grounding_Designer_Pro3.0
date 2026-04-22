@@ -86,11 +86,11 @@ const ProfessionalEngineDemo = ({ params, darkMode }) => {
     return (
       <div className={`p-6 rounded-lg ${darkMode ? 'bg-gray-800' : 'bg-white'} shadow`}>
         <div className="flex items-center gap-3 mb-4">
-          <Brain className="text-purple-500" size={24} />
+          <Brain className="text-blue-500" size={24} />
           <h3 className="text-lg font-semibold">Motor Profesional v2.0</h3>
         </div>
         <div className="text-center py-8">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
           <p className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
             Analizando con motor profesional...
           </p>
@@ -117,7 +117,7 @@ const ProfessionalEngineDemo = ({ params, darkMode }) => {
     <div className={`p-6 rounded-lg ${darkMode ? 'bg-gray-800' : 'bg-white'} shadow`}>
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
-          <Brain className="text-purple-500" size={24} />
+          <Brain className="text-blue-500" size={24} />
           <h3 className="text-lg font-semibold">Motor Profesional v2.0</h3>
           {professionalResults?._professionalEngine && (
             <span className="px-2 py-1 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300 text-xs rounded-full">
@@ -148,7 +148,7 @@ const ProfessionalEngineDemo = ({ params, darkMode }) => {
             {/* Professional Engine Results */}
             <div className={`p-4 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
               <h4 className="font-semibold mb-3 flex items-center gap-2">
-                <Calculator size={16} className="text-purple-500" />
+                <Calculator size={16} className="text-blue-500" />
                 Motor Profesional v2.0
               </h4>
               <div className="space-y-2 text-sm">

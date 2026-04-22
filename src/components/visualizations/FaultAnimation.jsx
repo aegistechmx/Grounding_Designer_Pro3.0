@@ -1057,7 +1057,7 @@ const FaultAnimation = ({ params, darkMode, onSimulate }) => {
             onClick={() => setShowAdvancedControls(!showAdvancedControls)}
             className={`px-3 py-1 text-sm rounded-lg transition-all flex items-center gap-1 ${
               showAdvancedControls
-                ? 'bg-purple-600 text-white'
+                ? 'bg-blue-600 text-white'
                 : darkMode ? 'bg-gray-600 text-gray-300 hover:bg-gray-500' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
             }`}
             title="Controles avanzados"
@@ -1311,38 +1311,38 @@ const FaultAnimation = ({ params, darkMode, onSimulate }) => {
       </div>
 
       {/* Detalles de protección IEEE Std 80 - SIEMPRE VISIBLE */}
-      <div className={`mt-4 p-4 rounded-lg border ${darkMode ? 'bg-purple-900/20 border-purple-700' : 'bg-purple-50 border-purple-200'}`} style={{ boxShadow: darkMode ? '0 0 15px rgba(147, 51, 234, 0.3), inset 0 0 8px rgba(147, 51, 234, 0.15)' : '0 0 15px rgba(139, 92, 246, 0.2), inset 0 0 8px rgba(139, 92, 246, 0.1)' }}>
-        <h4 className={`font-semibold mb-3 flex items-center gap-2 ${darkMode ? 'text-purple-300' : 'text-purple-800'}`}>
+      <div className={`mt-4 p-4 rounded-lg border ${darkMode ? 'bg-blue-900/20 border-blue-700' : 'bg-blue-50 border-blue-200'}`} style={{ boxShadow: darkMode ? '0 0 15px rgba(59, 130, 246, 0.3), inset 0 0 8px rgba(59, 130, 246, 0.15)' : '0 0 15px rgba(59, 130, 246, 0.2), inset 0 0 8px rgba(59, 130, 246, 0.1)' }}>
+        <h4 className={`font-semibold mb-3 flex items-center gap-2 ${darkMode ? 'text-blue-300' : 'text-blue-800'}`}>
           <Shield size={16} /> 📋 Detalles de protección (IEEE Std 80)
         </h4>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-xs">
-          <div className={`p-2 rounded ${darkMode ? 'bg-purple-900/30' : 'bg-purple-100'}`}>
-            <div className={`font-semibold mb-1 ${darkMode ? 'text-purple-300' : 'text-purple-700'}`}>Factor de reducción Cs</div>
-            <div className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-purple-900'}`}>{ieee80Data.Cs}</div>
+          <div className={`p-2 rounded ${darkMode ? 'bg-blue-900/30' : 'bg-blue-100'}`}>
+            <div className={`font-semibold mb-1 ${darkMode ? 'text-blue-300' : 'text-blue-700'}`}>Factor de reducción Cs</div>
+            <div className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-blue-900'}`}>{ieee80Data.Cs}</div>
           </div>
-          <div className={`p-2 rounded ${darkMode ? 'bg-purple-900/30' : 'bg-purple-100'}`}>
-            <div className={`font-semibold mb-1 ${darkMode ? 'text-purple-300' : 'text-purple-700'}`}>Límite de contacto seguro</div>
-            <div className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-purple-900'}`}>{ieee80Data.EtouchWithSurface} V</div>
+          <div className={`p-2 rounded ${darkMode ? 'bg-blue-900/30' : 'bg-blue-100'}`}>
+            <div className={`font-semibold mb-1 ${darkMode ? 'text-blue-300' : 'text-blue-700'}`}>Límite de contacto seguro</div>
+            <div className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-blue-900'}`}>{ieee80Data.EtouchWithSurface} V</div>
           </div>
-          <div className={`p-2 rounded ${darkMode ? 'bg-purple-900/30' : 'bg-purple-100'}`}>
-            <div className={`font-semibold mb-1 ${darkMode ? 'text-purple-300' : 'text-purple-700'}`}>Incremento de seguridad</div>
+          <div className={`p-2 rounded ${darkMode ? 'bg-blue-900/30' : 'bg-blue-100'}`}>
+            <div className={`font-semibold mb-1 ${darkMode ? 'text-blue-300' : 'text-blue-700'}`}>Incremento de seguridad</div>
             <div className={`text-lg font-bold ${darkMode ? 'text-green-400' : 'text-green-700'}`}>+{ieee80Data.safetyIncrease}%</div>
           </div>
-          <div className={`p-2 rounded ${darkMode ? 'bg-purple-900/30' : 'bg-purple-100'}`}>
-            <div className={`font-semibold mb-1 ${darkMode ? 'text-purple-300' : 'text-purple-700'}`}>Profundidad efectiva</div>
-            <div className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-purple-900'}`}>{ieee80Data.effectiveDepth} m</div>
+          <div className={`p-2 rounded ${darkMode ? 'bg-blue-900/30' : 'bg-blue-100'}`}>
+            <div className={`font-semibold mb-1 ${darkMode ? 'text-blue-300' : 'text-blue-700'}`}>Profundidad efectiva</div>
+            <div className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-blue-900'}`}>{ieee80Data.effectiveDepth} m</div>
           </div>
-          <div className={`p-2 rounded ${darkMode ? 'bg-purple-900/30' : 'bg-purple-100'}`}>
-            <div className={`font-semibold mb-1 ${darkMode ? 'text-purple-300' : 'text-purple-700'}`}>Área de influencia</div>
-            <div className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-purple-900'}`}>{ieee80Data.influenceArea} m²</div>
+          <div className={`p-2 rounded ${darkMode ? 'bg-blue-900/30' : 'bg-blue-100'}`}>
+            <div className={`font-semibold mb-1 ${darkMode ? 'text-blue-300' : 'text-blue-700'}`}>Área de influencia</div>
+            <div className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-blue-900'}`}>{ieee80Data.influenceArea} m²</div>
           </div>
-          <div className={`p-2 rounded ${darkMode ? 'bg-purple-900/30' : 'bg-purple-100'}`}>
-            <div className={`font-semibold mb-1 ${darkMode ? 'text-purple-300' : 'text-purple-700'}`}>Resistividad equivalente</div>
-            <div className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-purple-900'}`}>{ieee80Data.equivalentResistivity} Ω·m</div>
+          <div className={`p-2 rounded ${darkMode ? 'bg-blue-900/30' : 'bg-blue-100'}`}>
+            <div className={`font-semibold mb-1 ${darkMode ? 'text-blue-300' : 'text-blue-700'}`}>Resistividad equivalente</div>
+            <div className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-blue-900'}`}>{ieee80Data.equivalentResistivity} Ω·m</div>
           </div>
         </div>
-        <div className={`mt-3 p-2 rounded ${darkMode ? 'bg-purple-900/40' : 'bg-purple-200'}`}>
-          <p className={`text-xs flex items-start gap-2 ${darkMode ? 'text-purple-200' : 'text-purple-800'}`}>
+        <div className={`mt-3 p-2 rounded ${darkMode ? 'bg-blue-900/40' : 'bg-blue-200'}`}>
+          <p className={`text-xs flex items-start gap-2 ${darkMode ? 'text-blue-200' : 'text-blue-800'}`}>
             <Shield size={12} className="flex-shrink-0 mt-0.5" />
             <span>
               <strong>💡 La capa superficial de alta resistividad actúa como barrera:</strong> Aumentando la impedancia del cuerpo-tierra y reduciendo la corriente que puede circular por una persona durante una falla.

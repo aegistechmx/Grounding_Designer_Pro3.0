@@ -808,7 +808,7 @@ const MexicanNormatives = ({ params, calculations, darkMode }) => {
               </div>
               
               {/* Resistencia de malla */}
-              <div className="p-3 rounded-lg bg-purple-100 dark:bg-purple-900/30">
+              <div className="p-3 rounded-lg bg-blue-100 dark:bg-blue-900/30">
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-black dark:text-white">Resistencia de Malla</span>
                 </div>
@@ -993,45 +993,40 @@ const MexicanNormatives = ({ params, calculations, darkMode }) => {
         
         <div className="grid grid-cols-2 md:grid-cols-5 gap-2 text-sm">
           <div className="text-center">
-            <div className="font-semibold">NOM-022</div>
-            <div className={nom022Compliance.complies && nom022Compliance.hasGravelLayer ? 'text-green-600' : 'text-red-600'}>
+            <div className="font-semibold text-black dark:text-white">NOM-022</div>
+            <div className="text-black dark:text-white">
               {nom022Compliance.complies && nom022Compliance.hasGravelLayer ? '✓' : '✗'}
             </div>
           </div>
           <div className="text-center">
-            <div className="font-semibold">NMX-J-549</div>
-            <div className={nmx549Compliance.hasLightningRod && nmx549Compliance.hasEnoughRods ? 'text-green-600' : 'text-red-600'}>
+            <div className="font-semibold text-black dark:text-white">NMX-J-549</div>
+            <div className="text-black dark:text-white">
               {nmx549Compliance.hasLightningRod && nmx549Compliance.hasEnoughRods ? '✓' : '✗'}
             </div>
           </div>
           <div className="text-center">
-            <div className="font-semibold">IEEE 80</div>
-            <div className={calculations?.complies ? 'text-green-600' : 'text-red-600'}>
+            <div className="font-semibold text-black dark:text-white">IEEE 80</div>
+            <div className="text-black dark:text-white">
               {calculations?.complies ? '✓' : '✗'}
             </div>
           </div>
           <div className="text-center">
-            <div className="font-semibold">CFE</div>
-            <div className={cfeCompliance.resistanceOK ? 'text-green-600' : 'text-red-600'}>
+            <div className="font-semibold text-black dark:text-white">CFE</div>
+            <div className="text-black dark:text-white">
               {cfeCompliance.resistanceOK ? '✓' : '✗'}
             </div>
           </div>
           <div className="text-center">
-            <div className="font-semibold">NOM-001</div>
-            <div className={nom001Compliance.voltageDropOK && nom001Compliance.ampacityOK ? 'text-green-600' : 'text-red-600'}>
+            <div className="font-semibold text-black dark:text-white">NOM-001</div>
+            <div className="text-black dark:text-white">
               {nom001Compliance.voltageDropOK && nom001Compliance.ampacityOK ? '✓' : '✗'}
             </div>
           </div>
         </div>
         
         <div className="mt-3 text-center">
-          <span className={`text-sm font-bold ${
-            nom022Compliance.complies && nom022Compliance.hasGravelLayer && 
-             nmx549Compliance.hasLightningRod && nmx549Compliance.hasEnoughRods &&
-             cfeCompliance.resistanceOK && nom001Compliance.voltageDropOK && nom001Compliance.ampacityOK
-              ? 'text-green-600' : 'text-yellow-600'
-          }`}>
-            {nom022Compliance.complies && nom022Compliance.hasGravelLayer && 
+          <span className="text-sm font-bold text-black dark:text-white">
+            {nom022Compliance.complies && nom022Compliance.hasGravelLayer &&
              nmx549Compliance.hasLightningRod && nmx549Compliance.hasEnoughRods &&
              cfeCompliance.resistanceOK && nom001Compliance.voltageDropOK && nom001Compliance.ampacityOK
               ? '✅ SISTEMA CERTIFICADO - Cumple con todas las normas aplicables'

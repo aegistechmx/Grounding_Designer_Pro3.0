@@ -391,13 +391,13 @@ const TransformerTemplates = ({ onSelectTemplate, darkMode, onClose }) => {
                     </div>
 
                     {/* Kit Master */}
-                    <div className={`p-3 rounded-lg ${darkMode ? 'bg-purple-900/30' : 'bg-purple-50'}`}>
-                      <div className="text-xs font-semibold text-purple-600 mb-2">🟣 KIT MASTER</div>
+                    <div className={`p-3 rounded-lg ${darkMode ? 'bg-blue-900/30' : 'bg-blue-50'}`}>
+                      <div className="text-xs font-semibold text-blue-800 mb-2">🟣 KIT MASTER</div>
                       <div className="flex justify-between items-center">
                         <span className="font-bold">{kitInfo.name}</span>
                         <span className="text-sm">{kitInfo.capacity}</span>
                       </div>
-                      <div className="text-xs text-purple-600 mt-1">
+                      <div className="text-xs text-blue-600 mt-1">
                         Para transformadores de {kva} kVA
                       </div>
                     </div>

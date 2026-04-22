@@ -68,7 +68,7 @@ export const SaveProjectDialog = ({ isOpen, onClose, onSave, onSaveAs, onLoad, o
           </button>
           <button
             onClick={() => setActiveTab('export')}
-            className={`flex-1 py-2 text-sm font-medium transition-colors ${activeTab === 'export' ? 'text-purple-400 border-b-2 border-purple-400' : 'text-gray-400 hover:text-gray-300'}`}
+            className={`flex-1 py-2 text-sm font-medium transition-colors ${activeTab === 'export' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-gray-400 hover:text-gray-300'}`}
           >
             <Download size={14} className="inline mr-1" /> Exportar
           </button>
@@ -179,7 +179,7 @@ export const SaveProjectDialog = ({ isOpen, onClose, onSave, onSaveAs, onLoad, o
               
               <button
                 onClick={handleExport}
-                className="w-full py-2 bg-purple-600 hover:bg-purple-700 rounded-lg font-semibold transition-colors flex items-center justify-center gap-2"
+                className="w-full py-2 bg-blue-600 hover:bg-blue-700 rounded-lg font-semibold transition-colors flex items-center justify-center gap-2"
               >
                 <Download size={18} /> Exportar a JSON
               </button>
@@ -194,7 +194,7 @@ export const SaveProjectDialog = ({ isOpen, onClose, onSave, onSaveAs, onLoad, o
               </div>
               
               <label className="block">
-                <div className="flex items-center justify-center w-full p-4 border-2 border-dashed border-gray-600 rounded-lg cursor-pointer hover:border-purple-500 transition-colors">
+                <div className="flex items-center justify-center w-full p-4 border-2 border-dashed border-gray-600 rounded-lg cursor-pointer hover:border-blue-500 transition-colors">
                   <Upload size={20} className="text-gray-400 mr-2" />
                   <span className="text-gray-400">Seleccionar archivo JSON</span>
                   <input
@@ -208,7 +208,7 @@ export const SaveProjectDialog = ({ isOpen, onClose, onSave, onSaveAs, onLoad, o
               
               {importFile && (
                 <div className="bg-gray-700 rounded-lg p-2 text-sm">
-                  <FileText size={14} className="inline mr-1 text-purple-400" />
+                  <FileText size={14} className="inline mr-1 text-blue-400" />
                   {importFile.name}
                 </div>
               )}
@@ -216,7 +216,7 @@ export const SaveProjectDialog = ({ isOpen, onClose, onSave, onSaveAs, onLoad, o
               <button
                 onClick={handleImport}
                 disabled={!importFile}
-                className="w-full py-2 bg-purple-600 hover:bg-purple-700 rounded-lg font-semibold transition-colors disabled:opacity-50"
+                className="w-full py-2 bg-blue-600 hover:bg-blue-700 rounded-lg font-semibold transition-colors disabled:opacity-50"
               >
                 Importar Proyecto
               </button>

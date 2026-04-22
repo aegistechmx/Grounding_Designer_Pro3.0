@@ -7,11 +7,13 @@ import HeatmapControls from '../components/HeatmapControls';
 import ContourControls from '../components/ContourControls';
 import ErrorBoundary from '../components/ErrorBoundary';
 import LoadingSkeleton from '../components/LoadingSkeleton';
+import ReportToolbar from '../components/ReportToolbar';
 
 export default function Home() {
   const [results, setResults] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [params, setParams] = useState(null);
   
   // Interpolation controls state
   const [interpolationPower, setInterpolationPower] = useState(2);
@@ -35,6 +37,7 @@ export default function Home() {
     setLoading(true);
     setError(null);
     setResults(null);
+    setParams(input);
 
     try {
       const response = await fetch('http://localhost:3002/api/calculate', {
@@ -87,6 +90,7 @@ export default function Home() {
 
             {results && (
               <ErrorBoundary>
+                <ReportToolbar results={results} params={params} />
                 <ResultsPanel results={results} />
                 <ComparisonPanel results={results} />
                 

@@ -102,7 +102,7 @@ const GroundingModule = ({ params, darkMode }) => {
           Export DXF
         </button>
         
-        <label className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 cursor-pointer">
+        <label className="px-4 py-2 bg-blue-800 text-white rounded-lg hover:bg-blue-900 cursor-pointer">
           Import DXF
           <input
             type="file"

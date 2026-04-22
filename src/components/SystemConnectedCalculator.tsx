@@ -400,7 +400,7 @@ export const SystemConnectedCalculator: React.FC = () => {
             {/* 4. Cumplimiento Normativo - 3 estándares */}
             <div className="bg-gray-700/50 rounded-lg p-4">
               <h4 className="font-semibold mb-3 flex items-center gap-2">
-                <span className="text-purple-400">🛡️</span> Cumplimiento Normativo
+                <span className="text-blue-400">🛡️</span> Cumplimiento Normativo
               </h4>
               <div className="grid grid-cols-3 gap-2">
                 <div className="text-center p-2 rounded bg-gray-800">
@@ -430,7 +430,7 @@ export const SystemConnectedCalculator: React.FC = () => {
             {/* 5. Recomendaciones IA */}
             <div className="bg-gray-700/50 rounded-lg p-4">
               <h4 className="font-semibold mb-3 flex items-center gap-2">
-                <span className="text-purple-400">🧠</span> Recomendaciones IA
+                <span className="text-blue-400">🧠</span> Recomendaciones IA
               </h4>
               <div className="space-y-2">
                 <div className="flex items-start gap-2 p-2 rounded-lg bg-green-500/10 border-l-4 border-green-500">

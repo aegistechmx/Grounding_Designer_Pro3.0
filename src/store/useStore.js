@@ -20,10 +20,26 @@ const useStore = create(
       optimizationHistory: [],
       validationReport: null,
       paramErrors: { errors: [], warnings: [] },
+      history: [], // Timeline de versiones tipo Git
       
       // Acciones
       setParams: (newParams) => {
-        set({ params: newParams, isLoading: true });
+        const currentHistory = get().history;
+        const currentParams = get().params;
+        const currentCalculations = get().calculations;
+        
+        // Guardar versión actual en historial antes de cambiar
+        if (currentCalculations) {
+          const newHistory = [...currentHistory, {
+            id: Date.now(),
+            timestamp: new Date().toISOString(),
+            params: { ...currentParams },
+            results: { ...currentCalculations }
+          }];
+          set({ params: newParams, isLoading: true, history: newHistory });
+        } else {
+          set({ params: newParams, isLoading: true });
+        }
         
         try {
           const calculations = runGroundingCalculation(newParams);
@@ -130,6 +146,31 @@ const useStore = create(
       resetToDefaults: () => {
         const { setParams } = get();
         setParams(DEFAULT_PARAMS);
+      },
+      
+      // ============================================
+      // HISTORIAL / TIMELINE (Versioning tipo Git)
+      // ============================================
+      loadVersion: (versionId) => {
+        const { history, setParams } = get();
+        const version = history.find(v => v.id === versionId);
+        if (version) {
+          setParams(version.params);
+          get().addNotification({
+            type: 'success',
+            title: 'Versión cargada',
+            message: `Versión del ${new Date(version.timestamp).toLocaleString()} cargada`
+          });
+        }
+      },
+      
+      clearHistory: () => {
+        set({ history: [] });
+        get().addNotification({
+          type: 'info',
+          title: 'Historial limpiado',
+          message: 'El historial de versiones ha sido eliminado'
+        });
       },
       
       // ============================================

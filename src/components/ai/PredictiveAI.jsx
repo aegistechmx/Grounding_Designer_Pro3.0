@@ -219,20 +219,20 @@ const PredictiveAI = ({ params, calculations, darkMode }) => {
   return (
     <div className={`p-4 rounded-lg ${darkMode ? 'bg-gray-800' : 'bg-white'} shadow`}>
       <div className="flex items-center gap-2 mb-4">
-        <Brain className="text-purple-500" size={24} />
+        <Brain className="text-blue-800" size={24} />
         <h3 className="text-lg font-semibold">🤖 IA Predictiva - Análisis Inteligente</h3>
         {isAnalyzing && (
-          <span className="ml-auto text-xs text-purple-500 animate-pulse">Analizando...</span>
+          <span className="ml-auto text-xs text-blue-500 animate-pulse">Analizando...</span>
         )}
       </div>
       
       {isAnalyzing ? (
         <div className="text-center py-8">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
           <p className="text-sm text-gray-500">Analizando diseño con IA...</p>
           <div className="w-full bg-gray-200 rounded-full h-2 mt-4">
             <div 
-              className="bg-purple-500 h-2 rounded-full transition-all duration-300"
+              className="bg-blue-500 h-2 rounded-full transition-all duration-300"
               style={{ width: `${analysisProgress}%` }}
             />
           </div>
@@ -254,7 +254,7 @@ const PredictiveAI = ({ params, calculations, darkMode }) => {
                   cy="56"
                 />
                 <circle 
-                  className="text-purple-500" 
+                  className="text-blue-800" 
                   strokeWidth="8" 
                   strokeDasharray={`${2 * Math.PI * 48}`}
                   strokeDashoffset={`${2 * Math.PI * 48 * (1 - predictions.overallScore / 100)}`}
@@ -288,7 +288,7 @@ const PredictiveAI = ({ params, calculations, darkMode }) => {
           {/* Métricas principales */}
           <div className="grid grid-cols-3 gap-3 mb-6">
             <div className={`text-center p-3 rounded-lg ${getScoreBgColor(parseInt(predictions.safetyScore))}`}>
-              <Shield size={20} className="mx-auto mb-1 text-purple-500" />
+              <Shield size={20} className="mx-auto mb-1 text-blue-600" />
               <div className="text-xl font-bold">{predictions.safetyScore}%</div>
               <div className="text-xs text-gray-500">Seguridad</div>
             </div>
@@ -311,7 +311,7 @@ const PredictiveAI = ({ params, calculations, darkMode }) => {
                 <Clock size={14} className="text-gray-500" />
                 <span className="text-xs text-gray-500">Vida útil estimada</span>
               </div>
-              <div className="text-xl font-bold text-purple-600">{predictions.estimatedLifespan} años</div>
+              <div className="text-xl font-bold text-blue-600">{predictions.estimatedLifespan} años</div>
               <div className="text-xs text-gray-400 mt-1">
                 {predictions.estimatedLifespan > 25 ? 'Excelente' : predictions.estimatedLifespan > 20 ? 'Buena' : 'Aceptable'}
               </div>

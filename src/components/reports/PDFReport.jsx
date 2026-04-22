@@ -1,8 +1,24 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { FileText, Download } from 'lucide-react';
 import { formatResistance, formatVoltage, formatCurrent, formatDistance, formatNumber } from '../../utils/formatters';
 
-const PDFReport = ({ params, calculations, recommendations, darkMode }) => {
+const PDFReport = ({ params, calculations, recommendations, darkMode, heatmapCanvasRef }) => {
+  
+  // ============================================
+  // FUNCIÓN PARA EXPORTAR HEATMAP COMO IMAGEN
+  // ============================================
+  const exportHeatmapAsImage = () => {
+    if (!heatmapCanvasRef || !heatmapCanvasRef.current) return null;
+    
+    try {
+      const canvas = heatmapCanvasRef.current;
+      const dataURL = canvas.toDataURL('image/png');
+      return dataURL;
+    } catch (error) {
+      console.error('Error exporting heatmap:', error);
+      return null;
+    }
+  };
   
   // ============================================
   // FUNCIÓN PARA GENERAR PDF
@@ -260,6 +276,22 @@ const PDFReport = ({ params, calculations, recommendations, darkMode }) => {
             </tr>
           </tbody>
         </table>
+        
+        <!-- HEATMAP DE DISTRIBUCIÓN DE POTENCIAL -->
+        <h2>🗺️ HEATMAP DE DISTRIBUCIÓN DE POTENCIAL</h2>
+        <div style="text-align: center; margin: 20px 0;">
+          <p style="font-size: 12px; color: #666; margin-bottom: 10px;">
+            Distribución de potencial en la superficie de la malla de puesta a tierra
+          </p>
+          <div style="border: 1px solid #ddd; padding: 10px; background: #f9fafb; border-radius: 8px;">
+            <p style="font-size: 14px; color: #666;">
+              ⚠️ El heatmap se genera dinámicamente desde el canvas de visualización
+            </p>
+            <p style="font-size: 12px; color: #999; margin-top: 5px;">
+              Para incluir el heatmap en el PDF, asegúrese de que el canvas esté visible
+            </p>
+          </div>
+        </div>
         
         <!-- VERIFICACIÓN DE SEGURIDAD -->
         <h2>🛡️ VERIFICACIÓN DE SEGURIDAD</h2>

@@ -1,6 +1,16 @@
 /**
  * IEEE 80 Real Geometric Factors - Enhanced Physical Modeling
- * Implements the missing geometric factors that make IEEE 80 work in practice
+ * 
+ * DEPRECATED: This module is deprecated as of architectural refactoring
+ * All IEEE 80 formulas have been consolidated into IEEE80Formulas.js
+ * 
+ * Please use IEEE80Formulas as the single source of truth for IEEE 80 calculations
+ * 
+ * Migration guide:
+ * - Use IEEE80Formulas.calculateStepGeometricFactor() instead of calculateStepFactor()
+ * - Use IEEE80Formulas.calculateTouchGeometricFactor() instead of calculateMeshFactor()
+ * - Use IEEE80Formulas.calculateStepVoltage() instead of calculateEnhancedStepVoltage()
+ * - Use IEEE80Formulas.calculateTouchVoltage() instead of calculateEnhancedTouchVoltage()
  */
 
 class IEEE80RealFactors {

@@ -3,6 +3,9 @@ const cors = require('cors');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const { Pool } = require('pg');
+const { exec } = require('child_process');
+const fs = require('fs');
+const path = require('path');
 
 const app = express();
 const port = process.env.PORT || 3001;
@@ -251,6 +254,99 @@ app.post('/api/designs/:designId/reports', auth, async (req, res) => {
     );
     res.json(result.rows[0]);
   } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ============================================
+// RUTA DE GENERACIÓN DE PDF
+// ============================================
+
+app.post('/api/generate-pdf', async (req, res) => {
+  const { heatmap, results, recommendations, history, error, projectInfo } = req.body;
+
+  try {
+    // Save heatmap image
+    const base64Data = heatmap.replace(/^data:image\/png;base64,/, "");
+    const heatmapPath = path.join(__dirname, 'heatmap.png');
+    fs.writeFileSync(heatmapPath, base64Data, "base64");
+
+    // Save data for Python script
+    const dataPath = path.join(__dirname, 'data.json');
+    fs.writeFileSync(dataPath, JSON.stringify({
+      results,
+      recommendations,
+      history: history || [],
+      error: error || 0,
+      projectInfo: projectInfo || {}
+    }));
+
+    // Execute Python PDF generator
+    const pythonScript = path.join(__dirname, 'generate_pdf.py');
+    exec(`python "${pythonScript}"`, (error, stdout, stderr) => {
+      if (error) {
+        console.error('PDF generation error:', error);
+        return res.status(500).json({ error: 'Failed to generate PDF' });
+      }
+
+      try {
+        const pdfPath = path.join(__dirname, 'report.pdf');
+        const pdfFile = fs.readFileSync(pdfPath);
+        
+        // Clean up temporary files
+        fs.unlinkSync(heatmapPath);
+        fs.unlinkSync(dataPath);
+        fs.unlinkSync(pdfPath);
+
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', 'attachment; filename=grounding-report.pdf');
+        res.send(pdfFile);
+      } catch (fileError) {
+        console.error('PDF file read error:', fileError);
+        res.status(500).json({ error: 'Failed to read generated PDF' });
+      }
+    });
+  } catch (error) {
+    console.error('PDF endpoint error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ============================================
+// RUTA DE GENERACIÓN DE EXCEL
+// ============================================
+
+app.post('/api/generate-excel', async (req, res) => {
+  try {
+    // Save data for Python script
+    const dataPath = path.join(__dirname, 'data.json');
+    fs.writeFileSync(dataPath, JSON.stringify(req.body));
+
+    // Execute Python Excel generator
+    const pythonScript = path.join(__dirname, 'generate_excel.py');
+    exec(`python "${pythonScript}"`, (error, stdout, stderr) => {
+      if (error) {
+        console.error('Excel generation error:', error);
+        return res.status(500).json({ error: 'Failed to generate Excel' });
+      }
+
+      try {
+        const excelPath = path.join(__dirname, 'report.xlsx');
+        const excelFile = fs.readFileSync(excelPath);
+        
+        // Clean up temporary file
+        fs.unlinkSync(excelPath);
+
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader('Content-Disposition', 'attachment; filename=grounding-report.xlsx');
+        res.send(excelFile);
+      } catch (fileError) {
+        console.error('Excel file read error:', fileError);
+        res.status(500).json({ error: 'Failed to read generated Excel' });
+      }
+    });
+  } catch (error) {
+    console.error('Excel endpoint error:', error);
     res.status(500).json({ error: error.message });
   }
 });

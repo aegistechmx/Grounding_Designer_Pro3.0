@@ -208,100 +208,116 @@ export const ProDashboard = ({ calculations, params, darkMode }) => {
       </div>
       
       {/* Indicadores de Eficiencia */}
-      <div className="rounded-xl border-2 border-blue-500 bg-gradient-to-br from-gray-800 to-gray-900 shadow-[0_0_15px_rgba(59,130,246,0.3)] p-4">
-        <h4 className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
-          <TrendingDown size={16} className="text-blue-400" />
-          Indicadores de Eficiencia
+      <div className={`p-4 rounded-lg border ${darkMode ? 'bg-blue-900/20 border-blue-700' : 'bg-blue-50 border-blue-200'}`} style={{ boxShadow: darkMode ? '0 0 15px rgba(59, 130, 246, 0.3), inset 0 0 8px rgba(59, 130, 246, 0.15)' : '0 0 15px rgba(59, 130, 246, 0.2), inset 0 0 8px rgba(59, 130, 246, 0.1)' }}>
+        <h4 className={`font-semibold mb-3 flex items-center gap-2 ${darkMode ? 'text-blue-300' : 'text-blue-800'}`}>
+          <TrendingDown size={16} /> � Indicadores de Eficiencia
         </h4>
-        <div className="grid grid-cols-4 gap-3">
-          <IndicatorCard label="Área de malla" value={area} unit="m²" icon={Activity} darkMode={darkMode} />
-          <IndicatorCard label="Conductor total" value={totalConductor} unit="m" icon={Zap} darkMode={darkMode} />
-          <IndicatorCard label="Varillas" value={params?.numRods || 6} unit="" icon={Battery} darkMode={darkMode} />
-          <IndicatorCard label="Configuración" value={config} unit="" icon={Grid} darkMode={darkMode} />
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-xs">
+          <div className={`p-2 rounded ${darkMode ? 'bg-blue-900/30' : 'bg-blue-100'}`}>
+            <div className={`font-semibold mb-1 ${darkMode ? 'text-blue-300' : 'text-blue-700'}`}>Área de malla</div>
+            <div className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-blue-900'}`}>{area} m²</div>
+          </div>
+          <div className={`p-2 rounded ${darkMode ? 'bg-blue-900/30' : 'bg-blue-100'}`}>
+            <div className={`font-semibold mb-1 ${darkMode ? 'text-blue-300' : 'text-blue-700'}`}>Conductor total</div>
+            <div className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-blue-900'}`}>{totalConductor} m</div>
+          </div>
+          <div className={`p-2 rounded ${darkMode ? 'bg-blue-900/30' : 'bg-blue-100'}`}>
+            <div className={`font-semibold mb-1 ${darkMode ? 'text-blue-300' : 'text-blue-700'}`}>Varillas</div>
+            <div className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-blue-900'}`}>{params?.numRods || 6}</div>
+          </div>
+          <div className={`p-2 rounded ${darkMode ? 'bg-blue-900/30' : 'bg-blue-100'}`}>
+            <div className={`font-semibold mb-1 ${darkMode ? 'text-blue-300' : 'text-blue-700'}`}>Configuración</div>
+            <div className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-blue-900'}`}>{config}</div>
+          </div>
+          <div className={`p-2 rounded ${darkMode ? 'bg-blue-900/30' : 'bg-blue-100'}`}>
+            <div className={`font-semibold mb-1 ${darkMode ? 'text-blue-300' : 'text-blue-700'}`}>Eficiencia</div>
+            <div className={`text-lg font-bold ${darkMode ? 'text-green-400' : 'text-green-700'}`}>{efficiency}%</div>
+          </div>
+          <div className={`p-2 rounded ${darkMode ? 'bg-blue-900/30' : 'bg-blue-100'}`}>
+            <div className={`font-semibold mb-1 ${darkMode ? 'text-blue-300' : 'text-blue-700'}`}>Score diseño</div>
+            <div className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-blue-900'}`}>{designScore}</div>
+          </div>
+        </div>
+        <div className={`mt-3 p-2 rounded ${darkMode ? 'bg-blue-900/40' : 'bg-blue-200'}`}>
+          <p className={`text-xs flex items-start gap-2 ${darkMode ? 'text-blue-200' : 'text-blue-800'}`}>
+            <TrendingDown size={12} className="flex-shrink-0 mt-0.5" />
+            <span>
+              <strong>💡 Análisis de eficiencia:</strong> El diseño optimiza el uso de materiales manteniendo los estándares de seguridad IEEE 80.
+            </span>
+          </p>
+        </div>
+        <div className={`mt-2 p-2 rounded ${darkMode ? 'bg-blue-900/40' : 'bg-blue-200'}`}>
+          <p className={`text-xs ${darkMode ? 'text-blue-200' : 'text-blue-800'}`}>
+            <strong>📐 Balance:</strong> Relación óptima entre área de malla, conductor total y número de varillas para máxima eficiencia.
+          </p>
         </div>
       </div>
       
       {/* IA Predictiva */}
-      <div className="rounded-xl border-2 border-purple-500 bg-gradient-to-br from-gray-800 to-gray-900 shadow-[0_0_15px_rgba(168,85,247,0.3)] p-4">
+      <div className={`p-4 rounded-lg border ${darkMode ? 'bg-blue-900/20 border-blue-700' : 'bg-blue-50 border-blue-200'}`} style={{ boxShadow: darkMode ? '0 0 15px rgba(59, 130, 246, 0.3), inset 0 0 8px rgba(59, 130, 246, 0.15)' : '0 0 15px rgba(59, 130, 246, 0.2), inset 0 0 8px rgba(59, 130, 246, 0.1)' }}>
         <button
           onClick={() => setShowAI(!showAI)}
           className="w-full flex justify-between items-center"
         >
           <div className="flex items-center gap-2">
-            <Brain size={18} className="text-purple-400" />
-            <h4 className="font-semibold text-white">🤖 IA Predictiva - Análisis Inteligente</h4>
-            <span className="text-xs bg-purple-500/20 text-purple-400 px-2 py-0.5 rounded-full">Machine Learning</span>
+            <Brain size={18} className={darkMode ? 'text-blue-300' : 'text-blue-800'} />
+            <h4 className={`font-semibold ${darkMode ? 'text-blue-300' : 'text-blue-800'}`}>🤖 IA Predictiva - Análisis Inteligente</h4>
+            <span className={`text-xs ${darkMode ? 'bg-blue-500/20 text-blue-300' : 'bg-blue-100 text-blue-700'} px-2 py-0.5 rounded-full`}>Machine Learning</span>
           </div>
-          {showAI ? <ChevronUp size={18} className="text-gray-400" /> : <ChevronDown size={18} className="text-gray-400" />}
+          {showAI ? <ChevronUp size={18} className={darkMode ? 'text-blue-300' : 'text-blue-800'} /> : <ChevronDown size={18} className={darkMode ? 'text-blue-300' : 'text-blue-800'} />}
         </button>
         
         {showAI && (
           <div className="mt-4 space-y-4">
-            <div className="grid grid-cols-4 gap-3">
-              <ScoreCard title="Score" score={designScore} icon={Brain} darkMode={darkMode} />
-              <div className="rounded-xl border-2 border-green-500 bg-green-500/10 p-3 text-center">
-                <div className="text-xs text-gray-400">Riesgo</div>
-                <div className="text-lg font-bold text-green-400">Bajo</div>
+            <div className="grid grid-cols-4 gap-3 text-xs">
+              <div className={`p-2 rounded ${darkMode ? 'bg-blue-900/30' : 'bg-blue-100'}`}>
+                <div className={`font-semibold mb-1 ${darkMode ? 'text-blue-300' : 'text-blue-700'}`}>Score</div>
+                <div className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-blue-900'}`}>{designScore}</div>
               </div>
-              <ScoreCard title="Seguridad" score={safetyMargin} icon={Shield} darkMode={darkMode} />
-              <ScoreCard title="Eficiencia" score={efficiency} icon={Zap} darkMode={darkMode} />
-              <ScoreCard title="Costo" score={costScore} icon={Battery} darkMode={darkMode} />
-            </div>
-            
-            <div className="bg-gray-700/50 rounded-lg p-3">
-              <div className="flex items-center gap-2 mb-2">
-                <Calendar size={14} className="text-blue-400" />
-                <span className="text-sm text-white font-semibold">Vida útil estimada</span>
+              <div className={`p-2 rounded ${darkMode ? 'bg-green-900/30' : 'bg-green-100'}`}>
+                <div className={`font-semibold mb-1 ${darkMode ? 'text-green-300' : 'text-green-700'}`}>Riesgo</div>
+                <div className={`text-lg font-bold ${darkMode ? 'text-green-400' : 'text-green-700'}`}>Bajo</div>
               </div>
-              <div className="text-2xl font-bold text-green-400">30 años</div>
-              <div className="text-xs text-gray-400 mt-1">Excelente</div>
-            </div>
-            
-            <div className="grid grid-cols-2 gap-3">
-              <div className="bg-gray-700/50 rounded-lg p-2 text-center">
-                <div className="text-xs text-gray-400">Mantenimiento preventivo</div>
-                <div className="text-white font-semibold">Cada 8 años</div>
+              <div className={`p-2 rounded ${darkMode ? 'bg-blue-900/30' : 'bg-blue-100'}`}>
+                <div className={`font-semibold mb-1 ${darkMode ? 'text-blue-300' : 'text-blue-700'}`}>Seguridad</div>
+                <div className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-blue-900'}`}>{safetyMargin}</div>
               </div>
-              <div className="bg-gray-700/50 rounded-lg p-2 text-center">
-                <div className="text-xs text-gray-400">Inspección recomendada</div>
-                <div className="text-white font-semibold">Anual</div>
+              <div className={`p-2 rounded ${darkMode ? 'bg-blue-900/30' : 'bg-blue-100'}`}>
+                <div className={`font-semibold mb-1 ${darkMode ? 'text-blue-300' : 'text-blue-700'}`}>Eficiencia</div>
+                <div className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-blue-900'}`}>{efficiency}</div>
               </div>
             </div>
             
-            <div>
-              <div className="text-sm text-white mb-2">📈 Predicción de Desempeño</div>
-              <div className="flex gap-2">
-                {predictions.map(p => (
-                  <div key={p.year} className="flex-1 text-center p-2 bg-gray-700/50 rounded-lg">
-                    <div className="text-lg font-bold text-white">{p.year}</div>
-                    <div className="text-xs text-green-400">{p.status}</div>
-                  </div>
-                ))}
-              </div>
+            <div className={`p-3 rounded ${darkMode ? 'bg-blue-900/40' : 'bg-blue-200'}`}>
+              <p className={`text-xs flex items-start gap-2 ${darkMode ? 'text-blue-200' : 'text-blue-800'}`}>
+                <Brain size={12} className="flex-shrink-0 mt-0.5" />
+                <span>
+                  <strong>💡 Análisis predictivo:</strong> El diseño presenta un balance óptimo entre seguridad, eficiencia y costo según el modelo de IA.
+                </span>
+              </p>
             </div>
           </div>
         )}
       </div>
       
       {/* Recomendaciones IA */}
-      <div className="rounded-xl border-2 border-blue-500 bg-gradient-to-br from-gray-800 to-gray-900 shadow-[0_0_15px_rgba(59,130,246,0.3)] p-4">
-        <h4 className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
-          <Brain size={16} className="text-blue-400" />
-          Recomendaciones IA
+      <div className={`p-4 rounded-lg border ${darkMode ? 'bg-blue-900/20 border-blue-700' : 'bg-blue-50 border-blue-200'}`} style={{ boxShadow: darkMode ? '0 0 15px rgba(59, 130, 246, 0.3), inset 0 0 8px rgba(59, 130, 246, 0.15)' : '0 0 15px rgba(59, 130, 246, 0.2), inset 0 0 8px rgba(59, 130, 246, 0.1)' }}>
+        <h4 className={`font-semibold mb-3 flex items-center gap-2 ${darkMode ? 'text-blue-300' : 'text-blue-800'}`}>
+          <Brain size={16} /> 📋 Recomendaciones IA
         </h4>
         <div className="space-y-2">
           {recommendations.map((rec, idx) => {
-            let colorClass = 'text-gray-400';
-            if (rec.type === 'success') colorClass = 'text-green-400';
-            else if (rec.type === 'warning') colorClass = 'text-yellow-400';
-            else if (rec.type === 'info') colorClass = 'text-blue-400';
+            let colorClass = darkMode ? 'text-gray-400' : 'text-gray-600';
+            if (rec.type === 'success') colorClass = darkMode ? 'text-green-400' : 'text-green-700';
+            else if (rec.type === 'warning') colorClass = darkMode ? 'text-yellow-400' : 'text-yellow-700';
+            else if (rec.type === 'info') colorClass = darkMode ? 'text-blue-400' : 'text-blue-700';
             
             return (
-              <div key={idx} className="flex items-start gap-2 p-2 rounded-lg bg-gray-700/30">
+              <div key={idx} className={`flex items-start gap-2 p-2 rounded-lg ${darkMode ? 'bg-blue-900/30' : 'bg-blue-100'}`}>
                 <div className={colorClass}>{rec.icon}</div>
                 <div>
                   <div className={`text-sm font-medium ${colorClass}`}>{rec.title}</div>
-                  <div className="text-xs text-gray-400">{rec.description}</div>
+                  <div className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>{rec.description}</div>
                 </div>
               </div>
             );

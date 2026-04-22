@@ -1018,7 +1018,7 @@ const GroundingGrid3D = ({ params = {}, darkMode }) => {
           
           <div className={`mt-2 text-xs ${darkMode ? 'text-gray-100' : 'text-gray-600'}`}>
             💡 <strong>Controles:</strong> Arrastra para rotar | Shift + Arrastra para mover | Scroll para zoom
-            {!showKitMaster && <span className="ml-2 text-purple-500">🔘 Kit Master desactivado</span>}
+            {!showKitMaster && <span className="ml-2 text-blue-500">🔘 Kit Master desactivado</span>}
             {showRodSpacing && numRods > 0 && (
               <span className={`ml-2 ${spacingComplies ? 'text-green-500' : 'text-red-500'}`}>
                 📏 Espaciamiento varillas: {rodSpacingMeters}m 
@@ -1146,8 +1146,8 @@ const GroundingGrid3D = ({ params = {}, darkMode }) => {
             <div className={`font-semibold ${darkMode ? 'text-green-300' : 'text-green-700'}`}>Rotación Y</div>
             <div className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>{isFinite(rotation.y) ? rotation.y.toFixed(0) : 'N/A'}°</div>
           </div>
-          <div className={`text-center p-2 rounded ${darkMode ? 'bg-gray-600' : 'bg-purple-50'}`}>
-            <div className={`font-semibold ${darkMode ? 'text-purple-300' : 'text-purple-700'}`}>Zoom</div>
+          <div className={`text-center p-2 rounded ${darkMode ? 'bg-gray-600' : 'bg-blue-50'}`}>
+            <div className={`font-semibold ${darkMode ? 'text-blue-300' : 'text-blue-700'}`}>Zoom</div>
             <div className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>{isFinite(zoom) ? zoom.toFixed(1) : 'N/A'}x</div>
           </div>
           <div className={`text-center p-2 rounded ${darkMode ? 'bg-gray-600' : 'bg-orange-50'}`}>

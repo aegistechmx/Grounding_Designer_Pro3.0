@@ -54,13 +54,13 @@ const DashboardView = ({ calculations, params, darkMode }) => {
 
         <div className={`p-4 rounded-xl ${darkMode ? 'bg-gray-800' : 'bg-white'} shadow`}>
           <div className="flex items-center justify-between mb-2">
-            <Gauge size={24} className="text-purple-500" />
+            <Gauge size={24} className="text-blue-500" />
             <span className="text-xs text-gray-500">GPR</span>
           </div>
           <div className="text-2xl font-bold">{isFinite(calculations.GPR) ? calculations.GPR.toFixed(0) : 'N/A'} V</div>
           <div className="text-sm text-gray-500">Elevación de potencial</div>
           <div className="mt-2 h-1.5 w-full bg-gray-200 rounded-full overflow-hidden">
-            <div className="h-full bg-purple-500 rounded-full" style={{ width: getProgressWidth(calculations.GPR, 15000) }} />
+            <div className="h-full bg-blue-500 rounded-full" style={{ width: getProgressWidth(calculations.GPR, 15000) }} />
           </div>
         </div>
 
@@ -138,13 +138,7 @@ const DashboardView = ({ calculations, params, darkMode }) => {
             <div className="text-xs text-gray-500">Área de malla</div>
           </div>
           <div>
-            <div className="text-2xl font-bold text-green-600">
-              {isFinite(calculations.totalConductor) ? calculations.totalConductor.toFixed(0) : 'N/A'} m
-            </div>
-            <div className="text-xs text-gray-500">Conductor total</div>
-          </div>
-          <div>
-            <div className="text-2xl font-bold text-purple-600">
+            <div className="text-2xl font-bold text-blue-600">
               {params?.numRods || 0}
             </div>
             <div className="text-xs text-gray-500">Varillas</div>

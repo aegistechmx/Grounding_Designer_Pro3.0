@@ -31,7 +31,7 @@ export const IADashboardFull = ({ calculations, params, darkMode }) => {
   if (isAnalyzing) {
     return (
       <div className="bg-gray-700/50 rounded-lg p-8 text-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500 mx-auto mb-4"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
         <p className="text-gray-400">Analizando diseño con IA...</p>
       </div>
     );
@@ -40,15 +40,15 @@ export const IADashboardFull = ({ calculations, params, darkMode }) => {
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2">
-        <Brain size={20} className="text-purple-400" />
+        <Brain size={20} className="text-blue-400" />
         <h3 className="text-lg font-semibold text-white">🤖 IA Predictiva - Análisis Inteligente</h3>
-        <span className="text-xs bg-purple-500/20 text-purple-400 px-2 py-0.5 rounded-full">Machine Learning</span>
+        <span className="text-xs bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded-full">Machine Learning</span>
       </div>
       
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <div className="bg-purple-500/10 rounded-xl p-3 text-center border border-purple-500">
+        <div className="bg-blue-500/10 rounded-xl p-3 text-center border border-blue-500">
           <div className="text-xs text-gray-400">Score General</div>
-          <div className="text-2xl font-bold text-purple-400">{predictions?.overallScore}%</div>
+          <div className="text-2xl font-bold text-blue-400">{predictions?.overallScore}%</div>
         </div>
         <div className="bg-green-500/10 rounded-xl p-3 text-center border border-green-500">
           <div className="text-xs text-gray-400">Seguridad</div>
