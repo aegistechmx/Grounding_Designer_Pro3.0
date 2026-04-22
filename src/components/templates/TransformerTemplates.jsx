@@ -285,9 +285,9 @@ const TransformerTemplates = ({ onSelectTemplate, darkMode, onClose }) => {
             const isExpanded = expandedCard === parseInt(kva);
             const kitInfo = getKitMaster(parseInt(kva));
             const perimeter = 2 * (template.params.gridLength + template.params.gridWidth);
-            const actualRodSpacing = (perimeter / template.params.numRods).toFixed(2);
-            const minSpacing = template.params.rodLength * 2;
-            const spacingOk = parseFloat(actualRodSpacing) >= minSpacing;
+            const actualRodSpacing = (perimeter / Math.max(1, template.params.numRods)).toFixed(2);
+            const minSpacing = (template.params.rodLength || 3) * 2;
+            const spacingOk = parseFloat(actualRodSpacing || 0) >= minSpacing;
 
             return (
               <div

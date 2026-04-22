@@ -3,16 +3,17 @@ import { X, Download, Printer, Eye, EyeOff, FileSpreadsheet, FileText } from 'lu
 import GroundingGridSVG from '../GroundingGridSVG';
 import GroundingGrid3D from '../GroundingGrid3D';
 import HeatMap from '../visualizations/HeatMap';
-import { applyAllCorrections, getSeasonalRecommendation, MONTH_NAMES, REGION_NAMES } from '../../utils/correctedResistivity';
-import { conductorThermalCheck } from '../../utils/conductorThermalCheck';
-import { recommendSoilTreatment, compareTreatments } from '../../utils/soilTreatment';
-import { calculateTransferredVoltage } from '../../utils/transferredVoltage';
-import { equipotentialCheck } from '../../utils/equipotentialCheck';
-import { getDesignResistivity } from '../../utils/seasonalVariation';
-import { exportPDFWithLogo } from '../../utils/pdfExportWithLogo';
-import { exportToExcel } from '../../utils/excelExport';
-import { exportToWord } from '../../utils/wordExport';
-import { optimizeGroundGrid, worstCaseAnalysis } from '../../utils/groundGridOptimizer';
+import { applyAllCorrections, getSeasonalRecommendation, MONTH_NAMES, REGION_NAMES } from '../../utils/physics/correctedResistivity';
+import { conductorThermalCheck } from '../../utils/physics/conductorThermalCheck';
+import { recommendSoilTreatment, compareTreatments } from '../../utils/physics/soilTreatment';
+import { calculateTransferredVoltage } from '../../utils/physics/transferredVoltage';
+import { equipotentialCheck } from '../../utils/physics/equipotentialCheck';
+import { getDesignResistivity } from '../../utils/physics/seasonalVariation';
+import { exportPDFWithLogo } from '../../utils/export/pdfExportWithLogo';
+import { exportToExcel } from '../../utils/export/excelExport';
+import { exportToWord } from '../../utils/export/wordExport';
+import { optimizeGroundGrid, worstCaseAnalysis } from '../../utils/ai/groundGridOptimizer';
+import { formatNumber, formatResistance, formatVoltage, formatCurrent, formatDistance, formatPercentage, formatPower } from '../../utils/formatters';
 
 const ExecutiveReport = ({ params, calculations, recommendations, darkMode, onClose }) => {
   const [show3D, setShow3D] = useState(false);
@@ -72,9 +73,11 @@ const ExecutiveReport = ({ params, calculations, recommendations, darkMode, onCl
   };
 
   // ==================== CÁLCULOS ====================
-  const Vsec = params.secondaryVoltage || 480;
-  const In = (params.transformerKVA * 1000) / (Math.sqrt(3) * Vsec);
-  const faultCurrent = In / ((params.transformerImpedance || 5) / 100);
+  const Vsec = Math.max(1, params.secondaryVoltage || 480);
+  const safeKVA = Math.max(1, params.transformerKVA || 75);
+  const In = (safeKVA * 1000) / (Math.sqrt(3) * Vsec);
+  const safeImpedance = Math.max(0.1, params.transformerImpedance || 5);
+  const faultCurrent = In / (safeImpedance / 100);
   const Ig = faultCurrent * (params.currentDivisionFactor || 0.6);
 
   const ρ = params.soilResistivity || 100;
@@ -100,9 +103,9 @@ const ExecutiveReport = ({ params, calculations, recommendations, darkMode, onCl
 
   const nx = params.numParallel || 15;
   const ny = Math.max(3, Math.floor(nx * gridLength / gridWidth));
-  const D = Math.sqrt((gridLength / Math.max(1, nx - 1)) * (gridWidth / Math.max(1, ny - 1)));
+  const D = Math.sqrt((gridLength / Math.max(1, nx - 1)) * (gridWidth / Math.max(1, ny - 1))) || 1;
 
-  const n = (2 * totalGridLength / perimeter) * Math.sqrt(perimeter / (4 * Math.sqrt(A)));
+  const n = (2 * totalGridLength / Math.max(1, perimeter)) * Math.sqrt(Math.max(1, perimeter) / (4 * Math.sqrt(Math.max(1, A))));
   const Ki = 0.644 + 0.148 * n;
   const Kh = Math.sqrt(1 + h);
 
@@ -124,8 +127,8 @@ const ExecutiveReport = ({ params, calculations, recommendations, darkMode, onCl
   const Em = (ρ * Km * Ki * Ig) / LT;
   const Es = (ρ * Ks * Ki * Ig) / (0.75 * totalGridLength + 0.85 * totalRodLength);
 
-  const safetyMarginTouch = Etouch70 > 0 ? ((Etouch70 - Em) / Etouch70 * 100).toFixed(1) : '0';
-  const safetyMarginStep = Estep70 > 0 ? ((Estep70 - Es) / Estep70 * 100).toFixed(1) : '0';
+  const safetyMarginTouch = Etouch70 > 0 ? formatPercentage((Etouch70 - Em) / Etouch70 * 100, 1) : '0%';
+  const safetyMarginStep = Estep70 > 0 ? formatPercentage((Estep70 - Es) / Estep70 * 100, 1) : '0%';
 
   const complies = Em <= Etouch70 && Es <= Estep70;
 
@@ -296,12 +299,12 @@ const ExecutiveReport = ({ params, calculations, recommendations, darkMode, onCl
 
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-10">
           <div className="lg:col-span-2 p-8 bg-gray-50 dark:bg-gray-800 rounded-3xl space-y-4 text-base">
-            <p><strong>Dimensiones:</strong> {gridLength} m × {gridWidth} m</p>
-            <p><strong>Área total:</strong> {A.toFixed(0)} m²</p>
+            <p><strong>Dimensiones:</strong> {formatDistance(gridLength, 0)} × {formatDistance(gridWidth, 0)}</p>
+            <p><strong>Área total:</strong> {formatNumber(A, 0)} m²</p>
             <p><strong>Configuración:</strong> {nx} × {ny} conductores</p>
-            <p><strong>Espaciamiento promedio:</strong> {D.toFixed(2)} m</p>
-            <p><strong>Profundidad:</strong> {h} m</p>
-            <p><strong>Varillas de tierra:</strong> {params.numRods || 45} × {params.rodLength || 3} m</p>
+            <p><strong>Espaciamiento promedio:</strong> {formatDistance(D, 2)}</p>
+            <p><strong>Profundidad:</strong> {formatDistance(h, 1)}</p>
+            <p><strong>Varillas de tierra:</strong> {params.numRods || 45} × {formatDistance(params.rodLength || 3, 0)}</p>
           </div>
 
           <div className="lg:col-span-3">
@@ -325,19 +328,19 @@ const ExecutiveReport = ({ params, calculations, recommendations, darkMode, onCl
           <div className="p-8 bg-gray-50 dark:bg-gray-800 rounded-3xl">
             <h4 className="font-semibold text-blue-600 mb-4">Tensiones Permisibles</h4>
             <div className="space-y-4 text-base">
-              <p>C_s = <span className="font-mono">{Cs.toFixed(4)}</span></p>
-              <p>E_touch70 = <span className="font-mono font-bold">{Etouch70.toFixed(0)} V</span></p>
-              <p>E_step70 = <span className="font-mono font-bold">{Estep70.toFixed(0)} V</span></p>
+              <p>C_s = <span className="font-mono">{formatNumber(Cs, 4)}</span></p>
+              <p>E_touch70 = <span className="font-mono font-bold">{formatVoltage(Etouch70, 0)}</span></p>
+              <p>E_step70 = <span className="font-mono font-bold">{formatVoltage(Estep70, 0)}</span></p>
             </div>
           </div>
 
           <div className="p-8 bg-gray-50 dark:bg-gray-800 rounded-3xl">
             <h4 className="font-semibold text-blue-600 mb-4">Factores Geométricos</h4>
             <div className="space-y-4 text-base font-mono">
-              <p>K_i = {Ki.toFixed(3)}</p>
-              <p>K_h = {Kh.toFixed(3)}</p>
-              <p>K_m = {Km.toFixed(4)}</p>
-              <p>K_s = {Ks.toFixed(4)}</p>
+              <p>K_i = {formatNumber(Ki, 3)}</p>
+              <p>K_h = {formatNumber(Kh, 3)}</p>
+              <p>K_m = {formatNumber(Km, 4)}</p>
+              <p>K_s = {formatNumber(Ks, 4)}</p>
             </div>
           </div>
         </div>
@@ -382,8 +385,8 @@ const ExecutiveReport = ({ params, calculations, recommendations, darkMode, onCl
               <div className="p-6 bg-blue-50 dark:bg-blue-900/20 rounded-2xl">
                 <h4 className="font-semibold text-blue-600 mb-3">Resistividad Corregida</h4>
                 <div className="space-y-2">
-                  <p><strong>Medida:</strong> <span className="font-mono">{ρ.toFixed(1)} Ω·m</span></p>
-                  <p><strong>Corregida:</strong> <span className="font-mono font-bold text-green-600">{ρ_corrected.toFixed(1)} Ω·m</span></p>
+                  <p><strong>Medida:</strong> <span className="font-mono">{formatResistance(ρ, 1)}</span></p>
+                  <p><strong>Corregida:</strong> <span className="font-mono font-bold text-green-600">{formatResistance(ρ_corrected, 1)}</span></p>
                   <p><strong>Factor de corrección:</strong> <span className="font-mono">{correctionResult.finalFactor}x</span></p>
                 </div>
                 {correctionResult.corrections.length > 0 && (
@@ -422,8 +425,8 @@ const ExecutiveReport = ({ params, calculations, recommendations, darkMode, onCl
           <div className={`p-8 rounded-3xl ${Em <= Etouch70 ? 'bg-emerald-50 dark:bg-emerald-950 border-2 border-emerald-400' : 'bg-red-50 dark:bg-red-950 border-2 border-red-400'}`}>
             <h4 className="font-semibold mb-4">Tensión de Contacto (Em)</h4>
             <div className="space-y-3 text-base">
-              <p><strong>Valor calculado:</strong> <span className="font-mono font-bold">{Em.toFixed(0)} V</span></p>
-              <p><strong>Límite permisible:</strong> <span className="font-mono">{Etouch70.toFixed(0)} V</span></p>
+              <p><strong>Valor calculado:</strong> <span className="font-mono font-bold">{formatVoltage(Em, 0)}</span></p>
+              <p><strong>Límite permisible:</strong> <span className="font-mono">{formatVoltage(Etouch70, 0)}</span></p>
               <p><strong>Margen de seguridad:</strong> <span className={`font-bold ${Em <= Etouch70 ? 'text-emerald-600' : 'text-red-600'}`}>{safetyMarginTouch}%</span></p>
               <p className={`text-sm font-semibold ${Em <= Etouch70 ? 'text-emerald-600' : 'text-red-600'}`}>
                 {Em <= Etouch70 ? '✅ CUMPLE' : '❌ NO CUMPLE'}
@@ -434,8 +437,8 @@ const ExecutiveReport = ({ params, calculations, recommendations, darkMode, onCl
           <div className={`p-8 rounded-3xl ${Es <= Estep70 ? 'bg-emerald-50 dark:bg-emerald-950 border-2 border-emerald-400' : 'bg-red-50 dark:bg-red-950 border-2 border-red-400'}`}>
             <h4 className="font-semibold mb-4">Tensión de Paso (Es)</h4>
             <div className="space-y-3 text-base">
-              <p><strong>Valor calculado:</strong> <span className="font-mono font-bold">{Es.toFixed(0)} V</span></p>
-              <p><strong>Límite permisible:</strong> <span className="font-mono">{Estep70.toFixed(0)} V</span></p>
+              <p><strong>Valor calculado:</strong> <span className="font-mono font-bold">{formatVoltage(Es, 0)}</span></p>
+              <p><strong>Límite permisible:</strong> <span className="font-mono">{formatVoltage(Estep70, 0)}</span></p>
               <p><strong>Margen de seguridad:</strong> <span className={`font-bold ${Es <= Estep70 ? 'text-emerald-600' : 'text-red-600'}`}>{safetyMarginStep}%</span></p>
               <p className={`text-sm font-semibold ${Es <= Estep70 ? 'text-emerald-600' : 'text-red-600'}`}>
                 {Es <= Estep70 ? '✅ CUMPLE' : '❌ NO CUMPLE'}
@@ -449,15 +452,15 @@ const ExecutiveReport = ({ params, calculations, recommendations, darkMode, onCl
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-base">
             <div className="p-4 bg-white dark:bg-gray-900 rounded-2xl">
               <p className={`${darkMode ? 'text-gray-100' : 'text-gray-600'} text-sm`}>Resistencia de Malla (Rg)</p>
-              <p className="font-mono font-bold text-xl">{Rg.toFixed(3)} Ω</p>
+              <p className="font-mono font-bold text-xl">{formatResistance(Rg, 3)}</p>
             </div>
             <div className="p-4 bg-white dark:bg-gray-900 rounded-2xl">
               <p className={`${darkMode ? 'text-gray-100' : 'text-gray-600'} text-sm`}>GPR (Elevación de Potencial)</p>
-              <p className="font-mono font-bold text-xl">{(Rg * Ig).toFixed(0)} V</p>
+              <p className="font-mono font-bold text-xl">{formatVoltage(Rg * Ig, 0)}</p>
             </div>
             <div className="p-4 bg-white dark:bg-gray-900 rounded-2xl">
               <p className={`${darkMode ? 'text-gray-100' : 'text-gray-600'} text-sm`}>Corriente en Malla (Ig)</p>
-              <p className="font-mono font-bold text-xl">{Ig.toFixed(0)} A</p>
+              <p className="font-mono font-bold text-xl">{formatCurrent(Ig, 0)}</p>
             </div>
           </div>
         </div>
@@ -470,12 +473,12 @@ const ExecutiveReport = ({ params, calculations, recommendations, darkMode, onCl
         </h3>
         {optimization.best ? (
           <div className="p-6 bg-emerald-50 dark:bg-emerald-950 rounded-2xl">
-            <p><strong>Espaciamiento óptimo:</strong> {optimization.best.spacing} m</p>
+            <p><strong>Espaciamiento óptimo:</strong> {formatDistance(optimization.best.spacing, 2)}</p>
             <p><strong>Varillas:</strong> {optimization.best.rods}</p>
             <p><strong>Configuración:</strong> {optimization.best.nx} × {optimization.best.ny} conductores</p>
-            <p><strong>Costo mínimo:</strong> ${optimization.best.cost.toFixed(2)}</p>
-            <p><strong>Em:</strong> {optimization.best.Em.toFixed(0)} V</p>
-            <p><strong>Es:</strong> {optimization.best.Es.toFixed(0)} V</p>
+            <p><strong>Costo mínimo:</strong> {formatNumber(optimization.best.cost, 2)}</p>
+            <p><strong>Em:</strong> {formatVoltage(optimization.best.Em, 0)}</p>
+            <p><strong>Es:</strong> {formatVoltage(optimization.best.Es, 0)}</p>
           </div>
         ) : (
           <div className="p-6 bg-red-50 dark:bg-red-950 rounded-2xl">
@@ -490,8 +493,8 @@ const ExecutiveReport = ({ params, calculations, recommendations, darkMode, onCl
           <span className="text-orange-600">⚠️</span> Escenario Peor Caso (ρ = 300 Ω·m)
         </h3>
         <div className={`p-6 rounded-2xl ${worstCase.complies ? 'bg-emerald-50 dark:bg-emerald-950' : 'bg-red-50 dark:bg-red-950'}`}>
-          <p><strong>Em:</strong> {worstCase.Em.toFixed(0)} V</p>
-          <p><strong>Es:</strong> {worstCase.Es.toFixed(0)} V</p>
+          <p><strong>Em:</strong> {formatVoltage(worstCase.Em, 0)}</p>
+          <p><strong>Es:</strong> {formatVoltage(worstCase.Es, 0)}</p>
           <p><strong>Resultado:</strong> {worstCase.complies ? '✅ Cumple' : '❌ No cumple'}</p>
         </div>
       </section>
@@ -531,25 +534,25 @@ const ExecutiveReport = ({ params, calculations, recommendations, darkMode, onCl
             <tbody>
               <tr className="border-b border-gray-200 dark:border-gray-700">
                 <td className="py-3">Conductor de cobre (cable desnudo)</td>
-                <td className="text-right py-3">{totalGridLength.toFixed(0)} m</td>
+                <td className="text-right py-3">{formatDistance(totalGridLength, 0)}</td>
                 <td className="text-right py-3">$3.50/m</td>
-                <td className="text-right py-3 font-mono">${conductorCost.toFixed(2)}</td>
+                <td className="text-right py-3 font-mono">{formatNumber(conductorCost, 2)}</td>
               </tr>
               <tr className="border-b border-gray-200 dark:border-gray-700">
                 <td className="py-3">Varillas de cobre-acero (3m)</td>
                 <td className="text-right py-3">{params.numRods || 45} pz</td>
                 <td className="text-right py-3">$25.00/pz</td>
-                <td className="text-right py-3 font-mono">${rodCost.toFixed(2)}</td>
+                <td className="text-right py-3 font-mono">{formatNumber(rodCost, 2)}</td>
               </tr>
               <tr className="border-b border-gray-200 dark:border-gray-700">
                 <td className="py-3">Grava para capa superficial</td>
-                <td className="text-right py-3">{gravelVolume.toFixed(2)} m³</td>
+                <td className="text-right py-3">{formatNumber(gravelVolume, 2)} m³</td>
                 <td className="text-right py-3">$45.00/m³</td>
-                <td className="text-right py-3 font-mono">${gravelCost.toFixed(2)}</td>
+                <td className="text-right py-3 font-mono">{formatNumber(gravelCost, 2)}</td>
               </tr>
               <tr className="bg-blue-50 dark:bg-blue-950 font-bold">
                 <td className="py-3 pl-4" colSpan="3">TOTAL ESTIMADO</td>
-                <td className="text-right py-3 font-mono text-xl">${totalCost.toFixed(2)}</td>
+                <td className="text-right py-3 font-mono text-xl">${formatNumber(totalCost, 2)}</td>
               </tr>
             </tbody>
           </table>
@@ -627,7 +630,7 @@ const ExecutiveReport = ({ params, calculations, recommendations, darkMode, onCl
                 <li>Limpiar y nivelar el área de excavación</li>
                 <li>Verificar que no existan servicios subterráneos</li>
                 <li>Marcar los puntos de ubicación de varillas y conductores</li>
-                <li>Preparar zanjas según profundidad especificada ({h} m)</li>
+                <li>Preparar zanjas según profundidad especificada ({formatDistance(h, 1)})</li>
               </ul>
             </div>
             <div className="p-6 bg-white dark:bg-gray-900 rounded-2xl">
@@ -644,15 +647,15 @@ const ExecutiveReport = ({ params, calculations, recommendations, darkMode, onCl
               <ul className="space-y-2 list-disc pl-6 text-gray-700 dark:text-gray-300">
                 <li>Instalar varillas en perímetro y puntos críticos</li>
                 <li>Conectar varillas a la malla mediante soldadura exotérmica</li>
-                <li>Profundidad de instalación: {params.rodLength || 3} m</li>
+                <li>Profundidad de instalación: {formatDistance(params.rodLength || 3, 0)}</li>
                 <li>Verificar resistencia de conexión ≤ 0.1 Ω</li>
               </ul>
             </div>
             <div className="p-6 bg-white dark:bg-gray-900 rounded-2xl">
               <h4 className="font-semibold text-orange-600 mb-3">4. Capa Superficial</h4>
               <ul className="space-y-2 list-disc pl-6 text-gray-700 dark:text-gray-300">
-                <li>Extender capa de grava de {hs} m de espesor</li>
-                <li>Resistividad de grava: {ρs} Ω·m</li>
+                <li>Extender capa de grava de {formatDistance(hs, 1)} de espesor</li>
+                <li>Resistividad de grava: {formatResistance(ρs, 0)}</li>
                 <li>Cubrir completamente el área de la subestación</li>
                 <li>Compactar capa superficial uniformemente</li>
               </ul>
@@ -681,7 +684,7 @@ const ExecutiveReport = ({ params, calculations, recommendations, darkMode, onCl
               <h4 className="font-semibold text-cyan-600 mb-3">Prueba de Resistencia de Malla</h4>
               <div className="space-y-3 text-gray-700 dark:text-gray-300">
                 <p><strong>Método:</strong> Caída de potencial (método de 62%)</p>
-                <p><strong>Objetivo:</strong> Rg ≤ {Rg.toFixed(3)} Ω (valor de diseño)</p>
+                <p><strong>Objetivo:</strong> Rg ≤ {formatResistance(Rg, 3)} (valor de diseño)</p>
                 <p><strong>Equipo:</strong> Megger o equipo de medición de tierra</p>
                 <p><strong>Frecuencia:</strong> Una vez completada la instalación</p>
               </div>
@@ -690,7 +693,7 @@ const ExecutiveReport = ({ params, calculations, recommendations, darkMode, onCl
               <h4 className="font-semibold text-cyan-600 mb-3">Prueba de Tensión de Paso y Contacto</h4>
               <div className="space-y-3 text-gray-700 dark:text-gray-300">
                 <p><strong>Procedimiento:</strong> Medición en puntos críticos según IEEE 80</p>
-                <p><strong>Límites:</strong> Em ≤ {Etouch70.toFixed(0)} V, Es ≤ {Estep70.toFixed(0)} V</p>
+                <p><strong>Límites:</strong> Em ≤ {formatVoltage(Etouch70, 0)}, Es ≤ {formatVoltage(Estep70, 0)}</p>
                 <p><strong>Condiciones:</strong> Simulación de falla o cálculo indirecto</p>
               </div>
             </div>
@@ -731,7 +734,7 @@ const ExecutiveReport = ({ params, calculations, recommendations, darkMode, onCl
                 <div>
                   <div className="flex justify-between mb-1 text-sm">
                     <span>Valor Calculado (Em)</span>
-                    <span className="font-mono font-bold">{Em.toFixed(0)} V</span>
+                    <span className="font-mono font-bold">{formatVoltage(Em, 0)}</span>
                   </div>
                   <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-4">
                     <div className={`h-4 rounded-full ${Em <= Etouch70 ? 'bg-emerald-500' : 'bg-red-500'}`} style={{width: `${Math.min((Em / Etouch70) * 100, 100)}%`}}></div>
@@ -740,7 +743,7 @@ const ExecutiveReport = ({ params, calculations, recommendations, darkMode, onCl
                 <div>
                   <div className="flex justify-between mb-1 text-sm">
                     <span>Límite Permisible</span>
-                    <span className="font-mono">{Etouch70.toFixed(0)} V</span>
+                    <span className="font-mono">{formatVoltage(Etouch70, 0)}</span>
                   </div>
                   <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-4">
                     <div className="h-4 rounded-full bg-blue-500" style={{width: '100%'}}></div>
@@ -754,7 +757,7 @@ const ExecutiveReport = ({ params, calculations, recommendations, darkMode, onCl
                 <div>
                   <div className="flex justify-between mb-1 text-sm">
                     <span>Valor Calculado (Es)</span>
-                    <span className="font-mono font-bold">{Es.toFixed(0)} V</span>
+                    <span className="font-mono font-bold">{formatVoltage(Es, 0)}</span>
                   </div>
                   <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-4">
                     <div className={`h-4 rounded-full ${Es <= Estep70 ? 'bg-emerald-500' : 'bg-red-500'}`} style={{width: `${Math.min((Es / Estep70) * 100, 100)}%`}}></div>
@@ -763,7 +766,7 @@ const ExecutiveReport = ({ params, calculations, recommendations, darkMode, onCl
                 <div>
                   <div className="flex justify-between mb-1 text-sm">
                     <span>Límite Permisible</span>
-                    <span className="font-mono">{Estep70.toFixed(0)} V</span>
+                    <span className="font-mono">{formatVoltage(Estep70, 0)}</span>
                   </div>
                   <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-4">
                     <div className="h-4 rounded-full bg-blue-500" style={{width: '100%'}}></div>
@@ -802,8 +805,8 @@ const ExecutiveReport = ({ params, calculations, recommendations, darkMode, onCl
                   const rgVariation = resistivity * (1 / LT + 1 / Math.sqrt(20 * A) * (1 + 1 / (1 + h * Math.sqrt(20 / A))));
                   return (
                     <tr key={resistivity} className="border-b border-gray-200 dark:border-gray-700">
-                      <td className="py-2">{resistivity.toFixed(0)}</td>
-                      <td className="text-right py-2 font-mono">{rgVariation.toFixed(3)}</td>
+                      <td className="py-2">{formatResistance(resistivity, 0)}</td>
+                      <td className="text-right py-2 font-mono">{formatResistance(rgVariation, 3)}</td>
                       <td className={`text-right py-2 ${darkMode ? 'text-gray-100' : 'text-gray-600'}`}>{variation}</td>
                     </tr>
                   );
@@ -902,7 +905,7 @@ const ExecutiveReport = ({ params, calculations, recommendations, darkMode, onCl
             {(() => {
               const transferredVoltage = calculateTransferredVoltage(calculations?.GPR, 10, params.soilResistivity);
               const practicalVoltage = typeof transferredVoltage?.practicalVoltage === 'number'
-                ? transferredVoltage.practicalVoltage.toFixed(0)
+                ? formatVoltage(transferredVoltage.practicalVoltage, 0)
                 : 'N/A';
               return (
                 <div className="text-sm space-y-2">
@@ -944,7 +947,7 @@ const ExecutiveReport = ({ params, calculations, recommendations, darkMode, onCl
                 );
                 return (
                   <div className="text-sm space-y-2">
-                    <p><strong>Resistividad de diseño:</strong> {typeof design.designResistivity === 'number' ? design.designResistivity.toFixed(1) : 'N/A'} Ω·m</p>
+                    <p><strong>Resistividad de diseño:</strong> {typeof design.designResistivity === 'number' ? formatResistance(design.designResistivity, 1) : 'N/A'}</p>
                     <p><strong>Factor de seguridad:</strong> {design.safetyFactor || 'N/A'}x</p>
                     <p className={`${darkMode ? 'text-gray-100' : 'text-gray-600'}`}>{design.recommendation || 'N/A'}</p>
                   </div>

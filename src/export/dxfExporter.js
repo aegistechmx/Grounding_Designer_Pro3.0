@@ -194,8 +194,10 @@ ENTITIES
 `;
   
   // Exportar isolíneas de tensión
-  if (results.contours) {
+  if (results.contours && Array.isArray(results.contours)) {
     for (const contour of results.contours) {
+      if (!contour.points || !Array.isArray(contour.points)) continue;
+      
       dxf += `0
 POLYLINE
 8
@@ -243,6 +245,10 @@ EOF`;
 // ============================================
 
 export const exportHeatmapToImage = (canvas, filename = 'heatmap.png') => {
+  if (!canvas || typeof canvas.toDataURL !== 'function') {
+    console.error('exportHeatmapToImage: canvas inválido');
+    return;
+  }
   const link = document.createElement('a');
   link.download = filename;
   link.href = canvas.toDataURL('image/png');

@@ -124,7 +124,7 @@ export const generateHeatmapGrid = (gridData, resolution = 100) => {
   const normalizedGrid = grid.map(row =>
     row.map(cell => ({
       ...cell,
-      normalized: (cell.value - minVal) / (maxVal - minVal)
+      normalized: (maxVal - minVal) > 0 ? (cell.value - minVal) / (maxVal - minVal) : 0
     }))
   );
   

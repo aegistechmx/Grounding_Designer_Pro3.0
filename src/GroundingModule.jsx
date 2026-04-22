@@ -6,6 +6,7 @@ import HeatmapCanvas from './visual/HeatmapCanvas';
 import GridRenderer from './visual/GridRenderer';
 import { exportDXF } from './export/dxfExporter';
 import { importDXF } from './import/dxfImporter';
+import { formatResistance, formatVoltage, formatNumber, formatDistance } from './utils/formatters';
 
 const GroundingModule = ({ params, darkMode }) => {
   const [grid, setGrid] = useState(null);
@@ -30,8 +31,8 @@ const GroundingModule = ({ params, darkMode }) => {
       
       // Agregar varillas en el perímetro
       const perimeterNodes = newGrid.nodes.filter(n => n.isBorder);
-      const rodCount = Math.min(params.numRods || 10, perimeterNodes.length);
-      const step = Math.floor(perimeterNodes.length / rodCount);
+      const rodCount = Math.min(Math.max(1, params.numRods || 10), perimeterNodes.length);
+      const step = Math.max(1, Math.floor(perimeterNodes.length / rodCount));
       
       for (let i = 0; i < perimeterNodes.length; i += step) {
         if (i < rodCount) {
@@ -127,7 +128,7 @@ const GroundingModule = ({ params, darkMode }) => {
           />
           {selectedNode && (
             <div className="mt-2 text-sm text-gray-500">
-              Selected node: ({selectedNode.x.toFixed(2)}, {selectedNode.y.toFixed(2)})
+              Selected node: ({formatNumber(selectedNode.x, 2)}, {formatNumber(selectedNode.y, 2)})
               {selectedNode.isRod && ' Rod'}
             </div>
           )}
@@ -150,22 +151,22 @@ const GroundingModule = ({ params, darkMode }) => {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div>
               <div className="text-sm text-gray-500">Rg</div>
-              <div className="text-xl font-bold">{(calculations.Rg || 0).toFixed(2)} </div>
+              <div className="text-xl font-bold">{formatResistance(calculations.Rg || 0, 2)}</div>
             </div>
             <div>
               <div className="text-sm text-gray-500">GPR</div>
-              <div className="text-xl font-bold">{(calculations.GPR || 0).toFixed(0)} V</div>
+              <div className="text-xl font-bold">{formatVoltage(calculations.GPR || 0, 0)}</div>
             </div>
             <div>
               <div className="text-sm text-gray-500">Em</div>
               <div className={`text-xl font-bold ${calculations.complies ? 'text-green-600' : 'text-red-600'}`}>
-                {(calculations.Em || 0).toFixed(0)} V
+                {formatVoltage(calculations.Em || 0, 0)}
               </div>
             </div>
             <div>
               <div className="text-sm text-gray-500">Es</div>
               <div className={`text-xl font-bold ${calculations.complies ? 'text-green-600' : 'text-red-600'}`}>
-                {(calculations.Es || 0).toFixed(0)} V
+                {formatVoltage(calculations.Es || 0, 0)}
               </div>
             </div>
           </div>
@@ -196,7 +197,7 @@ const GroundingModule = ({ params, darkMode }) => {
             </div>
             <div>
               <span className="text-gray-500">Total length:</span>
-              <span className="ml-2 font-bold">{grid.params.totalConductorLength.toFixed(0)} m</span>
+              <span className="ml-2 font-bold">{formatDistance(grid.params.totalConductorLength, 0)}</span>
             </div>
           </div>
         </div>

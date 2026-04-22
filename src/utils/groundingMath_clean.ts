@@ -4,9 +4,9 @@
  * Catálogo Viakon completo implementado
  */
 
-import { validateGroundingParams, validateThermalCheckParams, safeSqrt, safeMax, safeMin, validateAndCorrectSpacing, validateNumber } from './validationUtils';
-import { mathLogger } from './loggerUtils';
-import { measurePerformance, memoize } from './performanceUtils';
+import { validateGroundingParams, validateThermalCheckParams, safeSqrt, safeMax, safeMin, validateAndCorrectSpacing, validateNumber } from './validation/validationUtils';
+import { mathLogger } from './helpers/loggerUtils';
+import { measurePerformance, memoize } from './helpers/performanceUtils';
 
 // ============================================
 // TYPES
@@ -144,25 +144,27 @@ export const calculateIEEE80 = (params: GroundingParams): IEEE80Results => {
   };
 
   // Cálculo básico
-  const Vsec = p.secondaryVoltage;
-  const Z = p.transformerImpedance;
+  const Vsec = Math.max(1, p.secondaryVoltage || 220);
+  const Z = Math.max(1, p.transformerImpedance || 5);
   const In = (p.transformerKVA * 1000) / (Math.sqrt(3) * Vsec);
   const faultCurrent = In / (Z / 100);
   const Ig = faultCurrent * p.currentDivisionFactor;
   
-  const A = p.gridLength * p.gridWidth;
+  const A = Math.max(1, p.gridLength * p.gridWidth);
   const perimeter = 2 * (p.gridLength + p.gridWidth);
   const totalGridLength = perimeter * p.numParallel;
   const totalRodLength = p.numRods * p.rodLength;
-  const LT = totalGridLength + totalRodLength;
+  const LT = Math.max(0.1, totalGridLength + totalRodLength);
   
   // Resistencia de malla simplificada
-  const Rg = p.soilResistivity * (1/LT + 1/Math.sqrt(20 * A));
+  const Rg = p.soilResistivity * (1/LT + 1/Math.max(1, Math.sqrt(20 * A)));
   const GPR = Ig * Rg;
   
   // Tensiones simplificadas
-  const Cs = 1 - (0.09 * (1 - p.soilResistivity / p.surfaceLayer)) / (2 * p.surfaceDepth + 0.09);
-  const t = p.faultDuration;
+  const surfaceLayer = Math.max(1, p.surfaceLayer || 10000);
+  const surfaceDepth = Math.max(0.01, p.surfaceDepth || 0.2);
+  const Cs = 1 - (0.09 * (1 - p.soilResistivity / surfaceLayer)) / (2 * surfaceDepth + 0.09);
+  const t = Math.max(0.1, p.faultDuration || 0.35);
   const sqrt_t = Math.sqrt(t);
   
   // ✅ Para PERSONA de 70 kg
@@ -187,7 +189,7 @@ export const calculateIEEE80 = (params: GroundingParams): IEEE80Results => {
   
   const complies = touchSafe70 && stepSafe70;
   
-  const minConductorArea = (Ig * Math.sqrt(t)) / 7.0;
+  const minConductorArea = (Ig * sqrt_t) / 7.0;
   
   const result: IEEE80Results = {
     faultCurrent,
@@ -229,7 +231,7 @@ export const generateRecommendations = (results: IEEE80Results | null | undefine
 };
 
 export const validateImportedData = (data: ImportedData | null | undefined): boolean => {
-  return !!(data?.parameters?.transformerKVA || data?.parameters?.transformerKVA);
+  return !!(data?.parameters?.transformerKVA);
 };
 
 export const selectConductor = (area: number): Conductor => {

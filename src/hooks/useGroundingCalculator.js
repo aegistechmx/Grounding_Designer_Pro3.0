@@ -31,7 +31,11 @@ export const useGroundingCalculator = () => {
   useEffect(() => {
     // El store ya maneja el recálculo en setParams
     // Este efecto es para acciones adicionales si es necesario
-  }, [debouncedParams]);
+    if (debouncedParams !== params) {
+      // Actualizar parámetros en el store cuando cambien
+      setParams(debouncedParams);
+    }
+  }, [debouncedParams, setParams, params]);
   
   // Verificar cumplimiento y agregar notificaciones automáticas
   useEffect(() => {
@@ -49,7 +53,7 @@ export const useGroundingCalculator = () => {
       });
     }
     
-    if (calculations.Rg > 5) {
+    if (calculations.Rg && isFinite(calculations.Rg) && calculations.Rg > 5) {
       newNotifications.push({
         type: 'warning',
         title: 'Resistencia de Malla Alta',
@@ -59,7 +63,7 @@ export const useGroundingCalculator = () => {
       });
     }
     
-    if (calculations.thermalCheck && !calculations.thermalCheck.complies) {
+    if (calculations.thermalCheck && calculations.thermalCheck.complies !== undefined && !calculations.thermalCheck.complies) {
       newNotifications.push({
         type: 'warning',
         title: 'Verificación Térmica',
@@ -69,8 +73,10 @@ export const useGroundingCalculator = () => {
     }
     
     // Limpiar notificaciones antiguas y agregar nuevas
-    // (la lógica de notificaciones se maneja en el store)
-  }, [calculations]);
+    newNotifications.forEach(notification => {
+      addNotification(notification);
+    });
+  }, [calculations, addNotification]);
   
   return {
     // Estado

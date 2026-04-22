@@ -527,6 +527,10 @@ function areLinesNearby(line1, line2, tolerance) {
  * @returns {number} Distance
  */
 function distanceBetweenLines(line1, line2) {
+  if (!line1 || !line2 || !line1.start || !line1.end || !line2.start || !line2.end) {
+    return Infinity;
+  }
+  
   // Simple implementation: distance between midpoints
   const mid1 = {
     x: (line1.start.x + line1.end.x) / 2,
@@ -595,6 +599,10 @@ function areLinesConnected(group, line) {
  * @returns {boolean} True if connected
  */
 function areLinesConnected(line1, line2) {
+  if (!line1 || !line2 || !line1.start || !line1.end || !line2.start || !line2.end) {
+    return false;
+  }
+  
   const tolerance = 0.01; // 1cm tolerance
   
   // Check if any endpoint is close to any endpoint of the other line
@@ -646,6 +654,8 @@ function calculateGroupLength(entities) {
  * @returns {boolean} True if closed
  */
 function isClosedPolyline(polyline) {
+  if (!polyline || !polyline.geometry || !polyline.geometry.vertices) return false;
+  
   const vertices = polyline.geometry.vertices;
   if (vertices.length < 3) return false;
   
@@ -661,6 +671,10 @@ function isClosedPolyline(polyline) {
  * @returns {Object} Bounding box
  */
 function calculatePolylineBounds(polyline) {
+  if (!polyline || !polyline.geometry || !polyline.geometry.vertices) {
+    return { minX: 0, maxX: 0, minY: 0, maxY: 0 };
+  }
+  
   const vertices = polyline.geometry.vertices;
   let minX = Infinity, maxX = -Infinity;
   let minY = Infinity, maxY = -Infinity;
@@ -681,6 +695,8 @@ function calculatePolylineBounds(polyline) {
  * @returns {number} Area
  */
 function calculatePolygonArea(polyline) {
+  if (!polyline || !polyline.geometry || !polyline.geometry.vertices) return 0;
+  
   const vertices = polyline.geometry.vertices;
   if (vertices.length < 3) return 0;
   

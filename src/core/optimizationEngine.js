@@ -62,13 +62,16 @@ const calculateFitness = (params, weights) => {
   }
   
   // Seguridad (margen de tensión de contacto)
-  const touchMargin = results.Etouch70 > 0 
-    ? ((results.Etouch70 - results.Em) / results.Etouch70 * 100)
+  const Etouch70 = Math.max(1, results.Etouch70 || 1);
+  const Em = results.Em || 0;
+  const touchMargin = Etouch70 > 0 
+    ? ((Etouch70 - Em) / Math.max(1, Etouch70) * 100)
     : 0;
   score += Math.min(50, Math.max(0, touchMargin)) * (weights.safety || 0.5);
   
   // Resistencia de malla
-  const rgScore = results.Rg <= 2 ? 30 : results.Rg <= 5 ? 20 : 10;
+  const Rg = results.Rg || 0;
+  const rgScore = Rg <= 2 ? 30 : Rg <= 5 ? 20 : 10;
   score += rgScore * (weights.resistance || 0.3);
   
   // Eficiencia (uso de materiales)
@@ -118,6 +121,10 @@ const mutate = (individual) => {
 
 // Selección por torneo
 const tournamentSelection = (population, scores, tournamentSize = 3) => {
+  if (!population || population.length === 0 || !scores || scores.length === 0) {
+    return null;
+  }
+  
   let best = null;
   let bestScore = -Infinity;
   
@@ -134,6 +141,8 @@ const tournamentSelection = (population, scores, tournamentSize = 3) => {
 
 // Algoritmo genético principal
 export const optimizeGridGenetic = async (baseParams, weights = {}, onProgress) => {
+  if (!baseParams) baseParams = {};
+  
   const startTime = Date.now();
   let population = [];
   let bestIndividual = null;
@@ -223,6 +232,8 @@ export const optimizeGridGenetic = async (baseParams, weights = {}, onProgress) 
 
 // Optimización heurística rápida
 export const quickOptimize = (baseParams, strategy = 'balanced') => {
+  if (!baseParams) baseParams = {};
+  
   const strategies = {
     safety: {
       numParallel: 20,
@@ -260,21 +271,27 @@ export const quickOptimize = (baseParams, strategy = 'balanced') => {
   const optimizedParams = { ...baseParams, ...target };
   const results = runGroundingCalculation(optimizedParams);
   
+  const baseRg = baseParams.Rg || 0;
+  const baseEm = baseParams.Em || 0;
+  const baseEs = baseParams.Es || 0;
+  
   return {
     success: true,
     strategy,
     params: optimizedParams,
     results,
     improvements: {
-      Rg: baseParams.Rg > 0 ? ((baseParams.Rg - results.Rg) / baseParams.Rg * 100).toFixed(1) : '0',
-      Em: baseParams.Em > 0 ? ((baseParams.Em - results.Em) / baseParams.Em * 100).toFixed(1) : '0',
-      Es: baseParams.Es > 0 ? ((baseParams.Es - results.Es) / baseParams.Es * 100).toFixed(1) : '0'
+      Rg: baseRg > 0 ? ((baseRg - (results.Rg || 0)) / Math.max(1, baseRg) * 100).toFixed(1) : '0',
+      Em: baseEm > 0 ? ((baseEm - (results.Em || 0)) / Math.max(1, baseEm) * 100).toFixed(1) : '0',
+      Es: baseEs > 0 ? ((baseEs - (results.Es || 0)) / Math.max(1, baseEs) * 100).toFixed(1) : '0'
     }
   };
 };
 
 // Análisis de Pareto (múltiples objetivos)
 export const paretoOptimize = (baseParams, iterations = 100) => {
+  if (!baseParams) baseParams = {};
+  
   const solutions = [];
   
   for (let i = 0; i < iterations; i++) {
@@ -282,11 +299,14 @@ export const paretoOptimize = (baseParams, iterations = 100) => {
     const results = runGroundingCalculation(candidate);
     
     if (results) {
+      const Etouch70 = Math.max(1, results.Etouch70 || 1);
+      const Em = results.Em || 0;
+      
       solutions.push({
         params: candidate,
         results,
         objectives: {
-          safety: results.touchSafe70 ? 100 - (results.Em / results.Etouch70 * 100) : 0,
+          safety: results.touchSafe70 ? 100 - (Em / Math.max(1, Etouch70) * 100) : 0,
           cost: 100 - (candidate.numParallel * candidate.numParallelY + candidate.numRods) / 2,
           compliance: results.complies ? 100 : 0
         }

@@ -35,9 +35,11 @@ const GroundingGridSVG = ({ params, darkMode, dxfData = null }) => {
 
   // Real-world scaling (meters to pixels)
   const pixelsPerMeter = useMemo(() => {
-    const scaleX = (svgWidth - padding * 2) / gridWidth;
-    const scaleY = (svgHeight - padding * 2) / gridLength;
-    return Math.min(scaleX, scaleY);
+    const gridWidthSafe = Math.max(1, gridWidth);
+    const gridLengthSafe = Math.max(1, gridLength);
+    const scaleX = (svgWidth - padding * 2) / gridWidthSafe;
+    const scaleY = (svgHeight - padding * 2) / gridLengthSafe;
+    return Math.max(0.1, Math.min(scaleX, scaleY));
   }, [gridWidth, gridLength]);
 
   const actualWidth = gridWidth * pixelsPerMeter;
@@ -60,10 +62,11 @@ const GroundingGridSVG = ({ params, darkMode, dxfData = null }) => {
 
   // 🔹 Generación optimizada de líneas con coordenadas reales
   const horizontalLines = useMemo(() => {
-    const spacing = actualHeight / (ny - 1);
-    return Array.from({ length: ny }, (_, i) => {
+    const nySafe = Math.max(2, ny);
+    const spacing = actualHeight / (nySafe - 1);
+    return Array.from({ length: nySafe }, (_, i) => {
       const y = offsetY + i * spacing;
-      const realY = (i / (ny - 1)) * gridLength;
+      const realY = (i / (nySafe - 1)) * gridLength;
       
       // Get UTM coordinates for this line
       const utmStart = getUTMCoordinates(0, realY);
@@ -78,18 +81,19 @@ const GroundingGridSVG = ({ params, darkMode, dxfData = null }) => {
           y2={y}
           stroke={darkMode ? '#60a5fa' : '#3b82f6'}
           strokeWidth={i === 0 || i === ny - 1 ? 3 : 1.5}
-          data-utm-start={`${utmStart.easting.toFixed(1)}, ${utmStart.northing.toFixed(1)}`}
-          data-utm-end={`${utmEnd.easting.toFixed(1)}, ${utmEnd.northing.toFixed(1)}`}
+          data-utm-start={`${isFinite(utmStart.easting) ? utmStart.easting.toFixed(1) : 'N/A'}, ${isFinite(utmStart.northing) ? utmStart.northing.toFixed(1) : 'N/A'}`}
+          data-utm-end={`${isFinite(utmEnd.easting) ? utmEnd.easting.toFixed(1) : 'N/A'}, ${isFinite(utmEnd.northing) ? utmEnd.northing.toFixed(1) : 'N/A'}`}
         />
       );
     });
   }, [ny, actualHeight, offsetX, gridLength, gridWidth, utmOrigin, rotation, darkMode]);
 
   const verticalLines = useMemo(() => {
-    const spacing = actualWidth / (nx - 1);
-    return Array.from({ length: nx }, (_, i) => {
+    const nxSafe = Math.max(2, nx);
+    const spacing = actualWidth / (nxSafe - 1);
+    return Array.from({ length: nxSafe }, (_, i) => {
       const x = offsetX + i * spacing;
-      const realX = (i / (nx - 1)) * gridWidth;
+      const realX = (i / (nxSafe - 1)) * gridWidth;
       
       // Get UTM coordinates for this line
       const utmStart = getUTMCoordinates(realX, 0);
@@ -104,8 +108,8 @@ const GroundingGridSVG = ({ params, darkMode, dxfData = null }) => {
           y2={offsetY + actualHeight}
           stroke={darkMode ? '#3b82f6' : '#2563eb'}
           strokeWidth={i === 0 || i === nx - 1 ? 3 : 1.5}
-          data-utm-start={`${utmStart.easting.toFixed(1)}, ${utmStart.northing.toFixed(1)}`}
-          data-utm-end={`${utmEnd.easting.toFixed(1)}, ${utmEnd.northing.toFixed(1)}`}
+          data-utm-start={`${isFinite(utmStart.easting) ? utmStart.easting.toFixed(1) : 'N/A'}, ${isFinite(utmStart.northing) ? utmStart.northing.toFixed(1) : 'N/A'}`}
+          data-utm-end={`${isFinite(utmEnd.easting) ? utmEnd.easting.toFixed(1) : 'N/A'}, ${isFinite(utmEnd.northing) ? utmEnd.northing.toFixed(1) : 'N/A'}`}
         />
       );
     });
@@ -114,7 +118,7 @@ const GroundingGridSVG = ({ params, darkMode, dxfData = null }) => {
   // 🔹 Varillas con posición real
   const rods = useMemo(() => {
     const rodsArray = [];
-    const perSide = Math.ceil(numRods / 4);
+    const perSide = Math.max(2, Math.ceil(numRods / 4));
 
     for (let i = 0; i < perSide; i++) {
       const t = i / (perSide - 1);
@@ -245,7 +249,7 @@ const GroundingGridSVG = ({ params, darkMode, dxfData = null }) => {
         </div>
         
         <div className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-          Zoom: {(zoom * 100).toFixed(0)}% | Rotación: {rotation}°
+          Zoom: {isFinite(zoom * 100) ? (zoom * 100).toFixed(0) : 'N/A'}% | Rotación: {rotation}°
         </div>
       </div>
 
@@ -284,7 +288,7 @@ const GroundingGridSVG = ({ params, darkMode, dxfData = null }) => {
                   fontSize="10"
                   fill={darkMode ? '#fff' : '#000'}
                 >
-                  {rod.utm.easting.toFixed(1)}, {rod.utm.northing.toFixed(1)}
+                  {isFinite(rod.utm.easting) ? rod.utm.easting.toFixed(1) : 'N/A'}, {isFinite(rod.utm.northing) ? rod.utm.northing.toFixed(1) : 'N/A'}
                 </text>
               )}
             </g>
@@ -310,17 +314,6 @@ const GroundingGridSVG = ({ params, darkMode, dxfData = null }) => {
             <text x={20} y={45} fontSize="11" fill={darkMode ? '#aaa' : '#666'}>
               Dimensiones: {gridWidth}m × {gridLength}m
             </text>
-            <text x={20} y={60} fontSize="11" fill={darkMode ? '#aaa' : '#666'}>
-              Conductores: {nx} × {ny} | Varillas: {numRods}
-            </text>
-            <text x={20} y={75} fontSize="11" fill={darkMode ? '#aaa' : '#666'}>
-              Escala: 1:{(1 / pixelsPerMeter).toFixed(2)}
-            </text>
-            {showCoordinates && (
-              <text x={20} y={90} fontSize="10" fill={darkMode ? '#888' : '#888'}>
-                UTM Zona {utmOrigin.zone} | {utmOrigin.hemisphere}
-              </text>
-            )}
           </g>
         </svg>
       </div>

@@ -214,8 +214,8 @@ const MapAreaSelector = ({ onAreaSelect, darkMode, initialBounds }) => {
           <Marker key={idx} position={[corner.lat, corner.lng]} icon={markerIcon}>
             <Popup>
               <strong>Punto {idx + 1}</strong><br />
-              Lat: {corner.lat.toFixed(6)}°<br />
-              Lon: {corner.lng.toFixed(6)}°
+              Lat: {isFinite(corner.lat) ? corner.lat.toFixed(6) : 'N/A'}°<br />
+              Lon: {isFinite(corner.lng) ? corner.lng.toFixed(6) : 'N/A'}°
             </Popup>
           </Marker>
         ))}
@@ -224,15 +224,15 @@ const MapAreaSelector = ({ onAreaSelect, darkMode, initialBounds }) => {
       {area && (
         <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-900/30 rounded-lg">
           <p className="text-sm font-semibold">📐 Área seleccionada</p>
-          <p className="text-2xl font-bold text-blue-600">{area.toFixed(0)} m²</p>
+          <p className="text-2xl font-bold text-blue-600">{isFinite(area) ? area.toFixed(0) : 'N/A'} m²</p>
           <div className="grid grid-cols-2 gap-2 mt-2 text-sm">
             <div>
               <span className={darkMode ? 'text-gray-100' : 'text-gray-600'}>Largo:</span>
-              <span className="ml-1 font-semibold">{dimensions?.length?.toFixed(1) || Math.sqrt(area).toFixed(1)} m</span>
+              <span className="ml-1 font-semibold">{isFinite(dimensions?.length) ? dimensions.length.toFixed(1) : (isFinite(Math.sqrt(area)) ? Math.sqrt(area).toFixed(1) : 'N/A')} m</span>
             </div>
             <div>
               <span className={darkMode ? 'text-gray-100' : 'text-gray-600'}>Ancho:</span>
-              <span className="ml-1 font-semibold">{dimensions?.width?.toFixed(1) || Math.sqrt(area).toFixed(1)} m</span>
+              <span className="ml-1 font-semibold">{isFinite(dimensions?.width) ? dimensions.width.toFixed(1) : (isFinite(Math.sqrt(area)) ? Math.sqrt(area).toFixed(1) : 'N/A')} m</span>
             </div>
           </div>
           <button

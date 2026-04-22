@@ -1,0 +1,108 @@
+version: '3.9'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: grounding
+      POSTGRES_PASSWORD: grounding123
+      POSTGRES_DB: grounding_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U grounding"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    ports:
+      - "3000:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://grounding:grounding123@postgres:5432/grounding_db
+      REDIS_URL: redis://redis:6379
+      PORT: 3000
+    volumes:
+      - ./apps/api:/app/apps/api
+      - ./packages:/app/packages
+
+  worker-fem:
+    build:
+      context: .
+      dockerfile: apps/worker-fem/Dockerfile
+    depends_on:
+      redis:
+        condition: service_healthy
+    environment:
+      REDIS_URL: redis://redis:6379
+    volumes:
+      - ./apps/worker-fem:/app/apps/worker-fem
+      - ./packages:/app/packages
+    deploy:
+      replicas: 3
+      resources:
+        limits:
+          memory: 2GB
+        reservations:
+          memory: 512MB
+
+  worker-ai:
+    build:
+      context: .
+      dockerfile: apps/worker-ai/Dockerfile
+    depends_on:
+      redis:
+        condition: service_healthy
+    environment:
+      REDIS_URL: redis://redis:6379
+    volumes:
+      - ./apps/worker-ai:/app/apps/worker-ai
+      - ./packages:/app/packages
+
+  worker-optimizer:
+    build:
+      context: .
+      dockerfile: apps/worker-optimizer/Dockerfile
+    depends_on:
+      redis:
+        condition: service_healthy
+    environment:
+      REDIS_URL: redis://redis:6379
+    volumes:
+      - ./apps/worker-optimizer:/app/apps/worker-optimizer
+      - ./packages:/app/packages
+
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+    volumes:
+      - ./infra/nginx/nginx.conf:/etc/nginx/nginx.conf
+    depends_on:
+      - api
+
+volumes:
+  postgres_data:
+  redis_data:

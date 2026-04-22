@@ -146,18 +146,27 @@ const calculateFaultCurrents = (params) => {
 // Resistencia de malla (Rg)
 const calculateResistance = (soilResistivity, LT, A, gridDepth) => {
   const ρ = safeNumber(soilResistivity, 100);
+  const LTSafe = Math.max(1, safeNumber(LT, 100));
+  const ASafe = Math.max(1, safeNumber(A, 100));
   const h = safeNumber(gridDepth, 0.6);
   
-  let Rg = ρ * (1 / LT + 1 / Math.sqrt(20 * A) * (1 + 1 / (1 + h * Math.sqrt(20 / A))));
+  let Rg = ρ * (1 / LTSafe + 1 / Math.sqrt(20 * ASafe) * (1 + 1 / (1 + h * Math.sqrt(20 / ASafe))));
   return (isNaN(Rg) || !isFinite(Rg)) ? 0 : Rg;
 };
 
 // Tensiones de malla y paso
 const calculateVoltages = (soilResistivity, Km, Ki, Ig, LT, Ks, totalGridLength, totalRodLength) => {
   const ρ = safeNumber(soilResistivity, 100);
+  const IgSafe = Math.max(1, safeNumber(Ig, 1000));
+  const LTSafe = Math.max(1, safeNumber(LT, 100));
+  const totalGridLengthSafe = Math.max(1, safeNumber(totalGridLength, 100));
+  const totalRodLengthSafe = Math.max(0, safeNumber(totalRodLength, 0));
+  const KmSafe = Math.max(0.1, safeNumber(Km, 0.5));
+  const KiSafe = Math.max(0.1, safeNumber(Ki, 0.7));
+  const KsSafe = Math.max(0.1, safeNumber(Ks, 0.7));
   
-  let Em = (ρ * Km * Ki * Ig) / LT;
-  let Es = (ρ * Ks * Ki * Ig) / (0.75 * totalGridLength + 0.85 * totalRodLength);
+  let Em = (ρ * KmSafe * KiSafe * IgSafe) / LTSafe;
+  let Es = (ρ * KsSafe * KiSafe * IgSafe) / (0.75 * totalGridLengthSafe + 0.85 * totalRodLengthSafe);
   
   Em = (isNaN(Em) || !isFinite(Em)) ? 0 : Em;
   Es = (isNaN(Es) || !isFinite(Es)) ? 0 : Es;
@@ -171,16 +180,19 @@ const calculateThermalCheck = (Ig, faultDuration, conductorArea, material = 'COP
   if (!constData) return { complies: false, error: 'Material no soportado' };
   
   const t = Math.max(0.1, safeNumber(faultDuration, 0.35));
-  const minRequiredArea = (Ig * Math.sqrt(t)) / constData.k;
-  const complies = conductorArea >= minRequiredArea;
+  const IgSafe = Math.max(1, safeNumber(Ig, 1000));
+  const conductorAreaSafe = Math.max(0.1, safeNumber(conductorArea, 1));
+  
+  const minRequiredArea = (IgSafe * Math.sqrt(t)) / constData.k;
+  const complies = conductorAreaSafe >= minRequiredArea;
   
   return {
     complies,
     minRequiredArea: minRequiredArea.toFixed(2),
-    currentArea: conductorArea.toFixed(2),
+    currentArea: conductorAreaSafe.toFixed(2),
     message: complies 
-      ? `✅ Conductor adecuado (${conductorArea.toFixed(2)} mm² ≥ ${minRequiredArea.toFixed(2)} mm²)`
-      : `❌ Conductor insuficiente (${conductorArea.toFixed(2)} mm² < ${minRequiredArea.toFixed(2)} mm²)`
+      ? `✅ Conductor adecuado (${conductorAreaSafe.toFixed(2)} mm² ≥ ${minRequiredArea.toFixed(2)} mm²)`
+      : `❌ Conductor insuficiente (${conductorAreaSafe.toFixed(2)} mm² < ${minRequiredArea.toFixed(2)} mm²)`
   };
 };
 
@@ -226,7 +238,8 @@ export const runGroundingCalculation = (params) => {
     const complies = touchSafe70 && stepSafe70;
     
     // 9. Verificación térmica
-    const conductorArea = Math.PI * Math.pow(params.conductorDiameter / 2, 2) * 1000000;
+    const conductorDiameterSafe = Math.max(0.001, safeNumber(params.conductorDiameter, 0.01168));
+    const conductorArea = Math.PI * Math.pow(conductorDiameterSafe / 2, 2) * 1000000;
     const thermalCheck = calculateThermalCheck(Ig, params.faultDuration, conductorArea, params.materialType);
     
     // 10. Calibre mínimo por área térmica
@@ -326,8 +339,8 @@ export const generateRecommendations = (results) => {
     recommendations.push("• Tensión de paso excede límite: agregar conductor perimetral adicional o mejorar capa superficial");
   }
   
-  if (results.GPR > results.Etouch70) {
-    recommendations.push("• GPR elevado: considerar malla de mayor área o reducir corriente de falla");
+  if (results.Em > results.Etouch70) {
+    recommendations.push("• Tensión de contacto elevada: considerar malla de mayor área o reducir espaciamiento");
   }
   
   if (results.thermalCheck && !results.thermalCheck.complies) {

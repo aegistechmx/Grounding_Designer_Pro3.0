@@ -7,6 +7,11 @@ const { Pool } = require('pg');
 const app = express();
 const port = process.env.PORT || 3001;
 
+// Verify required environment variables
+if (!process.env.JWT_SECRET) {
+  throw new Error('JWT_SECRET environment variable is required');
+}
+
 // Middleware
 app.use(cors());
 app.use(express.json());
@@ -25,14 +30,21 @@ const pool = new Pool({
 // ============================================
 
 const auth = (req, res, next) => {
-  const token = req.headers.authorization?.split(' ')[1];
+  const authHeader = req.headers.authorization;
   
-  if (!token) {
+  if (!authHeader) {
     return res.status(401).json({ error: 'No token provided' });
   }
+
+  const parts = authHeader.split(' ');
+  if (parts.length !== 2 || parts[0] !== 'Bearer') {
+    return res.status(401).json({ error: 'Invalid authorization format. Use: Bearer <token>' });
+  }
+
+  const token = parts[1];
   
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret');
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
     req.user = decoded;
     next();
   } catch (error) {
@@ -56,7 +68,7 @@ app.post('/api/auth/register', async (req, res) => {
     
     const token = jwt.sign(
       { id: result.rows[0].id, email: result.rows[0].email },
-      process.env.JWT_SECRET || 'secret',
+      process.env.JWT_SECRET,
       { expiresIn: '7d' }
     );
     
@@ -85,7 +97,7 @@ app.post('/api/auth/login', async (req, res) => {
     
     const token = jwt.sign(
       { id: user.id, email: user.email },
-      process.env.JWT_SECRET || 'secret',
+      process.env.JWT_SECRET,
       { expiresIn: '7d' }
     );
     

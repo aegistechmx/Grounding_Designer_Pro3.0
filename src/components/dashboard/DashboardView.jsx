@@ -11,7 +11,7 @@ const DashboardView = ({ calculations, params, darkMode }) => {
   }
 
   const safetyMargin = calculations.Etouch70 && calculations.Em
-    ? ((calculations.Etouch70 - calculations.Em) / calculations.Etouch70 * 100).toFixed(1)
+    ? isFinite(Math.max(0, ((calculations.Etouch70 - calculations.Em) / Math.max(1, calculations.Etouch70) * 100))) ? Math.max(0, ((calculations.Etouch70 - calculations.Em) / Math.max(1, calculations.Etouch70) * 100)).toFixed(1) : '0'
     : '0';
 
   const getStatusColor = (value, goodValue, badValue) => {
@@ -21,7 +21,7 @@ const DashboardView = ({ calculations, params, darkMode }) => {
   };
 
   const getProgressWidth = (value, max) => {
-    return `${Math.min(100, (value / max) * 100)}%`;
+    return `${Math.min(100, (value / Math.max(1, max)) * 100)}%`;
   };
 
   return (
@@ -45,7 +45,7 @@ const DashboardView = ({ calculations, params, darkMode }) => {
             <Zap size={24} className="text-yellow-500" />
             <span className="text-xs text-gray-500">Resistencia</span>
           </div>
-          <div className="text-2xl font-bold">{calculations.Rg?.toFixed(2)} Ω</div>
+          <div className="text-2xl font-bold">{isFinite(calculations.Rg) ? calculations.Rg.toFixed(2) : 'N/A'} Ω</div>
           <div className="text-sm text-gray-500">Resistencia de malla</div>
           <div className="mt-2 h-1.5 w-full bg-gray-200 rounded-full overflow-hidden">
             <div className="h-full bg-yellow-500 rounded-full" style={{ width: getProgressWidth(calculations.Rg, 10) }} />
@@ -57,7 +57,7 @@ const DashboardView = ({ calculations, params, darkMode }) => {
             <Gauge size={24} className="text-purple-500" />
             <span className="text-xs text-gray-500">GPR</span>
           </div>
-          <div className="text-2xl font-bold">{calculations.GPR?.toFixed(0)} V</div>
+          <div className="text-2xl font-bold">{isFinite(calculations.GPR) ? calculations.GPR.toFixed(0) : 'N/A'} V</div>
           <div className="text-sm text-gray-500">Elevación de potencial</div>
           <div className="mt-2 h-1.5 w-full bg-gray-200 rounded-full overflow-hidden">
             <div className="h-full bg-purple-500 rounded-full" style={{ width: getProgressWidth(calculations.GPR, 15000) }} />
@@ -69,7 +69,7 @@ const DashboardView = ({ calculations, params, darkMode }) => {
             <Activity size={24} className="text-green-500" />
             <span className="text-xs text-gray-500">Corriente</span>
           </div>
-          <div className="text-2xl font-bold">{calculations.Ig?.toFixed(0)} A</div>
+          <div className="text-2xl font-bold">{isFinite(calculations.Ig) ? calculations.Ig.toFixed(0) : 'N/A'} A</div>
           <div className="text-sm text-gray-500">Corriente en malla</div>
         </div>
       </div>
@@ -83,16 +83,16 @@ const DashboardView = ({ calculations, params, darkMode }) => {
           <div className="space-y-2">
             <div className="flex justify-between text-sm">
               <span>Valor calculado</span>
-              <span className="font-bold">{calculations.Em?.toFixed(0)} V</span>
+              <span className="font-bold">{isFinite(calculations.Em) ? calculations.Em.toFixed(0) : 'N/A'} V</span>
             </div>
             <div className="flex justify-between text-sm">
               <span>Límite permisible</span>
-              <span>{calculations.Etouch70?.toFixed(0)} V</span>
+              <span>{isFinite(calculations.Etouch70) ? calculations.Etouch70.toFixed(0) : 'N/A'} V</span>
             </div>
             <div className="mt-2 h-2 w-full bg-gray-200 rounded-full overflow-hidden">
               <div 
                 className={`h-full rounded-full ${calculations.touchSafe70 ? 'bg-green-500' : 'bg-red-500'}`}
-                style={{ width: `${(calculations.Em / calculations.Etouch70) * 100}%` }}
+                style={{ width: `${(calculations.Em / Math.max(1, calculations.Etouch70)) * 100}%` }}
               />
             </div>
             <div className={`text-sm font-semibold ${calculations.touchSafe70 ? 'text-green-600' : 'text-red-600'}`}>
@@ -108,16 +108,16 @@ const DashboardView = ({ calculations, params, darkMode }) => {
           <div className="space-y-2">
             <div className="flex justify-between text-sm">
               <span>Valor calculado</span>
-              <span className="font-bold">{calculations.Es?.toFixed(0)} V</span>
+              <span className="font-bold">{isFinite(calculations.Es) ? calculations.Es.toFixed(0) : 'N/A'} V</span>
             </div>
             <div className="flex justify-between text-sm">
               <span>Límite permisible</span>
-              <span>{calculations.Estep70?.toFixed(0)} V</span>
+              <span>{isFinite(calculations.Estep70) ? calculations.Estep70.toFixed(0) : 'N/A'} V</span>
             </div>
             <div className="mt-2 h-2 w-full bg-gray-200 rounded-full overflow-hidden">
               <div 
                 className={`h-full rounded-full ${calculations.stepSafe70 ? 'bg-green-500' : 'bg-red-500'}`}
-                style={{ width: `${(calculations.Es / calculations.Estep70) * 100}%` }}
+                style={{ width: `${(calculations.Es / Math.max(1, calculations.Estep70)) * 100}%` }}
               />
             </div>
             <div className={`text-sm font-semibold ${calculations.stepSafe70 ? 'text-green-600' : 'text-red-600'}`}>
@@ -133,25 +133,25 @@ const DashboardView = ({ calculations, params, darkMode }) => {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
           <div>
             <div className="text-2xl font-bold text-blue-600">
-              {((params.gridLength * params.gridWidth) || 0).toFixed(0)} m²
+              {isFinite(((params?.gridLength || 0) * (params?.gridWidth || 0)) || 0) ? (((params?.gridLength || 0) * (params?.gridWidth || 0)) || 0).toFixed(0) : 'N/A'} m²
             </div>
             <div className="text-xs text-gray-500">Área de malla</div>
           </div>
           <div>
             <div className="text-2xl font-bold text-green-600">
-              {calculations.totalConductor?.toFixed(0) || 0} m
+              {isFinite(calculations.totalConductor) ? calculations.totalConductor.toFixed(0) : 'N/A'} m
             </div>
             <div className="text-xs text-gray-500">Conductor total</div>
           </div>
           <div>
             <div className="text-2xl font-bold text-purple-600">
-              {params.numRods || 0}
+              {params?.numRods || 0}
             </div>
             <div className="text-xs text-gray-500">Varillas</div>
           </div>
           <div>
             <div className="text-2xl font-bold text-orange-600">
-              {params.numParallel || 0}×{params.numParallelY || 0}
+              {params?.numParallel || 0}×{params?.numParallelY || 0}
             </div>
             <div className="text-xs text-gray-500">Configuración</div>
           </div>

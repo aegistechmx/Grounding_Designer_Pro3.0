@@ -198,8 +198,8 @@ export const validateSystem = ({
     stepSafe,
     complies,
     Cs,
-    safetyMarginTouch: ((VtouchAllow - Em) / VtouchAllow * 100).toFixed(1),
-    safetyMarginStep: ((VstepAllow - Es) / VstepAllow * 100).toFixed(1)
+    safetyMarginTouch: touchMargin,
+    safetyMarginStep: stepMargin
   };
 };
 
@@ -254,6 +254,8 @@ export const calcThermalArea = ({
 // ============================================
 
 export const calculateComplete = (params) => {
+  if (!params) params = {};
+  
   // 1. Geometría básica
   const gridLength = params.gridLength || 30;
   const gridWidth = params.gridWidth || 16;

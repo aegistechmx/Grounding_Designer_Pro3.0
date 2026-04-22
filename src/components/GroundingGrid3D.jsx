@@ -73,14 +73,14 @@ const GroundingGrid3D = ({ params = {}, darkMode }) => {
   // ============================================
   const perimeter = 2 * (gridWidth + gridLength);
   const rodSpacing = numRods > 0 ? perimeter / numRods : perimeter;
-  const rodSpacingMeters = rodSpacing.toFixed(2);
+  const rodSpacingMeters = isFinite(rodSpacing) ? rodSpacing.toFixed(2) : 'N/A';
   
   // 👈 Espaciamiento mínimo requerido según NMX-J-549-ANCE-2005
   // La distancia mínima entre electrodos debe ser 2 veces la longitud de la varilla
   const minRequiredSpacing = rodLength * 2;
   const spacingComplies = rodSpacing >= minRequiredSpacing;
-  const spacingShortage = spacingComplies ? 0 : (minRequiredSpacing - rodSpacing).toFixed(2);
-  const compliancePercent = spacingComplies ? 100 : (rodSpacing / minRequiredSpacing * 100).toFixed(0);
+  const spacingShortage = spacingComplies ? 0 : (isFinite(minRequiredSpacing - rodSpacing) ? (minRequiredSpacing - rodSpacing).toFixed(2) : 'N/A');
+  const compliancePercent = spacingComplies ? 100 : (minRequiredSpacing > 0 && isFinite(rodSpacing / minRequiredSpacing) ? (rodSpacing / minRequiredSpacing * 100).toFixed(0) : '0');
   
   // 👈 Número máximo de varillas permitido por el espaciamiento mínimo
   const maxRodsBySpacing = Math.floor(perimeter / minRequiredSpacing);
@@ -325,7 +325,7 @@ const GroundingGrid3D = ({ params = {}, darkMode }) => {
               <div key={`mark-x-${i}`}>
                 <div style={{ position: 'absolute', left: `${xPercent}%`, top: '-5px', width: '1px', height: '10px', background: colors.measurementLine }} />
                 <div style={{ position: 'absolute', left: `${xPercent}%`, top: '-18px', fontSize: '8px', color: colors.textSecondary, transform: 'translateX(-50%)', whiteSpace: 'nowrap' }}>
-                  {value.toFixed(1)}m
+                  {isFinite(value) ? value.toFixed(1) : 'N/A'}m
                 </div>
               </div>
             );
@@ -351,7 +351,7 @@ const GroundingGrid3D = ({ params = {}, darkMode }) => {
               <div key={`mark-y-${i}`}>
                 <div style={{ position: 'absolute', left: '-5px', top: `${yPercent}%`, width: '10px', height: '1px', background: colors.measurementLine }} />
                 <div style={{ position: 'absolute', left: '-35px', top: `${yPercent}%`, fontSize: '8px', color: colors.textSecondary, transform: 'translateY(-50%)', whiteSpace: 'nowrap', textAlign: 'right' }}>
-                  {value.toFixed(1)}m
+                  {isFinite(value) ? value.toFixed(1) : 'N/A'}m
                 </div>
               </div>
             );
@@ -435,7 +435,7 @@ const GroundingGrid3D = ({ params = {}, darkMode }) => {
                 fontWeight: spacingComplies ? 'normal' : 'bold'
               }}
             >
-              {rodSpacingMeters}m {!spacingComplies && `⚠️ min:${minRequiredSpacing.toFixed(1)}m`}
+              {rodSpacingMeters}m {!spacingComplies && `⚠️ min:${isFinite(minRequiredSpacing) ? minRequiredSpacing.toFixed(1) : 'N/A'}m`}
             </div>
           </div>
         );
@@ -647,7 +647,7 @@ const GroundingGrid3D = ({ params = {}, darkMode }) => {
               <div>Espaciamiento: {rodSpacingMeters}m</div>
               {!spacingComplies && (
                 <div style={{ color: '#ffcccc' }}>
-                  ⚠️ Mínimo requerido: {minRequiredSpacing.toFixed(2)}m
+                  ⚠️ Mínimo requerido: {isFinite(minRequiredSpacing) ? minRequiredSpacing.toFixed(2) : 'N/A'}m
                 </div>
               )}
               {rodsExceedLimit && (
@@ -811,7 +811,7 @@ const GroundingGrid3D = ({ params = {}, darkMode }) => {
                         whiteSpace: 'nowrap'
                       }}
                     >
-                      {level.toFixed(1)}m
+                      {isFinite(level) ? level.toFixed(1) : 'N/A'}m
                     </div>
                   </div>
                 );
@@ -820,7 +820,7 @@ const GroundingGrid3D = ({ params = {}, darkMode }) => {
             })}
           </div>
           <div style={{ fontSize: '10px', color: colors.textSecondary, fontWeight: 'bold' }}>
-            Profundidad: {gridDepth.toFixed(1)}m
+            Profundidad: {isFinite(gridDepth) ? gridDepth.toFixed(1) : 'N/A'}m
           </div>
         </div>
         
@@ -879,7 +879,7 @@ const GroundingGrid3D = ({ params = {}, darkMode }) => {
             zIndex: 15
           }}
         >
-          X: {gridWidth.toFixed(1)} m | Espaciamiento: {spacingX.toFixed(2)} m
+          X: {isFinite(gridWidth) ? gridWidth.toFixed(1) : 'N/A'} m | Espaciamiento: {isFinite(spacingX) ? spacingX.toFixed(2) : 'N/A'} m
         </div>
         
         <div
@@ -898,7 +898,7 @@ const GroundingGrid3D = ({ params = {}, darkMode }) => {
             zIndex: 15
           }}
         >
-          Y: {gridLength.toFixed(1)} m | Espaciamiento: {spacingY.toFixed(2)} m
+          Y: {isFinite(gridLength) ? gridLength.toFixed(1) : 'N/A'} m | Espaciamiento: {isFinite(spacingY) ? spacingY.toFixed(2) : 'N/A'} m
         </div>
         
         <div
@@ -916,7 +916,7 @@ const GroundingGrid3D = ({ params = {}, darkMode }) => {
             zIndex: 15
           }}
         >
-          Z: {gridDepth.toFixed(1)} m
+          Z: {isFinite(gridDepth) ? gridDepth.toFixed(1) : 'N/A'} m
         </div>
       </>
     );
@@ -1022,7 +1022,7 @@ const GroundingGrid3D = ({ params = {}, darkMode }) => {
             {showRodSpacing && numRods > 0 && (
               <span className={`ml-2 ${spacingComplies ? 'text-green-500' : 'text-red-500'}`}>
                 📏 Espaciamiento varillas: {rodSpacingMeters}m 
-                {!spacingComplies && ` (mínimo: ${minRequiredSpacing.toFixed(2)}m)`}
+                {!spacingComplies && ` (mínimo: ${isFinite(minRequiredSpacing) ? minRequiredSpacing.toFixed(2) : 'N/A'}m)`}
               </span>
             )}
           </div>
@@ -1039,7 +1039,7 @@ const GroundingGrid3D = ({ params = {}, darkMode }) => {
                 ⚠️ Espaciamiento insuficiente entre electrodos (varillas)
               </div>
               <div className="text-xs text-red-600 dark:text-red-300">
-                Según <strong>NMX-J-549-ANCE-2005</strong>, la distancia mínima entre electrodos debe ser <strong>2 × longitud de varilla</strong> = {minRequiredSpacing.toFixed(2)}m.
+                Según <strong>NMX-J-549-ANCE-2005</strong>, la distancia mínima entre electrodos debe ser <strong>2 × longitud de varilla</strong> = {isFinite(minRequiredSpacing) ? minRequiredSpacing.toFixed(2) : 'N/A'}m.
                 <br />
                 Espaciamiento actual: <strong>{rodSpacingMeters}m</strong> ({compliancePercent}% del mínimo).
                 {rodsExceedLimit && (
@@ -1140,15 +1140,15 @@ const GroundingGrid3D = ({ params = {}, darkMode }) => {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
           <div className={`text-center p-2 rounded ${darkMode ? 'bg-gray-600' : 'bg-blue-50'}`}>
             <div className={`font-semibold ${darkMode ? 'text-blue-300' : 'text-blue-700'}`}>Rotación X</div>
-            <div className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>{rotation.x.toFixed(0)}°</div>
+            <div className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>{isFinite(rotation.x) ? rotation.x.toFixed(0) : 'N/A'}°</div>
           </div>
           <div className={`text-center p-2 rounded ${darkMode ? 'bg-gray-600' : 'bg-green-50'}`}>
             <div className={`font-semibold ${darkMode ? 'text-green-300' : 'text-green-700'}`}>Rotación Y</div>
-            <div className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>{rotation.y.toFixed(0)}°</div>
+            <div className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>{isFinite(rotation.y) ? rotation.y.toFixed(0) : 'N/A'}°</div>
           </div>
           <div className={`text-center p-2 rounded ${darkMode ? 'bg-gray-600' : 'bg-purple-50'}`}>
             <div className={`font-semibold ${darkMode ? 'text-purple-300' : 'text-purple-700'}`}>Zoom</div>
-            <div className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>{zoom.toFixed(1)}x</div>
+            <div className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>{isFinite(zoom) ? zoom.toFixed(1) : 'N/A'}x</div>
           </div>
           <div className={`text-center p-2 rounded ${darkMode ? 'bg-gray-600' : 'bg-orange-50'}`}>
             <div className={`font-semibold ${darkMode ? 'text-orange-300' : 'text-orange-700'}`}>Vista</div>
@@ -1162,11 +1162,11 @@ const GroundingGrid3D = ({ params = {}, darkMode }) => {
         </div>
         
         <div className={`text-center text-xs ${darkMode ? 'text-gray-100' : 'text-gray-600'} mt-2`}>
-          📐 Malla: {nx}×{ny} conductores | Espaciamiento X: {spacingX.toFixed(2)}m | Espaciamiento Y: {spacingY.toFixed(2)}m
-          | Profundidad: {gridDepth.toFixed(1)}m | Varillas: {numRods} × {rodLength}m
+          📐 Malla: {nx}×{ny} conductores | Espaciamiento X: {isFinite(spacingX) ? spacingX.toFixed(2) : 'N/A'}m | Espaciamiento Y: {isFinite(spacingY) ? spacingY.toFixed(2) : 'N/A'}m
+          | Profundidad: {isFinite(gridDepth) ? gridDepth.toFixed(1) : 'N/A'}m | Varillas: {numRods} × {isFinite(rodLength) ? rodLength : 'N/A'}m
           | <span className={spacingComplies ? 'text-green-600' : 'text-red-600 font-semibold'}>
               Espaciamiento varillas: {rodSpacingMeters}m
-              {!spacingComplies && ` (mínimo: ${minRequiredSpacing.toFixed(2)}m)`}
+              {!spacingComplies && ` (mínimo: ${isFinite(minRequiredSpacing) ? minRequiredSpacing.toFixed(2) : 'N/A'}m)`}
             </span>
           {showKitMaster && ` | 🟣 Kit: ${kitInfo.name} (${kitInfo.capacity})`}
         </div>

@@ -60,7 +60,7 @@ export const generateContours = (grid, levels) => {
 const getContourColor = (level, levels) => {
   const minLevel = Math.min(...levels);
   const maxLevel = Math.max(...levels);
-  const ratio = (level - minLevel) / (maxLevel - minLevel);
+  const ratio = (maxLevel - minLevel) > 0 ? (level - minLevel) / (maxLevel - minLevel) : 0;
   
   if (ratio < 0.25) return '#22c55e';      // Verde
   if (ratio < 0.5) return '#84cc16';       // Verde claro

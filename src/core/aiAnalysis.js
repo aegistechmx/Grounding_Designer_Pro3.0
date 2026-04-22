@@ -60,7 +60,7 @@ export function generateAIAnalysis(calculations, params, scoreResult, alerts) {
 
   // Touch voltage analysis
   if (Etouch70 > 0) {
-    const touchRatio = Em / Etouch70;
+    const touchRatio = Etouch70 > 0 ? Em / Etouch70 : 0;
     if (touchRatio <= 0.7) {
       analysis.technicalAnalysis += `La tensión de contacto de ${Em.toFixed(1)} V presenta un margen de seguridad adecuado (${(touchRatio * 100).toFixed(0)}% del límite). `;
     } else if (touchRatio <= 1) {
@@ -72,7 +72,7 @@ export function generateAIAnalysis(calculations, params, scoreResult, alerts) {
 
   // Step voltage analysis
   if (Estep70 > 0) {
-    const stepRatio = Es / Estep70;
+    const stepRatio = Estep70 > 0 ? Es / Estep70 : 0;
     if (stepRatio <= 0.7) {
       analysis.technicalAnalysis += `La tensión de paso de ${Es.toFixed(1)} V presenta un margen de seguridad adecuado (${(stepRatio * 100).toFixed(0)}% del límite). `;
     } else if (stepRatio <= 1) {
@@ -123,8 +123,10 @@ function generateTechnicalRecommendations(calculations, params, scoreResult, ale
   const recommendations = [];
   const Rg = calculations.Rg || calculations.resistance || 0;
   const GPR = calculations.GPR || calculations.gpr || 0;
-  const gridArea = params.length * params.width || 0;
-  const rodCount = params.numRods || 0;
+  const length = params?.length || 10;
+  const width = params?.width || 10;
+  const gridArea = length * width || 0;
+  const rodCount = params?.numRods || 0;
 
   // Resistance recommendations
   if (Rg > 5) {
@@ -173,7 +175,7 @@ function generateTechnicalRecommendations(calculations, params, scoreResult, ale
   }
 
   // Surface layer recommendations
-  const surfaceResistivity = params.surfaceResistivity || params.rho_s || 0;
+  const surfaceResistivity = params?.surfaceResistivity || params?.rho_s || 0;
   if (surfaceResistivity < 1000) {
     recommendations.push({
       priority: 'medium',
@@ -244,15 +246,18 @@ function generateConclusion(calculations, scoreResult, alerts) {
  * @returns {string} Executive summary
  */
 export function generateExecutiveSummary(analysis) {
+  if (!analysis) return 'Análisis no disponible';
+  
   let summary = '';
   
-  summary += analysis.safetyStatus + '\n\n';
-  summary += analysis.technicalAnalysis + '\n\n';
+  summary += (analysis.safetyStatus || '') + '\n\n';
+  summary += (analysis.technicalAnalysis || '') + '\n\n';
   summary += 'RECOMENDACIONES PRIORITARIAS:\n';
   
-  const priorityRecs = analysis.recommendations.filter(r => r.priority === 'high').slice(0, 3);
+  const recommendations = analysis.recommendations || [];
+  const priorityRecs = recommendations.filter(r => r.priority === 'high').slice(0, 3);
   priorityRecs.forEach((rec, i) => {
-    summary += `${i + 1}. ${rec.recommendation}\n`;
+    summary += `${i + 1}. ${rec.recommendation || 'Sin recomendación'}\n`;
   });
   
   return summary;

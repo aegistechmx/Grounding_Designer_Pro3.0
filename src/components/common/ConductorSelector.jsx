@@ -133,7 +133,7 @@ const ConductorSelector = ({
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-3 text-sm">
         <div className={`p-2 rounded ${darkMode ? 'bg-gray-600' : 'bg-gray-100'}`}>
           <div className="text-xs text-gray-500">Corriente (Ig)</div>
-          <div className="font-bold">{requiredAmpacity?.toFixed(0) || 'N/A'} A</div>
+          <div className="font-bold">{(requiredAmpacity || 0).toFixed(0)} A</div>
         </div>
         <div className={`p-2 rounded ${darkMode ? 'bg-gray-600' : 'bg-gray-100'}`}>
           <div className="text-xs text-gray-500">Duración (t)</div>
@@ -141,7 +141,7 @@ const ConductorSelector = ({
         </div>
         <div className={`p-2 rounded ${darkMode ? 'bg-gray-600' : 'bg-gray-100'}`}>
           <div className="text-xs text-gray-500">Área térmica mín.</div>
-          <div className="font-bold">{minRequiredArea?.toFixed(2) || 'N/A'} mm²</div>
+          <div className="font-bold">{(minRequiredArea || 0).toFixed(2)} mm²</div>
         </div>
         <div className={`p-2 rounded ${darkMode ? 'bg-gray-600' : 'bg-gray-100'}`}>
           <div className="text-xs text-gray-500">Temp. aislamiento</div>

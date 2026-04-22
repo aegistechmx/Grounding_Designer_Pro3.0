@@ -18,6 +18,7 @@ const HeatMap = forwardRef(({ params, calculations, darkMode }, ref) => {
     if (!canvas) return;
 
     const ctx = canvas.getContext('2d');
+    if (!ctx) return;
     const width = canvas.width;
     const height = canvas.height;
 
@@ -46,7 +47,8 @@ const HeatMap = forwardRef(({ params, calculations, darkMode }, ref) => {
 
     // Calcular gradiente de colores
     const getColor = (value, minVal, maxVal) => {
-      const ratio = (value - minVal) / (maxVal - minVal);
+      const range = maxVal - minVal || 1;
+      const ratio = (value - minVal) / range;
       
       if (ratio <= 0.2) {
         // Verde
@@ -98,7 +100,7 @@ const HeatMap = forwardRef(({ params, calculations, darkMode }, ref) => {
     }
 
     const minValue = Math.min(...values);
-    const maxValue = Math.max(...values);
+    const maxValue = Math.max(...values, minValue + 1);
 
     // Dibujar celdas
     const cellWidth = mapWidth / cellsX;

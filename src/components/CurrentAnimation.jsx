@@ -32,6 +32,10 @@ const CurrentAnimation = ({ nodes = [], width = 600, height = 400, particleCount
     
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    
+    const widthSafe = Math.max(1, width);
+    const heightSafe = Math.max(1, height);
     
     const animate = () => {
       // Limpiar con fade effect
@@ -44,8 +48,8 @@ const CurrentAnimation = ({ nodes = [], width = 600, height = 400, particleCount
         let nearest = null;
         let minDist = Infinity;
         
-        const gridX = Math.floor((p.x / width) * 50);
-        const gridY = Math.floor((p.y / height) * 50);
+        const gridX = Math.floor((p.x / widthSafe) * 50);
+        const gridY = Math.floor((p.y / heightSafe) * 50);
         
         for (const v of field) {
           const d = Math.sqrt((gridX - v.x) ** 2 + (gridY - v.y) ** 2);
@@ -57,7 +61,7 @@ const CurrentAnimation = ({ nodes = [], width = 600, height = 400, particleCount
         
         if (nearest) {
           // Actualizar velocidad basada en campo eléctrico
-          const mag = nearest.magnitude || 1;
+          const mag = Math.max(0.1, nearest.magnitude || 1);
           p.vx = (nearest.ex / mag) * speed;
           p.vy = (nearest.ey / mag) * speed;
         }
@@ -68,9 +72,9 @@ const CurrentAnimation = ({ nodes = [], width = 600, height = 400, particleCount
         p.life -= 1;
         
         // Respawn si sale de pantalla o muere
-        if (p.x < 0 || p.x > width || p.y < 0 || p.y > height || p.life <= 0) {
-          p.x = Math.random() * width;
-          p.y = Math.random() * height;
+        if (p.x < 0 || p.x > widthSafe || p.y < 0 || p.y > heightSafe || p.life <= 0) {
+          p.x = Math.random() * widthSafe;
+          p.y = Math.random() * heightSafe;
           p.life = Math.random() * 100 + 50;
         }
         

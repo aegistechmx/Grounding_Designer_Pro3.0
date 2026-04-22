@@ -45,13 +45,18 @@
  * @returns {FEMMesh} FEM mesh configuration
  */
 export function generateFEMMesh(vectorGrid, params, resolution = 0.5) {
+  if (!vectorGrid || !vectorGrid.bounds) {
+    console.error('Invalid vectorGrid or bounds');
+    return { nodes: [], elements: [], bounds: { minX: 0, maxX: 10, minY: 0, maxY: 10 }, properties: {} };
+  }
+  
   const nodes = [];
   const elements = [];
   let nodeId = 0;
   let elementId = 0;
   
   const { bounds } = vectorGrid;
-  const soilResistivity = params.resistivity || 100;
+  const soilResistivity = Math.max(1, params?.resistivity || 100);
   
   // Generate nodes
   const numX = Math.ceil((bounds.maxX - bounds.minX) / resolution) + 1;
@@ -138,6 +143,8 @@ export function generateFEMMesh(vectorGrid, params, resolution = 0.5) {
  * @returns {boolean} True if point is on conductor
  */
 function isPointOnConductor(x, y, conductors, tolerance) {
+  if (!conductors || !Array.isArray(conductors) || conductors.length === 0) return false;
+  
   return conductors.some(conductor => {
     const dist = pointToLineDistance(x, y, conductor.x1, conductor.y1, conductor.x2, conductor.y2);
     return dist <= tolerance;
@@ -194,12 +201,16 @@ function pointToLineDistance(px, py, x1, y1, x2, y2) {
  * @returns {Object} Resistance matrix and vector
  */
 export function buildResistanceMatrix(mesh, params) {
+  if (!mesh || !mesh.nodes || mesh.nodes.length === 0) {
+    return { matrix: [], vector: [] };
+  }
+  
   const numNodes = mesh.nodes.length;
   const matrix = Array(numNodes).fill(null).map(() => Array(numNodes).fill(0));
   const vector = Array(numNodes).fill(0);
   
-  const soilResistivity = params.resistivity || 100;
-  const gridDepth = params.gridDepth || 0.6;
+  const soilResistivity = Math.max(1, params?.resistivity || 100);
+  const gridDepth = Math.max(0.1, params?.gridDepth || 0.6);
   
   // Build conductance matrix (inverse of resistance)
   mesh.elements.forEach(element => {
@@ -292,11 +303,16 @@ export function solveFEMSystem(matrixSystem, gpr) {
           }
         }
         
-        const newVoltage = sum / matrix[i][i];
-        const change = Math.abs(newVoltage - voltages[i]);
-        maxChange = Math.max(maxChange, change);
-        
-        voltages[i] = newVoltage;
+        const diagonal = matrix[i][i];
+        if (Math.abs(diagonal) < 1e-10) {
+          voltages[i] = 0;
+        } else {
+          const newVoltage = sum / diagonal;
+          const change = Math.abs(newVoltage - voltages[i]);
+          maxChange = Math.max(maxChange, change);
+          
+          voltages[i] = newVoltage;
+        }
       }
     }
     
@@ -371,6 +387,9 @@ function findContainingElement(mesh, x, y) {
  */
 function isPointInTriangle(px, py, p1, p2, p3) {
   const area = 0.5 * (-p2.y * p3.x + p1.y * (-p2.x + p3.x) + p1.x * (p2.y - p3.y) + p2.x * p3.y);
+  
+  if (Math.abs(area) < 1e-10) return false;
+  
   const s = 1 / (2 * area) * (p1.y * p3.x - p1.x * p3.y + (p3.y - p1.y) * px + (p1.x - p3.x) * py);
   const t = 1 / (2 * area) * (p1.x * p2.y - p1.y * p2.x + (p1.y - p2.y) * px + (p2.x - p1.x) * py);
   
@@ -388,6 +407,11 @@ function isPointInTriangle(px, py, p1, p2, p3) {
  */
 function getBarycentricCoordinates(x, y, p1, p2, p3) {
   const denom = (p2.y - p3.y) * (p1.x - p3.x) + (p3.x - p2.x) * (p1.y - p3.y);
+  
+  // Protección contra división por cero
+  if (Math.abs(denom) < 1e-10) {
+    return { w1: 0.33, w2: 0.33, w3: 0.34 };
+  }
   
   const w1 = ((p2.y - p3.y) * (x - p3.x) + (p3.x - p2.x) * (y - p3.y)) / denom;
   const w2 = ((p3.y - p1.y) * (x - p3.x) + (p1.x - p3.x) * (y - p3.y)) / denom;
@@ -452,6 +476,8 @@ export function calculateStepVoltage(mesh, x1, y1, x2, y2, stepDistance = 1) {
   
   // Ensure points are at correct distance
   const actualDistance = Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
+  if (actualDistance < 1e-10) return 0;
+  
   const scaleFactor = stepDistance / actualDistance;
   
   return Math.abs(v2 - v1) * scaleFactor;

@@ -14,6 +14,7 @@ const RealTimeChart = ({ data, title, xLabel, yLabel, darkMode, onHover, onPoint
     
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
+    if (!ctx) return;
     const width = canvas.width;
     const height = canvas.height;
     let animationTime = 0;
@@ -127,14 +128,14 @@ const RealTimeChart = ({ data, title, xLabel, yLabel, darkMode, onHover, onPoint
         const value = minValue + (i * range / 4);
         ctx.fillStyle = colors.text;
         ctx.font = '10px Arial';
-        ctx.fillText(value.toFixed(1), 45, y + 3);
+        ctx.fillText(isFinite(value) ? value.toFixed(1) : 'N/A', 45, y + 3);
       }
       
       // Dibujar datos con animación
       const values = data.map(d => d.value);
       const maxValue = Math.max(...values, 1);
       const minValue = Math.min(...values, 0);
-      const range = maxValue - minValue;
+      const range = maxValue - minValue || 1;
       
       if (data.length > 1) {
         const visiblePoints = isAnimating 
@@ -144,7 +145,7 @@ const RealTimeChart = ({ data, title, xLabel, yLabel, darkMode, onHover, onPoint
         // Dibujar área bajo la curva
         ctx.beginPath();
         for (let i = 0; i < visiblePoints; i++) {
-          const x = 60 + (i * (width - 90) / (data.length - 1));
+          const x = 60 + (i * (width - 90) / (data.length - 1 || 1));
           const y = height - 40 - ((data[i].value - minValue) / range) * (height - 80);
           
           if (i === 0) {
@@ -153,7 +154,7 @@ const RealTimeChart = ({ data, title, xLabel, yLabel, darkMode, onHover, onPoint
             ctx.lineTo(x, y);
           }
         }
-        ctx.lineTo(60 + ((visiblePoints - 1) * (width - 90) / (data.length - 1)), height - 40);
+        ctx.lineTo(60 + ((visiblePoints - 1) * (width - 90) / (data.length - 1 || 1)), height - 40);
         ctx.lineTo(60, height - 40);
         ctx.fillStyle = colors.fill;
         ctx.fill();
@@ -164,7 +165,7 @@ const RealTimeChart = ({ data, title, xLabel, yLabel, darkMode, onHover, onPoint
         ctx.lineWidth = 2.5;
         
         for (let i = 0; i < visiblePoints; i++) {
-          const x = 60 + (i * (width - 90) / (data.length - 1));
+          const x = 60 + (i * (width - 90) / (data.length - 1 || 1));
           const y = height - 40 - ((data[i].value - minValue) / range) * (height - 80);
           
           if (i === 0) {
@@ -177,7 +178,7 @@ const RealTimeChart = ({ data, title, xLabel, yLabel, darkMode, onHover, onPoint
         
         // Dibujar puntos
         for (let i = 0; i < visiblePoints; i++) {
-          const x = 60 + (i * (width - 90) / (data.length - 1));
+          const x = 60 + (i * (width - 90) / (data.length - 1 || 1));
           const y = height - 40 - ((data[i].value - minValue) / range) * (height - 80);
           const isHovered = hoveredPoint === i;
           
@@ -208,7 +209,7 @@ const RealTimeChart = ({ data, title, xLabel, yLabel, darkMode, onHover, onPoint
         
         ctx.fillStyle = colors.text;
         ctx.font = 'bold 10px Arial';
-        ctx.fillText(`${tooltip.value.toFixed(2)}`, tooltip.x - 35, tooltip.y - 12);
+        ctx.fillText(`${isFinite(tooltip.value) ? tooltip.value.toFixed(2) : 'N/A'}`, tooltip.x - 35, tooltip.y - 12);
         ctx.font = '9px Arial';
         ctx.fillText(tooltip.label, tooltip.x - 35, tooltip.y - 18);
       }
@@ -301,7 +302,7 @@ const RealTimeChart = ({ data, title, xLabel, yLabel, darkMode, onHover, onPoint
         </div>
         {data && data.length > 0 && (
           <div className="text-xs text-gray-300">
-            Datos: {data.length} puntos | Rango: {Math.min(...data.map(d => d.value)).toFixed(1)} - {Math.max(...data.map(d => d.value)).toFixed(1)}
+            Datos: {data.length} puntos | Rango: {isFinite(Math.min(...data.map(d => d.value || 0))) ? Math.min(...data.map(d => d.value || 0)).toFixed(1) : 'N/A'} - {isFinite(Math.max(...data.map(d => d.value || 0))) ? Math.max(...data.map(d => d.value || 0)).toFixed(1) : 'N/A'}
           </div>
         )}
       </div>

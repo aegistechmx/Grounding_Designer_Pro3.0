@@ -1,0 +1,87 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Reporte de Cumplimiento - Subestación Industrial Norte</title>
+  <style>
+    body { font-family: 'Segoe UI', Arial, sans-serif; margin: 40px; background: #f5f5f5; }
+    .container { max-width: 900px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+    .header { text-align: center; border-bottom: 2px solid #2563eb; padding-bottom: 20px; margin-bottom: 30px; }
+    .header h1 { color: #2563eb; margin: 0; }
+    .header h2 { color: #666; margin: 10px 0 0; font-size: 16px; }
+    .status { text-align: center; padding: 20px; border-radius: 8px; margin: 20px 0; }
+    .status-approved { background: #dcfce7; color: #166534; border: 1px solid #86efac; }
+    .status-rejected { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
+    .status-warning { background: #fed7aa; color: #9a3412; border: 1px solid #fdba74; }
+    .section { margin: 25px 0; padding: 15px; background: #f8fafc; border-radius: 8px; }
+    .section h3 { margin-top: 0; color: #1e293b; }
+    table { width: 100%; border-collapse: collapse; margin: 15px 0; }
+    th, td { padding: 10px; text-align: left; border-bottom: 1px solid #e2e8f0; }
+    th { background: #e2e8f0; font-weight: 600; }
+    .pass { color: #16a34a; font-weight: bold; }
+    .fail { color: #dc2626; font-weight: bold; }
+    .footer { text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e2e8f0; font-size: 12px; color: #666; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <h1>🏭 Grounding Designer Pro</h1>
+    <h2>Reporte de Cumplimiento Normativo</h2>
+  </div>
+  
+  <div class="status status-warning">
+    <h2>⚠️ DISEÑO CON OBSERVACIONES</h2>
+    <p>El diseño requiere mejoras para cumplir con las normas.</p>
+  </div>
+  
+  <div class="section">
+    <h3>📋 Datos del Proyecto</h3>
+    <table>
+      <tr><th>Proyecto</th><td>Subestación Industrial Norte</td></tr>
+      <tr><th>Ingeniero</th><td>Ing. Juan Pérez Martínez</td></tr>
+      <tr><th>Fecha</th><td>21/4/2026, 4:57:41 p.m.</td></tr>
+      <tr><th>Tensión del Sistema</th><td>13,200 V</td></tr>
+    </table>
+  </div>
+  
+  <div class="section">
+    <h3>📐 Configuración de Malla</h3>
+    <table>
+      <tr><th>Dimensiones</th><td>12.5m x 8m</td></tr>
+      <tr><th>Conductores</th><td>8 x 8</td></tr>
+      <tr><th>Varillas</th><td>16 x 3m</td></tr>
+      <tr><th>Resistencia (Rg)</th><td class="pass">4.547 Ω</td></tr>
+      <tr><th>GPR</th><td>3410 V</td></tr>
+    </table>
+  </div>
+  
+  <div class="section">
+    <h3>📊 Tensión de Contacto</h3>
+    <table>
+      <tr><th>Norma</th><th>Límite (V)</th><th>Calculado (V)</th><th>Estado</th></tr>
+      <tr><td>IEEE 80-2013</td><td>1101</td><td>614</td><td class="pass">✓</td></tr>
+      <tr><td>NOM-001-SEDE-2012</td><td>75</td><td>614</td><td class="fail">✗</td></tr>
+      <tr><td>CFE 01J00-01</td><td>50</td><td>614</td><td class="fail">✗</td></tr>
+    </table>
+  </div>
+  
+  <div class="section">
+    <h3>📊 Tensión de Paso</h3>
+    <table>
+      <tr><th>Norma</th><th>Límite (V)</th><th>Calculado (V)</th><th>Estado</th></tr>
+      <tr><td>IEEE 80-2013</td><td>3609</td><td>341</td><td class="pass">✓</td></tr>
+      <tr><td>NOM-001-SEDE-2012</td><td>500</td><td>341</td><td class="pass">✓</td></tr>
+      <tr><td>CFE 01J00-01</td><td>150</td><td>341</td><td class="fail">✗</td></tr>
+    </table>
+  </div>
+  
+  <div class="footer">
+    <p>Reporte generado por Grounding Designer Pro v3.0</p>
+    <p>Normas aplicadas: IEEE Std 80-2013 | NOM-001-SEDE-2012 | CFE 01J00-01</p>
+  </div>
+</div>
+</body>
+</html>
+  

@@ -3,6 +3,11 @@
  */
 
 export const exportGridToDXF = (grid, filename = 'grounding_grid.dxf') => {
+  if (!grid || !grid.nodes || !Array.isArray(grid.nodes)) {
+    console.error('exportGridToDXF: grid o grid.nodes inválido');
+    return null;
+  }
+  
   let dxf = `0
 SECTION
 2
@@ -16,12 +21,13 @@ ENTITIES
 `;
 
   // Exportar conductores como líneas
-  for (const conductor of grid.conductors) {
-    const fromNode = grid.nodes?.find(n => n.id === conductor.from);
-    const toNode = grid.nodes?.find(n => n.id === conductor.to);
-    
-    if (fromNode && toNode) {
-      dxf += `0
+  if (grid.conductors && Array.isArray(grid.conductors)) {
+    for (const conductor of grid.conductors) {
+      const fromNode = grid.nodes.find(n => n.id === conductor.from);
+      const toNode = grid.nodes.find(n => n.id === conductor.to);
+      
+      if (fromNode && toNode) {
+        dxf += `0
 LINE
 8
 GRID
@@ -38,6 +44,7 @@ ${toNode.y.toFixed(3)}
 31
 ${toNode.z || 0}
 `;
+      }
     }
   }
   
@@ -94,6 +101,11 @@ EOF`;
 };
 
 export const exportResultsToDXF = (results, filename = 'grounding_results.dxf') => {
+  if (!results) {
+    console.error('exportResultsToDXF: results inválido');
+    return null;
+  }
+  
   let dxf = `0
 SECTION
 2
@@ -104,6 +116,8 @@ ENTITIES
   const contours = generateContours(results.potentialField, [500, 1000, 1500, 2000, 2500]);
   
   for (const contour of contours) {
+    if (!contour.points || !Array.isArray(contour.points)) continue;
+    
     dxf += `0
 POLYLINE
 8

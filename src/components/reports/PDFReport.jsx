@@ -1,5 +1,6 @@
 import React from 'react';
 import { FileText, Download } from 'lucide-react';
+import { formatResistance, formatVoltage, formatCurrent, formatDistance, formatNumber } from '../../utils/formatters';
 
 const PDFReport = ({ params, calculations, recommendations, darkMode }) => {
   
@@ -24,6 +25,21 @@ const PDFReport = ({ params, calculations, recommendations, darkMode }) => {
     const perimeter = 2 * ((safeParams.gridLength || 30) + (safeParams.gridWidth || 16));
     const totalConductor = perimeter * (safeParams.numParallel || 15);
     const totalRodLength = (safeParams.numRods || 45) * (safeParams.rodLength || 3);
+    
+    // Format values for display
+    const faultCurrentFormatted = formatCurrent(faultCurrent, 0);
+    const IgFormatted = formatCurrent(Ig, 0);
+    const gridAreaFormatted = formatNumber(gridArea, 0);
+    const perimeterFormatted = formatDistance(perimeter, 0);
+    const totalConductorFormatted = formatDistance(totalConductor, 0);
+    const totalRodLengthFormatted = formatDistance(totalRodLength, 0);
+    const totalLTFormatted = formatDistance(totalConductor + totalRodLength, 0);
+    const EmFormatted = formatVoltage(safeCalculations.Em, 0);
+    const Etouch70Formatted = formatVoltage(safeCalculations.Etouch70, 0);
+    const EsFormatted = formatVoltage(safeCalculations.Es, 0);
+    const Estep70Formatted = formatVoltage(safeCalculations.Estep70, 0);
+    const RgFormatted = formatResistance(safeCalculations.Rg, 3);
+    const GPRFormatted = formatVoltage(safeCalculations.GPR, 0);
     
     const printContent = `
       <!DOCTYPE html>
@@ -189,9 +205,9 @@ const PDFReport = ({ params, calculations, recommendations, darkMode }) => {
             <tr><td>Voltaje Primario</td><td>${safeParams.primaryVoltage || 13200}</td><td>V</td></tr>
             <tr><td>Voltaje Secundario</td><td>${safeParams.secondaryVoltage || 220}</td><td>V</td></tr>
             <tr><td>Impedancia</td><td>${safeParams.transformerImpedance || 5}</td><td>%</td></tr>
-            <tr><td>Corriente de falla</td><td>${faultCurrent.toFixed(0)}</td><td>A</td></tr>
+            <tr><td>Corriente de falla</td><td>${faultCurrentFormatted}</td><td>A</td></tr>
             <tr><td>Factor Sf</td><td>${safeParams.currentDivisionFactor || 0.6}</td><td>-</td></tr>
-            <tr><td>Corriente en malla (Ig)</td><td>${Ig.toFixed(0)}</td><td>A</td></tr>
+            <tr><td>Corriente en malla (Ig)</td><td>${IgFormatted}</td><td>A</td></tr>
             <tr><td>Duración de falla</td><td>${safeParams.faultDuration || 0.5}</td><td>s</td></tr>
             <tr><td>Resistividad del suelo</td><td>${safeParams.soilResistivity || 100}</td><td>Ω·m</td></tr>
             <tr><td>Capa superficial</td><td>${safeParams.surfaceLayer || 3000}</td><td>Ω·m</td></tr>
@@ -209,11 +225,11 @@ const PDFReport = ({ params, calculations, recommendations, darkMode }) => {
         <table>
           <thead><tr><th>Parámetro</th><th>Valor</th><th>Unidad</th></tr></thead>
           <tbody>
-            <tr><td>Área de la malla</td><td>${gridArea.toFixed(0)}</td><td>m²</td></tr>
-            <tr><td>Perímetro</td><td>${perimeter.toFixed(0)}</td><td>m</td></tr>
-            <tr><td>Longitud total conductores</td><td>${totalConductor.toFixed(0)}</td><td>m</td></tr>
-            <tr><td>Longitud total varillas</td><td>${totalRodLength.toFixed(0)}</td><td>m</td></tr>
-            <tr><td>Longitud total (LT)</td><td>${(totalConductor + totalRodLength).toFixed(0)}</td><td>m</td></tr>
+            <tr><td>Área de la malla</td><td>${gridAreaFormatted}</td><td>m²</td></tr>
+            <tr><td>Perímetro</td><td>${perimeterFormatted}</td><td>m</td></tr>
+            <tr><td>Longitud total conductores</td><td>${totalConductorFormatted}</td><td>m</td></tr>
+            <tr><td>Longitud total varillas</td><td>${totalRodLengthFormatted}</td><td>m</td></tr>
+            <tr><td>Longitud total (LT)</td><td>${totalLTFormatted}</td><td>m</td></tr>
           </tbody>
         </table>
         
@@ -224,23 +240,23 @@ const PDFReport = ({ params, calculations, recommendations, darkMode }) => {
           <tbody>
             <tr class="${safeCalculations.touchSafe70 ? 'safe' : 'unsafe'}">
               <td>Tensión de Contacto (Em)</td>
-              <td>${safeCalculations.Em?.toFixed(0) || 'N/A'} V</td>
-              <td>${safeCalculations.Etouch70?.toFixed(0) || 'N/A'} V</td>
+              <td>${EmFormatted || 'N/A'}</td>
+              <td>${Etouch70Formatted || 'N/A'}</td>
               <td>${safeCalculations.touchSafe70 ? '✅ CUMPLE' : '❌ NO CUMPLE'}</td>
             </tr>
             <tr class="${safeCalculations.stepSafe70 ? 'safe' : 'unsafe'}">
               <td>Tensión de Paso (Es)</td>
-              <td>${safeCalculations.Es?.toFixed(0) || 'N/A'} V</td>
-              <td>${safeCalculations.Estep70?.toFixed(0) || 'N/A'} V</td>
+              <td>${EsFormatted || 'N/A'}</td>
+              <td>${Estep70Formatted || 'N/A'}</td>
               <td>${safeCalculations.stepSafe70 ? '✅ CUMPLE' : '❌ NO CUMPLE'}</td>
             </tr>
             <tr>
               <td>Resistencia de Malla (Rg)</td>
-              <td colspan="3">${safeCalculations.Rg?.toFixed(3) || 'N/A'} Ω</td>
+              <td colspan="3">${RgFormatted || 'N/A'}</td>
             </tr>
             <tr>
               <td>GPR (Elevación de Potencial)</td>
-              <td colspan="3">${safeCalculations.GPR?.toFixed(0) || 'N/A'} V</td>
+              <td colspan="3">${GPRFormatted || 'N/A'}</td>
             </tr>
           </tbody>
         </table>

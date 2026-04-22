@@ -112,6 +112,8 @@ export const allowableStepVoltageWithSurface = (rho, rho_s, hs, t, bodyWeight = 
 // ============================================
 
 export const validateIEEE = (design) => {
+  if (!design) design = {};
+  
   const {
     faultCurrent,
     Rg,
@@ -139,8 +141,8 @@ export const validateIEEE = (design) => {
   const complies = touchOk && stepOk;
   
   // Márgenes de seguridad
-  const touchMargin = ((touchMax - touchVoltage) / touchMax * 100).toFixed(1);
-  const stepMargin = ((stepMax - stepVoltage) / stepMax * 100).toFixed(1);
+  const touchMargin = touchMax > 0 ? ((touchMax - touchVoltage) / touchMax * 100).toFixed(1) : '0';
+  const stepMargin = stepMax > 0 ? ((stepMax - stepVoltage) / stepMax * 100).toFixed(1) : '0';
   
   return {
     touchVoltage,

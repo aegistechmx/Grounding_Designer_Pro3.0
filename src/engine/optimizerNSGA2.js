@@ -18,10 +18,15 @@ export const costFunction = ({
   costSoldering = 15,
   area
 }) => {
-  const conductorCost = costConductor * totalLength;
-  const rodCost = costRod * numRods + costRodMeter * rodLength * numRods;
-  const excavationCost = costExcavation * area * 0.6;
-  const solderingCost = costSoldering * (numRods * 2 + Math.sqrt(totalLength) * 2);
+  const totalLengthSafe = Math.max(0, totalLength || 0);
+  const numRodsSafe = Math.max(0, numRods || 0);
+  const rodLengthSafe = Math.max(0, rodLength || 0);
+  const areaSafe = Math.max(0, area || 0);
+  
+  const conductorCost = costConductor * totalLengthSafe;
+  const rodCost = costRod * numRodsSafe + costRodMeter * rodLengthSafe * numRodsSafe;
+  const excavationCost = costExcavation * areaSafe * 0.6;
+  const solderingCost = costSoldering * (numRodsSafe * 2 + Math.sqrt(totalLengthSafe) * 2);
   const totalCost = conductorCost + rodCost + excavationCost + solderingCost;
   
   return { total: totalCost, conductorCost, rodCost, excavationCost, solderingCost };
@@ -50,15 +55,16 @@ export const constraints = (design, params) => {
   const rodLength = design.rodLength || 3;
   
   // Calcular geometría
-  const gridLength = Math.sqrt(area);
-  const gridWidth = Math.sqrt(area);
+  const areaSafe = Math.max(1, area || 100);
+  const gridLength = Math.sqrt(areaSafe);
+  const gridWidth = Math.sqrt(areaSafe);
   const totalConductorLength = 2 * (gridLength + gridWidth) * Math.max(nx, ny);
   const totalRodLength = numRods * rodLength;
-  const LT = totalConductorLength + totalRodLength;
+  const LT = Math.max(0.1, totalConductorLength + totalRodLength);
   
   // Resistencia de malla (IEEE 80)
-  const Rg = soilResistivity * (1/LT + 1/Math.sqrt(20 * area)) * 
-             (1 + 1/(1 + burialDepth * Math.sqrt(20 / area)));
+  const Rg = soilResistivity * (1/LT + 1/Math.sqrt(20 * areaSafe)) * 
+             (1 + 1/(1 + burialDepth * Math.sqrt(20 / areaSafe)));
   
   // Corriente de malla
   const Ig = faultCurrent * X_R;
@@ -70,8 +76,9 @@ export const constraints = (design, params) => {
   
   // Límites IEEE 80 para 70kg (CORRECTOS)
   const k = 0.157; // factor para 70kg
-  const Etouch70 = (1000 + 1.5 * Cs * surfaceResistivity) * (k / Math.sqrt(faultDuration));
-  const Estep70 = (1000 + 6 * Cs * surfaceResistivity) * (k / Math.sqrt(faultDuration));
+  const faultDurationSafe = Math.max(0.1, faultDuration || 0.5);
+  const Etouch70 = (1000 + 1.5 * Cs * surfaceResistivity) * (k / Math.sqrt(faultDurationSafe));
+  const Estep70 = (1000 + 6 * Cs * surfaceResistivity) * (k / Math.sqrt(faultDurationSafe));
   
   // Tensiones reales (SIN multiplicadores extraños)
   // Para una malla típica, Em ≈ 15-20% del GPR
@@ -234,6 +241,8 @@ export const crowdingDistance = (front) => {
     }
   }
 };
+
+// ============================================
 // 6. OPTIMIZACIÓN RÁPIDA (CORREGIDA)
 // ============================================
 
@@ -252,12 +261,13 @@ export const quickOptimize = (params) => {
   
   for (const config of configs) {
     const constraintsResult = constraints(config, params);
-    const totalLength = 2 * (Math.sqrt(params.area) + Math.sqrt(params.area)) * Math.max(config.nx, config.ny);
+    const areaSafe = Math.max(1, params.area || 100);
+    const totalLength = 2 * (Math.sqrt(areaSafe) + Math.sqrt(areaSafe)) * Math.max(config.nx, config.ny);
     const cost = costFunction({
       totalLength,
       numRods: config.numRods,
       rodLength: config.rodLength,
-      area: params.area
+      area: areaSafe
     });
     
     designs.push({
@@ -324,12 +334,13 @@ export const optimizeGrounding = (params, options = {}) => {
   for (let gen = 0; gen < generations; gen++) {
     const evaluated = population.map(design => {
       const constraintsResult = constraints(design, params);
-      const totalLength = 2 * (Math.sqrt(params.area) + Math.sqrt(params.area)) * Math.max(design.nx, design.ny);
+      const areaSafe = Math.max(1, params.area || 100);
+      const totalLength = 2 * (Math.sqrt(areaSafe) + Math.sqrt(areaSafe)) * Math.max(design.nx, design.ny);
       const cost = costFunction({
         totalLength,
         numRods: design.numRods,
         rodLength: design.rodLength,
-        area: params.area
+        area: areaSafe
       });
       
       return {
@@ -371,6 +382,7 @@ export const optimizeGrounding = (params, options = {}) => {
       }
       
       while (nextPopulation.length < populationSize) {
+        if (newPopulation.length === 0) break;
         const parent1 = newPopulation[Math.floor(Math.random() * newPopulation.length)];
         const parent2 = newPopulation[Math.floor(Math.random() * newPopulation.length)];
         let child = Math.random() < crossoverRate ? crossover(parent1, parent2) : { ...parent1 };

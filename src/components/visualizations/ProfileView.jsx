@@ -6,20 +6,36 @@ const ProfileView = ({ params, calculations, darkMode }) => {
   const [viewMode, setViewMode] = useState('heatmap'); // 'heatmap', 'profile', '3d'
   const [showLabels, setShowLabels] = useState(true);
   
-  const { gridLength, gridWidth, gridDepth, numParallel, numRods, rodLength, soilResistivity, surfaceLayer } = params;
-  const { Em, Etouch70, Es, Estep70, Rg } = calculations;
+  const { 
+    gridLength = 30, 
+    gridWidth = 16, 
+    gridDepth = 0.6, 
+    numParallel = 8, 
+    numRods = 6, 
+    rodLength = 3, 
+    soilResistivity = 100, 
+    surfaceLayer = 3000, 
+    surfaceDepth = 0.15 
+  } = params || {};
+  const { 
+    Em = 0, 
+    Etouch70 = 3804, 
+    Es = 0, 
+    Estep70 = 1400, 
+    Rg = 0 
+  } = calculations || {};
   
-  const tensionRatio = Math.min(1, (Em || 0) / (Etouch70 || 1));
-  const stepRatio = Math.min(1, (Es || 0) / (Estep70 || 1));
+  const tensionRatio = Math.min(1, (isFinite(Em) ? Em : 0) / Math.max(1, isFinite(Etouch70) ? Etouch70 : 1));
+  const stepRatio = Math.min(1, (isFinite(Es) ? Es : 0) / Math.max(1, isFinite(Estep70) ? Estep70 : 1));
   
   // Generar datos para el perfil de tensión
   const profileData = useMemo(() => {
     const points = [];
     const steps = 20;
     for (let i = 0; i <= steps; i++) {
-      const x = (i / steps) * gridLength;
+      const x = (i / steps) * (isFinite(gridLength) ? gridLength : 30);
       // Simular distribución de tensión
-      const tension = tensionRatio * Math.sin(Math.PI * x / gridLength);
+      const tension = tensionRatio * Math.sin(Math.PI * x / (isFinite(gridLength) ? gridLength : 30));
       points.push({ x, tension: tension * 100 });
     }
     return points;
@@ -107,9 +123,9 @@ const ProfileView = ({ params, calculations, darkMode }) => {
                 <div className={`text-center ${darkMode ? 'bg-gray-900/70' : 'bg-white/70'} p-3 rounded-lg shadow-md backdrop-blur-sm`}>
                   <p className="font-bold text-lg">Distribución de Tensión de Contacto</p>
                   <p className="text-sm mt-1">
-                    Máxima: <span className="font-bold">{Em?.toFixed(0) || 0} V</span> 
+                    Máxima: <span className="font-bold">{isFinite(Em) ? Em.toFixed(0) : '0'} V</span> 
                     <span className="mx-2">/</span>
-                    Límite: {Etouch70?.toFixed(0) || 0} V
+                    Límite: {isFinite(Etouch70) ? Etouch70.toFixed(0) : '0'} V
                   </p>
                   <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
                     <div 
@@ -117,7 +133,7 @@ const ProfileView = ({ params, calculations, darkMode }) => {
                       style={{ width: `${tensionRatio * 100}%` }}
                     />
                   </div>
-                  <p className="text-xs mt-1">({(tensionRatio * 100).toFixed(0)}% del límite)</p>
+                  <p className="text-xs mt-1">({isFinite(tensionRatio * 100) ? (tensionRatio * 100).toFixed(0) : '0'}% del límite)</p>
                 </div>
               </div>
               
@@ -166,7 +182,7 @@ const ProfileView = ({ params, calculations, darkMode }) => {
                 <div className="absolute inset-0 bg-gradient-to-t from-amber-700 to-amber-600 dark:from-amber-800 dark:to-amber-700">
                   <div className="absolute top-2 left-2 text-xs text-white font-medium">
                     🌍 Suelo Natural
-                    <div className="text-[10px] opacity-80">ρ = {soilResistivity} Ω·m</div>
+                    <div className="text-[10px] opacity-80">ρ = {isFinite(soilResistivity) ? soilResistivity : 100} Ω·m</div>
                   </div>
                 </div>
               </div>
@@ -176,7 +192,7 @@ const ProfileView = ({ params, calculations, darkMode }) => {
                 <div className="absolute inset-0 bg-gradient-to-t from-amber-500 to-amber-400 dark:from-amber-700 dark:to-amber-600">
                   <div className="absolute top-1 left-2 text-xs text-white font-medium">
                     🪨 Capa Superficial
-                    <div className="text-[10px] opacity-80">ρ = {surfaceLayer} Ω·m | h = {params.surfaceDepth} m</div>
+                    <div className="text-[10px] opacity-80">ρ = {isFinite(surfaceLayer) ? surfaceLayer : 3000} Ω·m | h = {isFinite(surfaceDepth) ? surfaceDepth : 0.15} m</div>
                   </div>
                 </div>
               </div>
@@ -184,10 +200,10 @@ const ProfileView = ({ params, calculations, darkMode }) => {
               {/* Malla */}
               <div 
                 className="absolute left-0 right-0 h-0.5 bg-blue-500 shadow-lg"
-                style={{ bottom: `${gridDepth * 45 + 15}%` }}
+                style={{ bottom: `${(isFinite(gridDepth) ? gridDepth : 0.6) * 45 + 15}%` }}
               >
                 <div className="absolute -top-5 left-3 text-xs font-bold text-blue-500 bg-blue-50 dark:bg-blue-900/50 px-2 py-0.5 rounded">
-                  ═══ MALLA a {gridDepth} m ═══
+                  ═══ MALLA a {isFinite(gridDepth) ? gridDepth : 0.6} m ═══
                 </div>
               </div>
               
@@ -196,13 +212,13 @@ const ProfileView = ({ params, calculations, darkMode }) => {
                 className="absolute w-2 bg-gradient-to-b from-green-400 to-green-600 rounded-full shadow-md"
                 style={{ 
                   left: `${cutPosition * 100}%`,
-                  bottom: `${gridDepth * 45 + 15}%`,
-                  height: `${rodLength * 12}px`,
+                  bottom: `${(isFinite(gridDepth) ? gridDepth : 0.6) * 45 + 15}%`,
+                  height: `${(isFinite(rodLength) ? rodLength : 3) * 12}px`,
                   transform: 'translateX(-50%)'
                 }}
               >
                 <div className="absolute -right-7 top-1/2 text-[10px] font-bold text-green-600 whitespace-nowrap bg-green-50 dark:bg-green-900/50 px-1 py-0.5 rounded">
-                  Varilla {rodLength}m
+                  Varilla {isFinite(rodLength) ? rodLength : 3}m
                 </div>
               </div>
               
@@ -241,29 +257,29 @@ const ProfileView = ({ params, calculations, darkMode }) => {
               <div className="absolute inset-0 flex items-center justify-center">
                 <div className="text-center">
                   <div className="text-6xl mb-2">🔲</div>
-                  <p className="text-white text-sm">Malla de {gridLength}×{gridWidth} m</p>
-                  <p className="text-gray-300 text-xs mt-1">{numParallel} conductores | {numRods} varillas</p>
+                  <p className="text-white text-sm">Malla de {isFinite(gridLength) ? gridLength : 30}×{isFinite(gridWidth) ? gridWidth : 16} m</p>
+                  <p className="text-gray-300 text-xs mt-1">{isFinite(numParallel) ? numParallel : 8} conductores | {isFinite(numRods) ? numRods : 6} varillas</p>
                   <p className={`${darkMode ? 'text-gray-100' : 'text-gray-600'} text-xs mt-2`}>Vista 3D interactiva disponible en la pestaña principal</p>
                 </div>
               </div>
               
               {/* Indicadores de profundidad */}
               <div className={`absolute bottom-2 left-2 text-xs ${darkMode ? 'text-gray-100' : 'text-gray-600'}`}>
-                Profundidad: {gridDepth}m
+                Profundidad: {isFinite(gridDepth) ? gridDepth : 0.6}m
               </div>
-              <div className={`absolute top-2 right-2 text-xs ${darkMode ? 'text-gray-100' : 'text-gray-600'`}>
-                Área: {(gridLength * gridWidth).toFixed(0)} m²
+              <div className={`absolute top-2 right-2 text-xs ${darkMode ? 'text-gray-100' : 'text-gray-600'}`}>
+                Área: {isFinite((gridLength || 30) * (gridWidth || 16)) ? ((gridLength || 30) * (gridWidth || 16)).toFixed(0) : 'N/A'} m²
               </div>
             </div>
             
             <div className="grid grid-cols-2 gap-2 text-center text-xs">
               <div className={`p-2 rounded ${darkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>
                 <span className={darkMode ? 'text-gray-100' : 'text-gray-600'}>Resistencia:</span>
-                <span className="ml-1 font-semibold">{Rg?.toFixed(2)} Ω</span>
+                <span className="ml-1 font-semibold">{isFinite(Rg) ? Rg.toFixed(2) : 'N/A'} Ω</span>
               </div>
               <div className={`p-2 rounded ${darkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>
                 <span className={darkMode ? 'text-gray-100' : 'text-gray-600'}>Tensión paso:</span>
-                <span className="ml-1 font-semibold">{Es?.toFixed(0)} V</span>
+                <span className="ml-1 font-semibold">{isFinite(Es) ? Es.toFixed(0) : 'N/A'} V</span>
               </div>
             </div>
           </div>
@@ -276,13 +292,13 @@ const ProfileView = ({ params, calculations, darkMode }) => {
           <div>
             <div className={darkMode ? 'text-gray-100' : 'text-gray-600'}>Tensión Contacto</div>
             <div className={`font-bold ${tensionRatio > 0.8 ? 'text-red-600' : tensionRatio > 0.6 ? 'text-yellow-600' : 'text-green-600'}`}>
-              {Em?.toFixed(0)} / {Etouch70?.toFixed(0)} V
+              {isFinite(Em) ? Em.toFixed(0) : 'N/A'} / {isFinite(Etouch70) ? Etouch70.toFixed(0) : 'N/A'} V
             </div>
           </div>
           <div>
             <div className={darkMode ? 'text-gray-100' : 'text-gray-600'}>Tensión Paso</div>
             <div className={`font-bold ${stepRatio > 0.8 ? 'text-red-600' : stepRatio > 0.6 ? 'text-yellow-600' : 'text-green-600'}`}>
-              {Es?.toFixed(0)} / {Estep70?.toFixed(0)} V
+              {isFinite(Es) ? Es.toFixed(0) : 'N/A'} / {isFinite(Estep70) ? Estep70.toFixed(0) : 'N/A'} V
             </div>
           </div>
           <div>

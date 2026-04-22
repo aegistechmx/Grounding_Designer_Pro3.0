@@ -62,13 +62,13 @@ export const generatePremiumReport = (data) => {
         calculada: data.Em,
         permisible: data.EtouchAllow,
         margen: data.touchMargin,
-        estado: data.touchSafe ? "CUMPLE" : "NO CUMPLE"
+        estado: data.touchSafe70 ? "CUMPLE" : "NO CUMPLE"
       },
       tension_paso: {
         calculada: data.Es,
         permisible: data.EstepAllow,
         margen: data.stepMargin,
-        estado: data.stepSafe ? "CUMPLE" : "NO CUMPLE"
+        estado: data.stepSafe70 ? "CUMPLE" : "NO CUMPLE"
       },
       gpr: {
         valor: data.GPR,
@@ -131,11 +131,11 @@ const generateRecommendations = (data) => {
   
   if (!data.complies) {
     recommendations.push("⚠️ El diseño NO cumple con IEEE 80. Se requieren mejoras:");
-    if (!data.touchSafe) {
+    if (!data.touchSafe70) {
       recommendations.push("  • Reducir el espaciamiento entre conductores");
       recommendations.push("  • Mejorar la capa superficial (grava de alta resistividad)");
     }
-    if (!data.stepSafe) {
+    if (!data.stepSafe70) {
       recommendations.push("  • Agregar conductor perimetral adicional");
       recommendations.push("  • Aumentar el número de varillas en el perímetro");
     }

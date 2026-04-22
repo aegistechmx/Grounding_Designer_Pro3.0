@@ -28,7 +28,7 @@ export function calculateSmartScore(calculations) {
   if (Rg > 5) {
     const penalty = Math.min(10, (Rg - 5) * 2);
     breakdown.resistance.score = Math.max(0, 10 - penalty);
-    breakdown.resistance.impact = `Rg de ${Rg.toFixed(2)} Ω excede el límite de 5 Ω`;
+    breakdown.resistance.impact = `Rg de ${isFinite(Rg) ? Rg.toFixed(2) : 'N/A'} Ω excede el límite de 5 Ω`;
   } else if (Rg > 3) {
     breakdown.resistance.score = 8;
     breakdown.resistance.impact = 'Rg aceptable pero mejorable';
@@ -41,7 +41,7 @@ export function calculateSmartScore(calculations) {
   if (GPR > 3000) {
     const penalty = Math.min(20, (GPR - 3000) / 200);
     breakdown.gpr.score = Math.max(0, 20 - penalty);
-    breakdown.gpr.impact = `GPR elevado (${GPR.toFixed(0)} V) - riesgo de transferencia de potencial`;
+    breakdown.gpr.impact = `GPR elevado (${isFinite(GPR) ? GPR.toFixed(0) : 'N/A'} V) - riesgo de transferencia de potencial`;
   } else if (GPR > 2000) {
     breakdown.gpr.score = 15;
     breakdown.gpr.impact = 'GPR moderado - monitorear estructuras externas';
@@ -52,11 +52,11 @@ export function calculateSmartScore(calculations) {
 
   // Touch voltage score (0-35 points) - highest weight for safety
   if (Etouch70 > 0) {
-    const touchRatio = Em / Etouch70;
+    const touchRatio = Em / Math.max(1, Etouch70);
     if (touchRatio > 1) {
       const penalty = Math.min(35, (touchRatio - 1) * 50);
       breakdown.touchVoltage.score = Math.max(0, 35 - penalty);
-      breakdown.touchVoltage.impact = `Tensión de contacto excede límite (${(touchRatio * 100).toFixed(0)}%)`;
+      breakdown.touchVoltage.impact = `Tensión de contacto excede límite (${isFinite(touchRatio * 100) ? (touchRatio * 100).toFixed(0) : 'N/A'}%)`;
     } else if (touchRatio > 0.8) {
       breakdown.touchVoltage.score = 25;
       breakdown.touchVoltage.impact = 'Tensión de contacto cerca del límite';
@@ -74,11 +74,11 @@ export function calculateSmartScore(calculations) {
 
   // Step voltage score (0-35 points) - highest weight for safety
   if (Estep70 > 0) {
-    const stepRatio = Es / Estep70;
+    const stepRatio = Es / Math.max(1, Estep70);
     if (stepRatio > 1) {
       const penalty = Math.min(35, (stepRatio - 1) * 50);
       breakdown.stepVoltage.score = Math.max(0, 35 - penalty);
-      breakdown.stepVoltage.impact = `Tensión de paso excede límite (${(stepRatio * 100).toFixed(0)}%)`;
+      breakdown.stepVoltage.impact = `Tensión de paso excede límite (${isFinite(stepRatio * 100) ? (stepRatio * 100).toFixed(0) : 'N/A'}%)`;
     } else if (stepRatio > 0.8) {
       breakdown.stepVoltage.score = 25;
       breakdown.stepVoltage.impact = 'Tensión de paso cerca del límite';

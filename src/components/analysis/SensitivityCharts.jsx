@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { BarChart3, TrendingUp, Download, Sliders, Info, ArrowUp, ArrowDown, Minus } from 'lucide-react';
 
-const SensitivityCharts = ({ sensitivityData, darkMode }) => {
+const SensitivityCharts = ({ sensitivityData = null, darkMode = false }) => {
   const [selectedMetric, setSelectedMetric] = useState('sensitivity');
   const [chartType, setChartType] = useState('bar');
   const [showTooltip, setShowTooltip] = useState(false);
@@ -47,7 +47,9 @@ const SensitivityCharts = ({ sensitivityData, darkMode }) => {
 
   const drawChart = () => {
     const canvas = canvasRef.current;
+    if (!canvas) return;
     const ctx = canvas.getContext('2d');
+    if (!ctx) return;
     const width = canvas.width;
     const height = canvas.height;
 
@@ -93,8 +95,8 @@ const SensitivityCharts = ({ sensitivityData, darkMode }) => {
     }
 
     // Draw bars
-    const barWidth = chartWidth / data.length * 0.6;
-    const barGap = chartWidth / data.length * 0.4;
+    const barWidth = chartWidth / Math.max(1, data.length) * 0.6;
+    const barGap = chartWidth / Math.max(1, data.length) * 0.4;
 
     data.forEach((item, index) => {
       const value = getMetricValue(item);
@@ -122,7 +124,7 @@ const SensitivityCharts = ({ sensitivityData, darkMode }) => {
       ctx.fillStyle = darkMode ? '#d1d5db' : '#374151';
       ctx.font = '10px Arial';
       ctx.textAlign = 'right';
-      ctx.fillText(item.label.substring(0, 15), 0, 0);
+      ctx.fillText((item.label || '').substring(0, 15), 0, 0);
       ctx.restore();
 
       // Value on top of bar
@@ -172,8 +174,8 @@ const SensitivityCharts = ({ sensitivityData, darkMode }) => {
     const padding = { top: 40, right: 30, bottom: 80, left: 70 };
     const chartWidth = canvas.width - padding.left - padding.right;
     const data = sensitivityData.ranking;
-    const barWidth = chartWidth / data.length * 0.6;
-    const barGap = chartWidth / data.length * 0.4;
+    const barWidth = chartWidth / Math.max(1, data.length) * 0.6;
+    const barGap = chartWidth / Math.max(1, data.length) * 0.4;
 
     data.forEach((item, index) => {
       const barX = padding.left + index * (barWidth + barGap) + barGap / 2;

@@ -8,6 +8,7 @@ const TrendChart = ({ data, title, darkMode }) => {
     
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
+    if (!ctx) return;
     const width = canvas.width;
     const height = canvas.height;
     
@@ -40,7 +41,7 @@ const TrendChart = ({ data, title, darkMode }) => {
     const values = data.map(d => d.value);
     const maxValue = Math.max(...values, 1);
     const minValue = Math.min(...values, 0);
-    const range = maxValue - minValue;
+    const range = Math.max(1, maxValue - minValue);
     
     if (data.length > 1) {
       ctx.beginPath();
@@ -48,7 +49,7 @@ const TrendChart = ({ data, title, darkMode }) => {
       ctx.lineWidth = 2;
       
       data.forEach((point, i) => {
-        const x = 40 + (i * (width - 60) / (data.length - 1));
+        const x = 40 + (i * (width - 60) / Math.max(1, data.length - 1));
         const y = height - 20 - ((point.value - minValue) / range) * (height - 40);
         
         if (i === 0) {

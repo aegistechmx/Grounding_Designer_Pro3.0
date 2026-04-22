@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import { X, Printer, Download, FileText } from 'lucide-react';
+import { formatNumber, formatDistance } from '../../utils/formatters';
 
 const MaterialListModal = ({ materialList, darkMode, onClose, onExport }) => {
   // ============================================
@@ -13,7 +14,7 @@ const MaterialListModal = ({ materialList, darkMode, onClose, onExport }) => {
 
   const safeNumber = (value, decimals = 0) => {
     if (value === undefined || value === null) return 'N/A';
-    if (typeof value !== 'number' || isNaN(value)) return 'N/A';
+    if (typeof value !== 'number' || isNaN(value) || !isFinite(value)) return 'N/A';
     return value.toFixed(decimals);
   };
 
@@ -28,11 +29,11 @@ const MaterialListModal = ({ materialList, darkMode, onClose, onExport }) => {
   // Datos seguros
   const projectName = safeValue(materialList.projectName, 'Proyecto de Puesta a Tierra');
   const date = useMemo(() => safeValue(materialList.date, new Date().toLocaleDateString('es-MX')), [materialList.date]);
-  const gridArea = safeNumber(materialList.gridArea, 0);
-  const totalConductor = safeNumber(materialList.totalConductor, 0);
-  const numRods = safeNumber(materialList.numRods, 0);
-  const rodLength = safeNumber(materialList.rodLength, 1);
-  const totalCost = safeNumber(materialList.totalCost, 0);
+  const gridArea = formatNumber(materialList.gridArea, 0);
+  const totalConductor = formatDistance(materialList.totalConductor, 0);
+  const numRods = formatNumber(materialList.numRods, 0);
+  const rodLength = formatDistance(materialList.rodLength, 1);
+  const totalCost = formatNumber(materialList.totalCost, 0);
   const complies = materialList.complies === true;
   const materials = materialList.materials || [];
 
@@ -96,15 +97,15 @@ const MaterialListModal = ({ materialList, darkMode, onClose, onExport }) => {
                 <div className="text-xs text-gray-500">Área de malla</div>
               </div>
               <div>
-                <div className="text-2xl font-bold text-green-600">{totalConductor} m</div>
+                <div className="text-2xl font-bold text-green-600">{totalConductor}</div>
                 <div className="text-xs text-gray-500">Conductor total</div>
               </div>
               <div>
                 <div className="text-2xl font-bold text-purple-600">{numRods} und</div>
-                <div className="text-xs text-gray-500">Varillas de {rodLength}m</div>
+                <div className="text-xs text-gray-500">Varillas de {rodLength}</div>
               </div>
               <div>
-                <div className="text-2xl font-bold text-orange-600">${grandTotal.toFixed(0)} MXN</div>
+                <div className="text-2xl font-bold text-orange-600">{formatNumber(grandTotal, 0)} MXN</div>
                 <div className="text-xs text-gray-500">Costo estimado</div>
               </div>
             </div>
@@ -135,9 +136,9 @@ const MaterialListModal = ({ materialList, darkMode, onClose, onExport }) => {
                       </thead>
                       <tbody>
                         {items.map((item, itemIdx) => {
-                          const quantity = safeNumber(item.quantity, 0);
-                          const unitPrice = safeNumber(item.unitPrice, 0);
-                          const totalPrice = safeNumber(item.totalPrice, 0);
+                          const quantity = formatNumber(item.quantity, 0);
+                          const unitPrice = formatNumber(item.unitPrice, 0);
+                          const totalPrice = formatNumber(item.totalPrice, 0);
                           
                           return (
                             <tr key={itemIdx} className={`border-b ${darkMode ? 'border-gray-700' : 'border-gray-100'}`}>
@@ -155,7 +156,7 @@ const MaterialListModal = ({ materialList, darkMode, onClose, onExport }) => {
                         <tfoot className={`${darkMode ? 'bg-gray-700/50' : 'bg-gray-50'}`}>
                           <tr>
                             <td colSpan="5" className="p-2 text-right font-semibold">Subtotal {category.category}:</td>
-                            <td className="p-2 text-center font-bold">${categoryTotal.toFixed(0)}</td>
+                            <td className="p-2 text-center font-bold">{formatNumber(categoryTotal, 0)} MXN</td>
                           </tr>
                         </tfoot>
                       )}
@@ -172,7 +173,7 @@ const MaterialListModal = ({ materialList, darkMode, onClose, onExport }) => {
           
           {/* TOTAL GENERAL */}
           <div className={`mt-4 p-3 rounded-lg text-right font-bold text-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>
-            TOTAL ESTIMADO: ${grandTotal.toFixed(0)} MXN
+            TOTAL ESTIMADO: {formatNumber(grandTotal, 0)} MXN
           </div>
           
           {/* NOTAS */}

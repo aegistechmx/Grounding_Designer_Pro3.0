@@ -38,19 +38,25 @@ const FEMHeatmap = ({
     
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
+    if (!ctx) return;
     
-    drawHeatmap(ctx, solver, width, height);
+    const widthSafe = Math.max(1, width);
+    const heightSafe = Math.max(1, height);
+    const gridWidthSafe = Math.max(1, gridWidth);
+    const gridHeightSafe = Math.max(1, gridHeight);
+    
+    drawHeatmap(ctx, solver, widthSafe, heightSafe);
     
     // Dibujar líneas de contorno (opcional)
     ctx.beginPath();
     ctx.strokeStyle = darkMode ? '#ffffff' : '#000000';
     ctx.lineWidth = 0.5;
-    for (let i = 0; i <= gridWidth; i++) {
-      ctx.moveTo(i * (width / gridWidth), 0);
-      ctx.lineTo(i * (width / gridWidth), height);
+    for (let i = 0; i <= gridWidthSafe; i++) {
+      ctx.moveTo(i * (widthSafe / gridWidthSafe), 0);
+      ctx.lineTo(i * (widthSafe / gridWidthSafe), heightSafe);
       ctx.stroke();
-      ctx.moveTo(0, i * (height / gridHeight));
-      ctx.lineTo(width, i * (height / gridHeight));
+      ctx.moveTo(0, i * (heightSafe / gridHeightSafe));
+      ctx.lineTo(widthSafe, i * (heightSafe / gridHeightSafe));
       ctx.stroke();
     }
     
@@ -61,8 +67,10 @@ const FEMHeatmap = ({
     if (!solver || !canvasRef.current) return;
     
     const rect = canvasRef.current.getBoundingClientRect();
-    const x = (e.clientX - rect.left) / rect.width;
-    const y = (e.clientY - rect.top) / rect.height;
+    const rectWidth = Math.max(1, rect.width);
+    const rectHeight = Math.max(1, rect.height);
+    const x = (e.clientX - rect.left) / rectWidth;
+    const y = (e.clientY - rect.top) / rectHeight;
     
     if (x >= 0 && x <= 1 && y >= 0 && y <= 1) {
       const value = solver.getValueAt(x, y);
@@ -77,8 +85,10 @@ const FEMHeatmap = ({
     if (!solver || !canvasRef.current) return;
     
     const rect = canvasRef.current.getBoundingClientRect();
-    const x = (e.clientX - rect.left) / rect.width;
-    const y = (e.clientY - rect.top) / rect.height;
+    const rectWidth = Math.max(1, rect.width);
+    const rectHeight = Math.max(1, rect.height);
+    const x = (e.clientX - rect.left) / rectWidth;
+    const y = (e.clientY - rect.top) / rectHeight;
     
     if (x >= 0 && x <= 1 && y >= 0 && y <= 1) {
       const value = solver.getValueAt(x, y);
@@ -105,14 +115,14 @@ const FEMHeatmap = ({
         <div
           className="absolute bg-black/80 text-white text-xs px-2 py-1 rounded pointer-events-none"
           style={{
-            left: Math.max(10, Math.min(width - 10, hoverValue.x * width + 10)),
-            top: Math.max(30, Math.min(height - 10, hoverValue.y * height - 20)),
+            left: Math.max(10, Math.min(Math.max(1, width) - 10, (hoverValue.x || 0) * Math.max(1, width) + 10)),
+            top: Math.max(30, Math.min(Math.max(1, height) - 10, (hoverValue.y || 0) * Math.max(1, height) - 20)),
             transform: 'translate(-50%, -100%)'
           }}
         >
-          <div>Potencial: {hoverValue.value.toFixed(3)} V</div>
-          <div>Ex: {hoverValue.gradient.ex.toFixed(3)}</div>
-          <div>Ey: {hoverValue.gradient.ey.toFixed(3)}</div>
+          <div>Potencial: {isFinite(hoverValue.value || 0) ? (hoverValue.value || 0).toFixed(3) : 'N/A'} V</div>
+          <div>Ex: {isFinite(hoverValue.gradient?.ex || 0) ? (hoverValue.gradient?.ex || 0).toFixed(3) : 'N/A'}</div>
+          <div>Ey: {isFinite(hoverValue.gradient?.ey || 0) ? (hoverValue.gradient?.ey || 0).toFixed(3) : 'N/A'}</div>
         </div>
       )}
       
@@ -136,9 +146,9 @@ const FEMHeatmap = ({
       {selectedPoint && (
         <div className={`absolute top-2 left-2 p-2 rounded text-xs ${darkMode ? 'bg-black/70 text-white' : 'bg-white/70 text-black'}`}>
           <div>Punto seleccionado</div>
-          <div>Pos: ({selectedPoint.x.toFixed(2)}, {selectedPoint.y.toFixed(2)})</div>
-          <div>V = {selectedPoint.value.toFixed(3)} V</div>
-          <div>E = {Math.hypot(selectedPoint.gradient.ex, selectedPoint.gradient.ey).toFixed(3)} V/m</div>
+          <div>Pos: {isFinite(selectedPoint.x || 0) ? (selectedPoint.x || 0).toFixed(2) : 'N/A'}, {isFinite(selectedPoint.y || 0) ? (selectedPoint.y || 0).toFixed(2) : 'N/A'}</div>
+          <div>V = {isFinite(selectedPoint.value || 0) ? (selectedPoint.value || 0).toFixed(3) : 'N/A'} V</div>
+          <div>E = {isFinite(Math.hypot(selectedPoint.gradient?.ex || 0, selectedPoint.gradient?.ey || 0)) ? Math.hypot(selectedPoint.gradient?.ex || 0, selectedPoint.gradient?.ey || 0).toFixed(3) : 'N/A'} V/m</div>
           <button 
             onClick={() => setSelectedPoint(null)}
             className="mt-1 text-xs text-red-500 hover:text-red-700"

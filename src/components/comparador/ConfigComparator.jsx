@@ -3,9 +3,10 @@ import { Plus, Trash2, Copy, X, CheckCircle, XCircle } from 'lucide-react';
 import { calculateIEEE80 } from '../../utils/groundingMath_clean';
 
 const ConfigComparator = ({ currentParams, darkMode, onClose }) => {
+  const safeCurrentParams = currentParams || {};
   const [configs, setConfigs] = useState([
-    { id: 1, name: 'Configuración Actual', params: { ...currentParams }, results: calculateIEEE80(currentParams) },
-    { id: 2, name: 'Configuración Optimizada', params: { ...currentParams, numParallel: 18, numRods: 50, currentDivisionFactor: 0.20 }, results: null }
+    { id: 1, name: 'Configuración Actual', params: { ...safeCurrentParams }, results: calculateIEEE80(safeCurrentParams) },
+    { id: 2, name: 'Configuración Optimizada', params: { ...safeCurrentParams, numParallel: 18, numRods: 50, currentDivisionFactor: 0.20 }, results: null }
   ]);
 
   const addConfig = () => {
@@ -13,7 +14,7 @@ const ConfigComparator = ({ currentParams, darkMode, onClose }) => {
     setConfigs([...configs, {
       id: newId,
       name: `Configuración ${configs.length + 1}`,
-      params: { ...currentParams },
+      params: { ...safeCurrentParams },
       results: null
     }]);
   };
@@ -25,7 +26,12 @@ const ConfigComparator = ({ currentParams, darkMode, onClose }) => {
     setConfigs(configs.map(c => {
       if (c.id === configId) {
         const newParams = { ...c.params, [key]: parsedValue };
-        const newResults = calculateIEEE80(newParams);
+        let newResults = null;
+        try {
+          newResults = calculateIEEE80(newParams);
+        } catch (error) {
+          console.error('Error calculating IEEE80:', error);
+        }
         return { ...c, params: newParams, results: newResults };
       }
       return c;
@@ -54,16 +60,16 @@ const ConfigComparator = ({ currentParams, darkMode, onClose }) => {
   const getComparisonTable = () => {
     const headers = ['Parámetro', ...configs.map(c => c.name)];
     const rows = [
-      { label: 'Resistencia (Ω)', getValue: (c) => c.results?.Rg?.toFixed(2) || '-' },
-      { label: 'GPR (V)', getValue: (c) => c.results?.GPR?.toFixed(0) || '-' },
-      { label: 'Contacto (V)', getValue: (c) => c.results?.Em?.toFixed(0) || '-' },
-      { label: 'Paso (V)', getValue: (c) => c.results?.Es?.toFixed(0) || '-' },
+      { label: 'Resistencia (Ω)', getValue: (c) => isFinite(c.results?.Rg) ? c.results.Rg.toFixed(2) : '-' },
+      { label: 'GPR (V)', getValue: (c) => isFinite(c.results?.GPR) ? c.results.GPR.toFixed(0) : '-' },
+      { label: 'Contacto (V)', getValue: (c) => isFinite(c.results?.Em) ? c.results.Em.toFixed(0) : '-' },
+      { label: 'Paso (V)', getValue: (c) => isFinite(c.results?.Es) ? c.results.Es.toFixed(0) : '-' },
       { label: 'Cumple IEEE 80', getValue: (c) => c.results?.complies ? '✅' : '❌' },
       { label: 'Conductores', getValue: (c) => c.params?.numParallel || '-' },
       { label: 'Varillas', getValue: (c) => c.params?.numRods || '-' },
-      { label: 'Sf', getValue: (c) => c.params?.currentDivisionFactor?.toFixed(2) || '-' },
-      { label: 'Profundidad (m)', getValue: (c) => c.params?.gridDepth?.toFixed(1) || '-' },
-      { label: 'Long. Varilla (m)', getValue: (c) => c.params?.rodLength?.toFixed(1) || '-' }
+      { label: 'Sf', getValue: (c) => isFinite(c.params?.currentDivisionFactor) ? c.params.currentDivisionFactor.toFixed(2) : '-' },
+      { label: 'Profundidad (m)', getValue: (c) => isFinite(c.params?.gridDepth) ? c.params.gridDepth.toFixed(1) : '-' },
+      { label: 'Long. Varilla (m)', getValue: (c) => isFinite(c.params?.rodLength) ? c.params.rodLength.toFixed(1) : '-' }
     ];
 
     return { headers, rows };
@@ -78,9 +84,9 @@ const ConfigComparator = ({ currentParams, darkMode, onClose }) => {
     const currentScore = current.results.complies ? 1 : 0;
     const bestScore = best.results.complies ? 1 : 0;
     if (currentScore > bestScore) return current;
-    if (currentScore === bestScore && current.results.Rg < best.results.Rg) return current;
+    if (currentScore === bestScore && (current.results.Rg || Infinity) < (best.results.Rg || Infinity)) return current;
     return best;
-  }, configs[0]);
+  }, configs[0] || null);
 
   return (
     <div className={`p-4 rounded-lg ${darkMode ? 'bg-gray-800' : 'bg-white'} shadow-xl max-w-6xl mx-auto`}>
@@ -190,9 +196,9 @@ const ConfigComparator = ({ currentParams, darkMode, onClose }) => {
             {bestConfig.results.complies && ' ✅ Cumple IEEE 80'}
           </p>
           <div className="grid grid-cols-3 gap-2 mt-2 text-xs">
-            <div>Rg: {bestConfig.results.Rg?.toFixed(2)} Ω</div>
-            <div>Em: {bestConfig.results.Em?.toFixed(0)} V</div>
-            <div>Es: {bestConfig.results.Es?.toFixed(0)} V</div>
+            <div>Rg: {isFinite(bestConfig.results.Rg) ? bestConfig.results.Rg.toFixed(2) : 'N/A'} Ω</div>
+            <div>Em: {isFinite(bestConfig.results.Em) ? bestConfig.results.Em.toFixed(0) : 'N/A'} V</div>
+            <div>Es: {isFinite(bestConfig.results.Es) ? bestConfig.results.Es.toFixed(0) : 'N/A'} V</div>
           </div>
         </div>
       )}

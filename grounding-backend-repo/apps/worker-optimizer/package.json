@@ -1,0 +1,17 @@
+{
+  "name": "@grounding/worker-optimizer",
+  "version": "1.0.0",
+  "main": "src/index.ts",
+  "scripts": {
+    "start": "ts-node src/index.ts"
+  },
+  "dependencies": {
+    "bullmq": "^5.0.0",
+    "@prisma/client": "^5.0.0",
+    "@optimization": "*"
+  },
+  "devDependencies": {
+    "ts-node": "^10.9.0",
+    "typescript": "^5.0.0"
+  }
+}

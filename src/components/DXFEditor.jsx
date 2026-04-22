@@ -102,7 +102,7 @@ const DXFEditor = ({ darkMode, onSave, initialData = null }) => {
     ctx.strokeStyle = darkMode ? '#334155' : '#e2e8f0';
     ctx.lineWidth = 0.5;
     
-    const gridSize = 50 * scale;
+    const gridSize = Math.max(1, 50 * scale);
     const offsetX = pan.x % gridSize;
     const offsetY = pan.y % gridSize;
 
@@ -126,8 +126,9 @@ const DXFEditor = ({ darkMode, onSave, initialData = null }) => {
     if (!canvas) return;
 
     const rect = canvas.getBoundingClientRect();
-    const x = (e.clientX - rect.left - pan.x) / scale;
-    const y = (e.clientY - rect.top - pan.y) / scale;
+    const scaleSafe = Math.max(0.1, scale);
+    const x = (e.clientX - rect.left - pan.x) / scaleSafe;
+    const y = (e.clientY - rect.top - pan.y) / scaleSafe;
 
     if (currentTool === 'select') {
       // Check if clicking on an entity
@@ -160,8 +161,9 @@ const DXFEditor = ({ darkMode, onSave, initialData = null }) => {
     if (!canvas) return;
 
     const rect = canvas.getBoundingClientRect();
-    const x = (e.clientX - rect.left - pan.x) / scale;
-    const y = (e.clientY - rect.top - pan.y) / scale;
+    const scaleSafe = Math.max(0.1, scale);
+    const x = (e.clientX - rect.left - pan.x) / scaleSafe;
+    const y = (e.clientY - rect.top - pan.y) / scaleSafe;
 
     if (isPanning) {
       setPan({ x: pan.x + e.movementX, y: pan.y + e.movementY });
@@ -178,8 +180,9 @@ const DXFEditor = ({ darkMode, onSave, initialData = null }) => {
       if (!canvas) return;
 
       const rect = canvas.getBoundingClientRect();
-      const x = (e.clientX - rect.left - pan.x) / scale;
-      const y = (e.clientY - rect.top - pan.y) / scale;
+      const scaleSafe = Math.max(0.1, scale);
+      const x = (e.clientX - rect.left - pan.x) / scaleSafe;
+      const y = (e.clientY - rect.top - pan.y) / scaleSafe;
 
       let newEntity = null;
       
@@ -237,7 +240,7 @@ const DXFEditor = ({ darkMode, onSave, initialData = null }) => {
     const lenSq = C * C + D * D;
     let param = -1;
 
-    if (lenSq !== 0) param = dot / lenSq;
+    if (Math.abs(lenSq) > 1e-10) param = dot / lenSq;
 
     let xx, yy;
 
@@ -287,8 +290,8 @@ const DXFEditor = ({ darkMode, onSave, initialData = null }) => {
     }
   };
 
-  const handleZoomIn = () => setScale(s => Math.min(5, s * 1.2));
-  const handleZoomOut = () => setScale(s => Math.max(0.1, s / 1.2));
+  const handleZoomIn = () => setScale(s => Math.min(5, Math.max(0.1, s) * 1.2));
+  const handleZoomOut = () => setScale(s => Math.max(0.1, Math.max(0.1, s) / 1.2));
   const handleResetView = () => { setScale(1); setPan({ x: 0, y: 0 }); };
 
   const handleSave = () => {

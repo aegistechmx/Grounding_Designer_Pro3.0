@@ -16,8 +16,9 @@ export default function SplitView({ left, right, leftLabel = 'Antes', rightLabel
   const handleMouseMove = (e) => {
     if (!isDragging) return;
     const rect = e.currentTarget.getBoundingClientRect();
+    const rectWidth = Math.max(1, rect.width);
     const x = e.clientX - rect.left;
-    const newPos = (x / rect.width) * 100;
+    const newPos = (x / rectWidth) * 100;
     setPosition(Math.max(5, Math.min(95, newPos)));
   };
 
@@ -32,8 +33,9 @@ export default function SplitView({ left, right, leftLabel = 'Antes', rightLabel
   const handleTouchMove = (e) => {
     if (!isDragging) return;
     const rect = e.currentTarget.getBoundingClientRect();
+    const rectWidth = Math.max(1, rect.width);
     const x = e.touches[0].clientX - rect.left;
-    const newPos = (x / rect.width) * 100;
+    const newPos = (x / rectWidth) * 100;
     setPosition(Math.max(5, Math.min(95, newPos)));
   };
 
@@ -109,7 +111,7 @@ export default function SplitView({ left, right, leftLabel = 'Antes', rightLabel
 
       {/* Indicador de porcentaje */}
       <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 bg-black/70 text-white text-xs px-3 py-1 rounded">
-        {position.toFixed(0)}%
+        {isFinite(position) ? position.toFixed(0) : 'N/A'}%
       </div>
     </div>
   );

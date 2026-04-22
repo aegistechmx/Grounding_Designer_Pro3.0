@@ -27,11 +27,11 @@ const MetricCompare = ({ label, before, after, unit = '', lowerIsBetter = true }
       <span className="text-sm font-medium">{label}</span>
       <div className="text-right">
         <div className="flex items-center gap-2">
-          <span className="text-sm text-gray-500 line-through">{before.toFixed(1)}</span>
-          <span className="text-sm font-bold text-green-600">{after.toFixed(1)}</span>
+          <span className="text-sm text-gray-500 line-through">{isFinite(before) ? before.toFixed(1) : 'N/A'}</span>
+          <span className="text-sm font-bold text-green-600">{isFinite(after) ? after.toFixed(1) : 'N/A'}</span>
           <span className={`text-xs ${isImprovement ? 'text-green-600' : 'text-red-600'}`}>
             {isImprovement ? <TrendingDown size={14} /> : <TrendingUp size={14} />}
-            {Math.abs(percent).toFixed(1)}%
+            {isFinite(Math.abs(percent)) ? Math.abs(percent).toFixed(1) : 'N/A'}%
           </span>
         </div>
         <div className="text-xs text-gray-500">{unit}</div>
@@ -50,10 +50,10 @@ const DesignComparator = ({ base, optimized, darkMode }) => {
   }
 
   const improvements = {
-    resistance: base.resistance > 0 ? ((base.resistance - optimized.resistance) / base.resistance * 100).toFixed(1) : '0',
-    touch: base.touch > 0 ? ((base.touch - optimized.touch) / base.touch * 100).toFixed(1) : '0',
-    step: base.step > 0 ? ((base.step - optimized.step) / base.step * 100).toFixed(1) : '0',
-    cost: base.cost > 0 ? ((base.cost - optimized.cost) / base.cost * 100).toFixed(1) : '0'
+    resistance: base.resistance > 0 && isFinite((base.resistance - optimized.resistance) / base.resistance * 100) ? ((base.resistance - optimized.resistance) / base.resistance * 100).toFixed(1) : '0',
+    touch: base.touch > 0 && isFinite((base.touch - optimized.touch) / base.touch * 100) ? ((base.touch - optimized.touch) / base.touch * 100).toFixed(1) : '0',
+    step: base.step > 0 && isFinite((base.step - optimized.step) / base.step * 100) ? ((base.step - optimized.step) / base.step * 100).toFixed(1) : '0',
+    cost: base.cost > 0 && isFinite((base.cost - optimized.cost) / base.cost * 100) ? ((base.cost - optimized.cost) / base.cost * 100).toFixed(1) : '0'
   };
 
   return (
@@ -66,10 +66,10 @@ const DesignComparator = ({ base, optimized, darkMode }) => {
         </div>
         
         <div className="space-y-3">
-          <MetricCard label="Resistencia (Rg)" value={base.resistance.toFixed(2)} unit="Ω" color="blue" />
-          <MetricCard label="Tensión Contacto" value={base.touch.toFixed(0)} unit="V" color={base.touchOk ? 'green' : 'red'} />
-          <MetricCard label="Tensión Paso" value={base.step.toFixed(0)} unit="V" color={base.stepOk ? 'green' : 'red'} />
-          <MetricCard label="Costo Estimado" value={base.cost.toLocaleString()} unit="MXN" color="yellow" />
+          <MetricCard label="Resistencia (Rg)" value={isFinite(base.resistance || 0) ? (base.resistance || 0).toFixed(2) : 'N/A'} unit="Ω" color="blue" />
+          <MetricCard label="Tensión Contacto" value={isFinite(base.touch || 0) ? (base.touch || 0).toFixed(0) : 'N/A'} unit="V" color={base.touchOk ? 'green' : 'red'} />
+          <MetricCard label="Tensión Paso" value={isFinite(base.step || 0) ? (base.step || 0).toFixed(0) : 'N/A'} unit="V" color={base.stepOk ? 'green' : 'red'} />
+          <MetricCard label="Costo Estimado" value={isFinite(base.cost || 0) ? (base.cost || 0).toLocaleString() : 'N/A'} unit="MXN" color="yellow" />
           
           <div className={`mt-3 p-2 rounded-lg ${base.complies ? 'bg-green-100 dark:bg-green-900/30' : 'bg-red-100 dark:bg-red-900/30'}`}>
             <div className="flex items-center gap-2 text-sm">
@@ -92,10 +92,10 @@ const DesignComparator = ({ base, optimized, darkMode }) => {
         </div>
         
         <div className="space-y-3">
-          <MetricCompare label="Resistencia" before={base.resistance} after={optimized.resistance} unit="Ω" lowerIsBetter />
-          <MetricCompare label="Tensión Contacto" before={base.touch} after={optimized.touch} unit="V" lowerIsBetter />
-          <MetricCompare label="Tensión Paso" before={base.step} after={optimized.step} unit="V" lowerIsBetter />
-          <MetricCompare label="Costo" before={base.cost} after={optimized.cost} unit="MXN" lowerIsBetter />
+          <MetricCompare label="Resistencia" before={base.resistance || 0} after={optimized.resistance || 0} unit="Ω" lowerIsBetter />
+          <MetricCompare label="Tensión Contacto" before={base.touch || 0} after={optimized.touch || 0} unit="V" lowerIsBetter />
+          <MetricCompare label="Tensión Paso" before={base.step || 0} after={optimized.step || 0} unit="V" lowerIsBetter />
+          <MetricCompare label="Costo" before={base.cost || 0} after={optimized.cost || 0} unit="MXN" lowerIsBetter />
           
           <div className="mt-3 p-2 rounded-lg bg-green-100 dark:bg-green-900/30">
             <div className="flex items-center gap-2 text-sm">
@@ -103,7 +103,7 @@ const DesignComparator = ({ base, optimized, darkMode }) => {
               <span>Cumple IEEE 80</span>
               <span className="ml-auto text-xs text-green-600">
                 Mejora total: {(
-                  (improvements.resistance + improvements.touch + improvements.step + improvements.cost) / 4
+                  (parseFloat(improvements.resistance) + parseFloat(improvements.touch) + parseFloat(improvements.step) + parseFloat(improvements.cost)) / 4
                 ).toFixed(0)}% promedio
               </span>
             </div>

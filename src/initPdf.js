@@ -1,5 +1,5 @@
 // src/initPdf.js
-import { generateFullPDF } from './utils/pdfFullPro';
+import { generateFullPDF } from './utils/export/pdfFullPro';
 
 // Exponer globalmente
 if (typeof window !== 'undefined') {

@@ -1,20 +1,29 @@
 // Layout
-export { Header } from './layout/Header';
-export { Sidebar } from './layout/Sidebar';
+export { Header, Sidebar } from './layout';
 
 // Panels
-export { DesignPanel } from './panels/DesignPanel';
-export { DashboardPanel } from './panels/DashboardPanel';
-export { VisualizationPanel } from './panels/VisualizationPanel';
-export { ValidationPanel } from './panels/ValidationPanel';
-export { OptimizationPanel } from './panels/OptimizationPanel';
-export { FeedersPanel } from './panels/FeedersPanel';
-export { NormativesPanel } from './panels/NormativesPanel';
-export { ReportsPanel } from './panels/ReportsPanel';
-export { ResultsPanel } from './panels/ResultsPanel';
+export { DesignPanel, DashboardPanel, VisualizationPanel, ValidationPanel, OptimizationPanel, FeedersPanel, NormativesPanel, ReportsPanel, ResultsPanel } from './panels';
 
 // Common
-export { InputField } from './common/InputField';
-export { SafetyIndicator } from './common/SafetyIndicator';
-export { ThermalWarning } from './common/ThermalWarning';
-export { ToastNotifications } from './common/ToastNotifications';
+export { ConductorSelector, ErrorBoundary, InputField, LoadingSpinner, Logo, MetricCard, SaveProjectDialog, Skeleton, SplashScreen, ValidatedSection, ValidationBadge } from './common';
+
+// AI
+export { PredictiveAI } from './ai';
+
+// Visualizations
+export { FaultAnimation, HeatMap, Interactive3DGrid, MapAreaSelector, ProfileView, RealTimeChart, ScenarioSimulator, SensitivityChart, SoilProfile } from './visualizations';
+
+// Notifications
+export { ToastNotifications } from './notifications';
+
+// Wizard
+export { NewProjectWizard, SetupWizard } from './wizard';
+
+// Templates
+export { ProjectTemplates, TransformerTemplates } from './templates';
+
+// Docs
+export { DocumentationViewer } from './docs';
+
+// Reports
+export { ComplianceCertificate, ExecutiveReport, MaterialListModal, PDFReport } from './reports';

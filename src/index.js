@@ -1,10 +1,10 @@
 ﻿// Al inicio de index.js
 import './initPdf';
-import './utils/pdfFullPro';
+import './utils/export/pdfFullPro';
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
-import { debugSuite } from './utils/debugUtils';
+import { debugSuite } from './utils/helpers/debugUtils';
 
 // Initialize debug suite
 if (typeof window !== 'undefined') {

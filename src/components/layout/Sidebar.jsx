@@ -16,7 +16,7 @@ const NavItem = ({ icon, label, active, onClick, darkMode }) => (
   </button>
 );
 
-export const Sidebar = ({ activeTab, setActiveTab, darkMode, sidebarOpen, setSidebarOpen }) => {
+export const Sidebar = ({ activeTab = 'design', setActiveTab, darkMode = false, sidebarOpen = false, setSidebarOpen }) => {
   const navItems = [
     { icon: '📐', label: 'Diseño de Malla', id: 'design' },
     { icon: '📊', label: 'Dashboard', id: 'dashboard' },
@@ -24,6 +24,8 @@ export const Sidebar = ({ activeTab, setActiveTab, darkMode, sidebarOpen, setSid
     { icon: '✅', label: 'Validación', id: 'validation' },
     { icon: '⚡', label: 'Optimización', id: 'optimization' },
     { icon: '🔌', label: 'Alimentadores', id: 'feeders' },
+    { icon: '🤖', label: 'IA Predictiva', id: 'ai' },
+    { icon: '📁', label: 'Proyectos', id: 'projects' },
     { icon: '📜', label: 'Normativas', id: 'normatives' },
     { icon: '📄', label: 'Reportes', id: 'reports' }
   ];
@@ -60,7 +62,7 @@ export const Sidebar = ({ activeTab, setActiveTab, darkMode, sidebarOpen, setSid
 
       {/* Botón menú móvil */}
       <button
-        onClick={() => setSidebarOpen(!sidebarOpen)}
+        onClick={() => setSidebarOpen && setSidebarOpen(!sidebarOpen)}
         className="lg:hidden fixed bottom-4 left-4 z-50 bg-blue-600 text-white p-3 rounded-full shadow-lg"
       >
         {sidebarOpen ? <X size={24} /> : <Menu size={24} />}
@@ -68,11 +70,11 @@ export const Sidebar = ({ activeTab, setActiveTab, darkMode, sidebarOpen, setSid
 
       {/* Sidebar móvil */}
       {sidebarOpen && (
-        <div className="lg:hidden fixed inset-0 z-40 bg-black/50" onClick={() => setSidebarOpen(false)}>
+        <div className="lg:hidden fixed inset-0 z-40 bg-black/50" onClick={() => setSidebarOpen && setSidebarOpen(false)}>
           <div className="fixed left-0 top-0 bottom-0 w-64 bg-white dark:bg-gray-800 shadow-xl p-4 animate-slide-in" onClick={(e) => e.stopPropagation()}>
             <div className="flex justify-between items-center mb-4">
               <h3 className="font-bold">Menú</h3>
-              <button onClick={() => setSidebarOpen(false)} className="p-1 rounded hover:bg-gray-100">✕</button>
+              <button onClick={() => setSidebarOpen && setSidebarOpen(false)} className="p-1 rounded hover:bg-gray-100">✕</button>
             </div>
             {navItems.map(item => (
               <NavItem
@@ -80,7 +82,7 @@ export const Sidebar = ({ activeTab, setActiveTab, darkMode, sidebarOpen, setSid
                 icon={item.icon}
                 label={item.label}
                 active={activeTab === item.id}
-                onClick={() => { setActiveTab(item.id); setSidebarOpen(false); }}
+                onClick={() => { setActiveTab && setActiveTab(item.id); setSidebarOpen && setSidebarOpen(false); }}
                 darkMode={darkMode}
               />
             ))}

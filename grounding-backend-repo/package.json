@@ -1,0 +1,28 @@
+{
+  "name": "grounding-backend",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:api": "nest start api --watch",
+    "dev:worker-fem": "ts-node apps/worker-fem/src/index.ts",
+    "dev:worker-ai": "ts-node apps/worker-ai/src/index.ts",
+    "dev:worker-opt": "ts-node apps/worker-optimizer/src/index.ts",
+    "build": "nest build api",
+    "start:prod": "node dist/apps/api/main.js",
+    "docker:up": "docker-compose up -d",
+    "docker:down": "docker-compose down",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev",
+    "test": "jest"
+  },
+  "devDependencies": {
+    "@nestjs/cli": "^10.0.0",
+    "@types/node": "^20.0.0",
+    "ts-node": "^10.9.0",
+    "typescript": "^5.0.0"
+  }
+}

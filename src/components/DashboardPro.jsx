@@ -22,7 +22,7 @@ const DashboardPro = ({ params, calculations, gridData, darkMode, onApplyOptimiz
         resistance: calculations.Rg || 0,
         touch: calculations.Em || 0,
         step: calculations.Es || 0,
-        cost: (calculations.totalConductor || 0) * 12 + (params.numRods || 0) * 25,
+        cost: ((calculations.totalConductor || 0) * 12 + (params?.numRods || 0) * 25),
         complies: calculations.complies || false,
         touchOk: calculations.touchSafe70 || false,
         stepOk: calculations.stepSafe70 || false
@@ -165,23 +165,23 @@ const DashboardPro = ({ params, calculations, gridData, darkMode, onApplyOptimiz
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <div className={`p-3 rounded-lg text-center ${darkMode ? 'bg-gray-800' : 'bg-gray-100'}`}>
             <Shield size={20} className="mx-auto mb-1 text-blue-500" />
-            <div className="text-xl font-bold">{calculations.Rg?.toFixed(2)} Ω</div>
+            <div className="text-xl font-bold">{isFinite(calculations.Rg) ? calculations.Rg?.toFixed(2) : 'N/A'}</div>
             <div className="text-xs text-gray-500">Resistencia</div>
           </div>
           <div className={`p-3 rounded-lg text-center ${darkMode ? 'bg-gray-800' : 'bg-gray-100'}`}>
             <Zap size={20} className="mx-auto mb-1 text-yellow-500" />
-            <div className="text-xl font-bold">{calculations.GPR?.toFixed(0)} V</div>
+            <div className="text-xl font-bold">{isFinite(calculations.GPR) ? calculations.GPR?.toFixed(0) : 'N/A'} V</div>
             <div className="text-xs text-gray-500">GPR</div>
           </div>
           <div className={`p-3 rounded-lg text-center ${darkMode ? 'bg-gray-800' : 'bg-gray-100'}`}>
             <TrendingUp size={20} className="mx-auto mb-1 text-green-500" />
-            <div className="text-xl font-bold">{calculations.Em?.toFixed(0)} V</div>
+            <div className="text-xl font-bold">{isFinite(calculations.Em) ? calculations.Em?.toFixed(0) : 'N/A'} V</div>
             <div className="text-xs text-gray-500">Contacto</div>
           </div>
           <div className={`p-3 rounded-lg text-center ${darkMode ? 'bg-gray-800' : 'bg-gray-100'}`}>
             <DollarSign size={20} className="mx-auto mb-1 text-purple-500" />
             <div className="text-xl font-bold">
-              ${((calculations.totalConductor || 0) * 12 + (params.numRods || 0) * 25).toLocaleString()}
+              ${(((calculations.totalConductor || 0) * 12 + (params?.numRods || 0) * 25)).toLocaleString()}
             </div>
             <div className="text-xs text-gray-500">Costo estimado</div>
           </div>

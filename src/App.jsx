@@ -1,24 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useGroundingCalculator } from './hooks/useGroundingCalculator';
-import { Header } from './components/layout/Header';
-import { Sidebar } from './components/layout/Sidebar';
-import { DesignPanel } from './components/panels/DesignPanel';
-import { DashboardPanel } from './components/panels/DashboardPanel';
-import { VisualizationPanel } from './components/panels/VisualizationPanel';
-import { ValidationPanel } from './components/panels/ValidationPanel';
-import { OptimizationPanel } from './components/panels/OptimizationPanel';
-import { FeedersPanel } from './components/panels/FeedersPanel';
-import { NormativesPanel } from './components/panels/NormativesPanel';
-import { ReportsPanel } from './components/panels/ReportsPanel';
-import { ResultsPanel } from './components/panels/ResultsPanel';
-import SensitivityChart from './components/visualizations/SensitivityChart';
-import ScenarioSimulator from './components/visualizations/ScenarioSimulator';
-import ToastNotifications from './components/common/ToastNotifications';
-import SetupWizard from './components/wizard/SetupWizard';
-import TransformerTemplates from './components/templates/TransformerTemplates';
-import DocumentationViewer from './components/docs/DocumentationViewer';
+import { Header, Sidebar, DesignPanel, DashboardPanel, VisualizationPanel, ValidationPanel, OptimizationPanel, FeedersPanel, NormativesPanel, ReportsPanel, ResultsPanel, PredictiveAI, ScenarioSimulator, ToastNotifications, SetupWizard, TransformerTemplates, DocumentationViewer } from './components';
+import { ProjectManager } from './components/Projects/ProjectManager';
+import SensitivityChart from './components/analysis/SensitivityCharts';
 import { useSensitivityAnalysis } from './hooks/useSensitivityAnalysis';
-import './utils/pdfFullPro';
+import { projectStorageService } from './services/projectStorage.service';
+import './utils/export/pdfFullPro';
 
 const App = () => {
   const {
@@ -46,12 +33,68 @@ const App = () => {
   const [showSensitivity, setShowSensitivity] = useState(false);
   const [showScenarios, setShowScenarios] = useState(false);
 
-  // Ejecutar análisis de sensibilidad automáticamente
+  const handleLoadProject = (project) => {
+    if (!project || typeof project !== 'object') {
+      console.error('Invalid project data');
+      return;
+    }
+    if (project.params && typeof project.params === 'object') {
+      Object.keys(project.params).forEach(key => {
+        if (project.params[key] !== undefined && project.params[key] !== null) {
+          updateParam(key, project.params[key]);
+        }
+      });
+    }
+    if (project.activeTab && typeof project.activeTab === 'string') {
+      setActiveTab(project.activeTab);
+    }
+  };
+
+  const handleNewProject = (projectData) => {
+    if (!projectData || typeof projectData !== 'object') {
+      console.error('Invalid project data');
+      return;
+    }
+    Object.keys(projectData).forEach(key => {
+      if (projectData[key] !== undefined && projectData[key] !== null) {
+        updateParam(key, projectData[key]);
+      }
+    });
+    setActiveTab('design');
+  };
+
   useEffect(() => {
     if (calculations && !sensitivityAnalysis.analysisResults && !sensitivityAnalysis.isAnalyzing) {
       sensitivityAnalysis.analyzeAllParameters();
     }
-  }, [calculations]);
+  }, [calculations, sensitivityAnalysis]);
+
+  const handleKeyDown = useCallback((e) => {
+    if (e.ctrlKey && e.key === 's') {
+      e.preventDefault();
+      try {
+        const currentProject = projectStorageService.getCurrentProject();
+        const projectData = {
+          id: currentProject?.id || Date.now().toString(),
+          name: currentProject?.name || 'Nuevo Proyecto',
+          params: params,
+          calculations: calculations,
+          activeTab: activeTab,
+          createdAt: currentProject?.createdAt || new Date().toISOString()
+        };
+        const result = projectStorageService.saveProject(projectData);
+        // Use toast notification instead of alert
+        console.log('Project saved:', result.message);
+      } catch (error) {
+        console.error('Error saving project:', error);
+      }
+    }
+  }, [params, calculations, activeTab]);
+
+  useEffect(() => {
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [handleKeyDown]);
 
   const renderActivePanel = () => {
     switch (activeTab) {
@@ -69,8 +112,12 @@ const App = () => {
         return <FeedersPanel params={params} darkMode={darkMode} />;
       case 'normatives':
         return <NormativesPanel params={params} calculations={calculations} darkMode={darkMode} />;
+      case 'ai':
+        return <PredictiveAI params={params} calculations={calculations} darkMode={darkMode} />;
       case 'reports':
         return <ReportsPanel params={params} calculations={calculations} recommendations={recommendations} darkMode={darkMode} />;
+      case 'projects':
+        return <ProjectManager darkMode={darkMode} onLoadProject={handleLoadProject} onNewProject={handleNewProject} />;
       default:
         return <DesignPanel params={params} calculations={calculations} updateParam={updateParam} darkMode={darkMode} />;
     }
@@ -89,6 +136,10 @@ const App = () => {
             onOpenWizard={() => setShowWizard(true)}
             onOpenTemplates={() => setShowTemplates(true)}
             onOpenDocs={() => setShowDocs(true)}
+            params={params}
+            calculations={calculations}
+            onLoadProject={handleLoadProject}
+            onNewProject={handleNewProject}
           />
           
           {isLoading && (
@@ -113,33 +164,9 @@ const App = () => {
               {renderActivePanel()}
               <ResultsPanel calculations={calculations} recommendations={recommendations} darkMode={darkMode} />
               
-              {/* Sección de Análisis Avanzado - Solo en Diseño de Malla */}
               {activeTab === 'design' && (
                 <div className="mt-8 space-y-4">
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => setShowSensitivity(!showSensitivity)}
-                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                        showSensitivity
-                          ? 'bg-blue-600 text-white'
-                          : darkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-200 hover:bg-gray-300'
-                      }`}
-                    >
-                      📊 Análisis de Sensibilidad
-                    </button>
-                    <button
-                      onClick={() => setShowScenarios(!showScenarios)}
-                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                        showScenarios
-                          ? 'bg-blue-600 text-white'
-                          : darkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-200 hover:bg-gray-300'
-                      }`}
-                    >
-                      🎲 Simulación de Escenarios
-                    </button>
-                  </div>
-                
-                {showSensitivity && sensitivityAnalysis.analysisResults && (
+                {sensitivityAnalysis.analysisResults && (
                   <div className={`p-4 rounded-lg ${darkMode ? 'bg-gray-800' : 'bg-gray-100'}`}>
                     <h3 className="text-lg font-semibold mb-4">📈 Análisis de Sensibilidad</h3>
                     <SensitivityChart 
@@ -152,28 +179,21 @@ const App = () => {
                         <div className="text-blue-600 font-bold">
                           {sensitivityAnalysis.generateSensitivityReport().summary.mostSensitiveParameter}
                         </div>
-                        <div className="text-xs text-gray-500">
-                          Sensibilidad: {sensitivityAnalysis.generateSensitivityReport().summary.mostSensitiveValue}%
-                        </div>
                       </div>
                       <div className={`p-3 rounded ${darkMode ? 'bg-gray-700' : 'bg-white'}`}>
                         <div className="font-semibold mb-2">Parámetro menos sensible</div>
                         <div className="text-green-600 font-bold">
                           {sensitivityAnalysis.generateSensitivityReport().summary.leastSensitiveParameter}
                         </div>
-                        <div className="text-xs text-gray-500">
-                          Sensibilidad: {sensitivityAnalysis.generateSensitivityReport().summary.leastSensitiveValue}%
-                        </div>
                       </div>
                     </div>
                   </div>
                 )}
                 
-                {showScenarios && (
-                  <div className={`p-4 rounded-lg ${darkMode ? 'bg-gray-800' : 'bg-gray-100'}`}>
-                    <ScenarioSimulator baseParams={params} darkMode={darkMode} />
-                  </div>
-                )}
+                <div className={`p-4 rounded-lg ${darkMode ? 'bg-gray-800' : 'bg-gray-100'}`}>
+                  <h3 className="text-lg font-semibold mb-4">🎲 Simulación de Escenarios</h3>
+                  <ScenarioSimulator baseParams={params} darkMode={darkMode} />
+                </div>
               </div>
               )}
             </div>

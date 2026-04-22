@@ -31,7 +31,18 @@ export class HeatmapRenderer {
     // Crear shaders
     const vertexShader = createShader(gl, gl.VERTEX_SHADER, heatmapVertexShader);
     const fragmentShader = createShader(gl, gl.FRAGMENT_SHADER, heatmapFragmentShader);
+    
+    if (!vertexShader || !fragmentShader) {
+      console.error('Error al crear shaders');
+      return;
+    }
+    
     this.program = createProgram(gl, vertexShader, fragmentShader);
+    
+    if (!this.program) {
+      console.error('Error al crear programa');
+      return;
+    }
     
     gl.useProgram(this.program);
     
@@ -66,6 +77,10 @@ export class HeatmapRenderer {
   }
   
   updateData(data, width, height) {
+    if (!this.gl) {
+      console.warn('WebGL no disponible, no se puede actualizar datos');
+      return;
+    }
     const gl = this.gl;
     
     // Actualizar textura con nuevos datos
@@ -74,6 +89,10 @@ export class HeatmapRenderer {
   }
   
   render() {
+    if (!this.gl) {
+      console.warn('WebGL no disponible, no se puede renderizar');
+      return;
+    }
     const gl = this.gl;
     gl.clear(gl.COLOR_BUFFER_BIT);
     

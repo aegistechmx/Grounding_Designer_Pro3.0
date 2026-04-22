@@ -63,7 +63,7 @@ a) Modelo de resistividad del suelo:
    - Espesor capa superficial: ${i.soil.surfaceDepth} m
 
 b) Geometría de la malla:
-   - Área: ${r.gridArea.toFixed(2)} m²
+   - Área: ${isFinite(r.gridArea) ? r.gridArea.toFixed(2) : 'N/A'} m²
    - Longitud: ${i.grid.length} m
    - Ancho: ${i.grid.width} m
    - Profundidad: ${i.grid.depth} m
@@ -75,8 +75,8 @@ b) Geometría de la malla:
 c) Corriente de falla:
    - Duración de falla: ${i.fault.duration} s
    - Factor de división de corriente: ${i.fault.currentDivisionFactor}
-   - Corriente de falla: ${r.faultCurrent.toFixed(2)} A
-   - Corriente en malla: ${r.gridCurrent.toFixed(2)} A
+   - Corriente de falla: ${isFinite(r.faultCurrent) ? r.faultCurrent.toFixed(2) : 'N/A'} A
+   - Corriente en malla: ${isFinite(r.gridCurrent) ? r.gridCurrent.toFixed(2) : 'N/A'} A
 
 d) Factores de corrección:
    - Factor de capa superficial (Cs)
@@ -96,32 +96,32 @@ Los cálculos consideran condiciones críticas de operación y factores de segur
 Resultados principales obtenidos del cálculo:
 
 RESISTENCIA DE MALLA:
-• Resistencia de malla (Rg): ${r.resistance.toFixed(4)} Ω
+• Resistencia de malla (Rg): ${isFinite(r.resistance) ? r.resistance.toFixed(4) : 'N/A'} Ω
 • Valor objetivo: ≤ 5 Ω (CFE 01J00-01)
 • Estado: ${r.resistance <= 5 ? 'CUMPLE' : 'NO CUMPLE'}
 
 ELEVACIÓN DE POTENCIAL:
-• Elevación de potencial (GPR): ${r.gpr.toFixed(2)} V
-• Corriente en malla (Ig): ${r.gridCurrent.toFixed(2)} A
+• Elevación de potencial (GPR): ${isFinite(r.gpr) ? r.gpr.toFixed(2) : 'N/A'} V
+• Corriente en malla (Ig): ${isFinite(r.gridCurrent) ? r.gridCurrent.toFixed(2) : 'N/A'} A
 
 TENSIONES DE CONTACTO:
-• Tensión de contacto (Em): ${r.touchVoltage.toFixed(2)} V
-• Límite 70 kg: ${r.touchLimit70.toFixed(2)} V
-• Límite 50 kg: ${r.touchLimit50.toFixed(2)} V
+• Tensión de contacto (Em): ${isFinite(r.touchVoltage) ? r.touchVoltage.toFixed(2) : 'N/A'} V
+• Límite 70 kg: ${isFinite(r.touchLimit70) ? r.touchLimit70.toFixed(2) : 'N/A'} V
+• Límite 50 kg: ${isFinite(r.touchLimit50) ? r.touchLimit50.toFixed(2) : 'N/A'} V
 • Estado 70 kg: ${r.touchSafe70 ? 'CUMPLE' : 'NO CUMPLE'}
 • Estado 50 kg: ${r.touchSafe50 ? 'CUMPLE' : 'NO CUMPLE'}
 
 TENSIONES DE PASO:
-• Tensión de paso (Es): ${r.stepVoltage.toFixed(2)} V
-• Límite 70 kg: ${r.stepLimit70.toFixed(2)} V
-• Límite 50 kg: ${r.stepLimit50.toFixed(2)} V
+• Tensión de paso (Es): ${isFinite(r.stepVoltage) ? r.stepVoltage.toFixed(2) : 'N/A'} V
+• Límite 70 kg: ${isFinite(r.stepLimit70) ? r.stepLimit70.toFixed(2) : 'N/A'} V
+• Límite 50 kg: ${isFinite(r.stepLimit50) ? r.stepLimit50.toFixed(2) : 'N/A'} V
 • Estado 70 kg: ${r.stepSafe70 ? 'CUMPLE' : 'NO CUMPLE'}
 • Estado 50 kg: ${r.stepSafe50 ? 'CUMPLE' : 'NO CUMPLE'}
 
 GEOMETRÍA:
-• Área de malla: ${r.gridArea.toFixed(2)} m²
-• Longitud total conductor: ${r.totalConductor.toFixed(2)} m
-• Longitud total varillas: ${r.totalRodLength.toFixed(2)} m
+• Área de malla: ${isFinite(r.gridArea) ? r.gridArea.toFixed(2) : 'N/A'} m²
+• Longitud total conductor: ${isFinite(r.totalConductor) ? r.totalConductor.toFixed(2) : 'N/A'} m
+• Longitud total varillas: ${isFinite(r.totalRodLength) ? r.totalRodLength.toFixed(2) : 'N/A'} m
         `.trim()
       },
 
@@ -132,19 +132,19 @@ GEOMETRÍA:
 ANÁLISIS DE CUMPLIMIENTO IEEE 80:
 
 Tensión de contacto:
-• Calculado: ${r.touchVoltage.toFixed(2)} V
-• Límite permisible (70 kg): ${r.touchLimit70.toFixed(2)} V
-• Margen de seguridad: ${((r.touchLimit70 - r.touchVoltage) / r.touchLimit70 * 100).toFixed(1)}%
+• Calculado: ${isFinite(r.touchVoltage) ? r.touchVoltage.toFixed(2) : 'N/A'} V
+• Límite permisible (70 kg): ${isFinite(r.touchLimit70) ? r.touchLimit70.toFixed(2) : 'N/A'} V
+• Margen de seguridad: ${isFinite(r.touchLimit70) && r.touchLimit70 > 0 ? ((r.touchLimit70 - (r.touchVoltage || 0)) / r.touchLimit70 * 100).toFixed(1) : 'N/A'}%
 • Estado: ${r.touchSafe70 ? 'CUMPLE' : 'NO CUMPLE'}
 
 Tensión de paso:
-• Calculado: ${r.stepVoltage.toFixed(2)} V
-• Límite permisible (70 kg): ${r.stepLimit70.toFixed(2)} V
-• Margen de seguridad: ${((r.stepLimit70 - r.stepVoltage) / r.stepLimit70 * 100).toFixed(1)}%
+• Calculado: ${isFinite(r.stepVoltage) ? r.stepVoltage.toFixed(2) : 'N/A'} V
+• Límite permisible (70 kg): ${isFinite(r.stepLimit70) ? r.stepLimit70.toFixed(2) : 'N/A'} V
+• Margen de seguridad: ${isFinite(r.stepLimit70) && r.stepLimit70 > 0 ? ((r.stepLimit70 - (r.stepVoltage || 0)) / r.stepLimit70 * 100).toFixed(1) : 'N/A'}%
 • Estado: ${r.stepSafe70 ? 'CUMPLE' : 'NO CUMPLE'}
 
 RESISTENCIA DE MALLA:
-• Calculado: ${r.resistance.toFixed(4)} Ω
+• Calculado: ${isFinite(r.resistance) ? r.resistance.toFixed(4) : 'N/A'} Ω
 • Límite CFE: 5 Ω
 • Estado: ${r.resistance <= 5 ? 'CUMPLE' : 'NO CUMPLE'}
 

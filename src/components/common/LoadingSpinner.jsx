@@ -35,7 +35,7 @@ const LoadingSpinner = ({ message, progress, steps, darkMode }) => {
           {steps && steps.length > 0 && (
             <div className="w-full mt-3 text-xs">
               {steps.map((step, idx) => {
-                const isActive = progress >= (idx / steps.length) * 100;
+                const isActive = progress >= (idx / Math.max(1, steps.length)) * 100;
                 return (
                   <div key={idx} className="flex items-center gap-2 mt-1">
                     <div className={`w-2 h-2 rounded-full ${isActive ? 'bg-green-500' : 'bg-gray-300'}`} />

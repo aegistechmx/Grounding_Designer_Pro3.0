@@ -269,7 +269,7 @@ const MapAreaSelector = ({ onAreaSelect, darkMode, initialBounds, onClose }) => 
         bounds
       };
       setMeasurementHistory(prev => [newMeasurement, ...prev].slice(0, 10));
-      alert(`✅ Medición guardada: ${area.toFixed(0)} m²`);
+      alert(`✅ Medición guardada: ${isFinite(area) ? area.toFixed(0) : 'N/A'} m²`);
     }
   };
 
@@ -400,17 +400,6 @@ const MapAreaSelector = ({ onAreaSelect, darkMode, initialBounds, onClose }) => 
             isSelecting={isSelecting}
           />
           
-          <MapControls 
-            onZoomIn={() => {}}
-            onZoomOut={() => {}}
-            onReset={() => {
-              setMapCenter([20.659698, -103.349609]);
-              setMapZoom(13);
-            }}
-            onFullscreen={toggleFullscreen}
-            isFullscreen={isFullscreen}
-          />
-          
           {bounds && (
             <Rectangle
               bounds={bounds}
@@ -423,8 +412,8 @@ const MapAreaSelector = ({ onAreaSelect, darkMode, initialBounds, onClose }) => 
               <Popup>
                 <div className="text-sm">
                   <strong>Punto {idx + 1}</strong><br />
-                  Lat: {corner.lat.toFixed(6)}°<br />
-                  Lon: {corner.lng.toFixed(6)}°
+                  Lat: {isFinite(corner.lat) ? corner.lat.toFixed(6) : 'N/A'}°<br />
+                  Lon: {isFinite(corner.lng) ? corner.lng.toFixed(6) : 'N/A'}°
                 </div>
               </Popup>
             </Marker>
@@ -435,12 +424,19 @@ const MapAreaSelector = ({ onAreaSelect, darkMode, initialBounds, onClose }) => 
               <Popup>
                 <div className="text-sm">
                   <strong>📍 Tu ubicación</strong><br />
-                  Lat: {currentLocation[0].toFixed(6)}°<br />
-                  Lon: {currentLocation[1].toFixed(6)}°
+                  Lat: {isFinite(currentLocation[0]) ? currentLocation[0].toFixed(6) : 'N/A'}°<br />
+                  Lon: {isFinite(currentLocation[1]) ? currentLocation[1].toFixed(6) : 'N/A'}°
                 </div>
               </Popup>
             </Marker>
           )}
+          
+          <MapCenterControl center={mapCenter} zoom={mapZoom} />
+          <MapControls 
+            onReset={handleReset}
+            onFullscreen={toggleFullscreen}
+            isFullscreen={isFullscreen}
+          />
         </MapContainer>
         
         {/* Indicador de ubicación */}
@@ -460,28 +456,28 @@ const MapAreaSelector = ({ onAreaSelect, darkMode, initialBounds, onClose }) => 
               <p className="text-sm font-semibold text-green-800 dark:text-green-300 flex items-center gap-2">
                 <CheckCircle size={16} /> Área seleccionada
               </p>
-              <p className="text-2xl font-bold text-green-700 dark:text-green-400">{area.toFixed(0)} m²</p>
+              <p className="text-2xl font-bold text-green-700 dark:text-green-400">{isFinite(area) ? area.toFixed(0) : 'N/A'} m²</p>
               <div className="grid grid-cols-2 gap-3 mt-2 text-sm">
                 <div>
                   <span className={darkMode ? 'text-gray-100' : 'text-gray-600'}>Largo:</span>
-                  <span className="ml-1 font-semibold">{dimensions?.length?.toFixed(1) || Math.sqrt(area).toFixed(1)} m</span>
+                  <span className="ml-1 font-semibold">{isFinite(dimensions?.length) ? dimensions.length.toFixed(1) : (isFinite(Math.sqrt(area)) ? Math.sqrt(area).toFixed(1) : 'N/A')} m</span>
                 </div>
                 <div>
                   <span className={darkMode ? 'text-gray-100' : 'text-gray-600'}>Ancho:</span>
-                  <span className="ml-1 font-semibold">{dimensions?.width?.toFixed(1) || Math.sqrt(area).toFixed(1)} m</span>
+                  <span className="ml-1 font-semibold">{isFinite(dimensions?.width) ? dimensions.width.toFixed(1) : (isFinite(Math.sqrt(area)) ? Math.sqrt(area).toFixed(1) : 'N/A')} m</span>
                 </div>
               </div>
+              <button
+                onClick={() => {
+                  const length = dimensions?.length || Math.sqrt(area);
+                  const width = dimensions?.width || Math.sqrt(area);
+                  onAreaSelect({ length, width, area });
+                }}
+                className="mt-3 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
+              >
+                Aplicar dimensiones
+              </button>
             </div>
-            <button
-              onClick={() => {
-                const length = dimensions?.length || Math.sqrt(area);
-                const width = dimensions?.width || Math.sqrt(area);
-                onAreaSelect({ length, width, area });
-              }}
-              className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
-            >
-              Aplicar dimensiones
-            </button>
           </div>
         </div>
       )}
@@ -497,7 +493,7 @@ const MapAreaSelector = ({ onAreaSelect, darkMode, initialBounds, onClose }) => 
                 onClick={() => loadMeasurement(m)}
                 className="px-2 py-1 text-xs bg-gray-100 dark:bg-gray-700 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
               >
-                {m.area.toFixed(0)} m² ({new Date(m.date).toLocaleTimeString()})
+                {isFinite(m.area) ? m.area.toFixed(0) : 'N/A'} m² ({new Date(m.date).toLocaleTimeString()})
               </button>
             ))}
           </div>

@@ -38,8 +38,9 @@ export const ScenarioSimulator = ({ baseParams, darkMode }) => {
   };
 
   const updateScenarioParam = (id, param, value) => {
+    const parsedValue = parseFloat(value);
     setScenarios(scenarios.map(s =>
-      s.id === id ? { ...s, params: { ...s.params, [param]: parseFloat(value) } } : s
+      s.id === id ? { ...s, params: { ...s.params, [param]: isNaN(parsedValue) ? 0 : parsedValue } } : s
     ));
   };
 
@@ -63,21 +64,24 @@ export const ScenarioSimulator = ({ baseParams, darkMode }) => {
     
     return scenarios
       .filter(s => s.results)
-      .map(scenario => ({
-        name: scenario.name,
-        Rg: scenario.results.Rg,
-        Em: scenario.results.Em,
-        Es: scenario.results.Es,
-        GPR: scenario.results.GPR,
-        improvement: baseScenario.results.Rg > 0 ? ((baseScenario.results.Rg - scenario.results.Rg) / baseScenario.results.Rg * 100).toFixed(1) : '0'
-      }));
+      .map(scenario => {
+        const improvement = baseScenario.results.Rg > 0 ? ((baseScenario.results.Rg - scenario.results.Rg) / (baseScenario.results.Rg || 1) * 100) : 0;
+        return {
+          name: scenario.name,
+          Rg: scenario.results.Rg,
+          Em: scenario.results.Em,
+          Es: scenario.results.Es,
+          GPR: scenario.results.GPR,
+          improvement: isFinite(improvement) ? improvement.toFixed(1) : '0'
+        };
+      });
   };
 
   const exportResults = () => {
     const data = getComparisonData();
     const csvContent = [
       ['Escenario', 'Rg (Ω)', 'Em (V)', 'Es (V)', 'GPR (V)', 'Mejora (%)'],
-      ...data.map(s => [s.name, s.Rg?.toFixed(2), s.Em?.toFixed(0), s.Es?.toFixed(0), s.GPR?.toFixed(0), s.improvement])
+      ...data.map(s => [s.name, isFinite(s.Rg) ? s.Rg.toFixed(2) : 'N/A', isFinite(s.Em) ? s.Em.toFixed(0) : 'N/A', isFinite(s.Es) ? s.Es.toFixed(0) : 'N/A', isFinite(s.GPR) ? s.GPR.toFixed(0) : 'N/A', s.improvement])
     ].map(row => row.join(',')).join('\n');
     
     const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -141,7 +145,7 @@ export const ScenarioSimulator = ({ baseParams, darkMode }) => {
                     {scenario.isBase && <span className="ml-2 text-xs text-blue-500">(base)</span>}
                   </div>
                   <div className="text-xs text-gray-500 mt-1">
-                    {scenario.results?.Rg ? `${scenario.results.Rg.toFixed(2)} Ω` : 'Sin simular'}
+                    {scenario.results?.Rg ? `${isFinite(scenario.results.Rg) ? scenario.results.Rg.toFixed(2) : 'N/A'} Ω` : 'Sin simular'}
                   </div>
                 </div>
                 {!scenario.isBase && (
@@ -205,18 +209,18 @@ export const ScenarioSimulator = ({ baseParams, darkMode }) => {
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
                 <span className="text-gray-500">Resistencia (Rg):</span>
-                <span className="font-bold">{scenarios.find(s => s.id === selectedScenario)?.results.Rg?.toFixed(3)} Ω</span>
+                <span className="font-bold">{isFinite(scenarios.find(s => s.id === selectedScenario)?.results.Rg) ? scenarios.find(s => s.id === selectedScenario)?.results.Rg.toFixed(3) : 'N/A'} Ω</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-500">GPR:</span>
-                <span className="font-bold">{scenarios.find(s => s.id === selectedScenario)?.results.GPR?.toFixed(0)} V</span>
+                <span className="font-bold">{isFinite(scenarios.find(s => s.id === selectedScenario)?.results.GPR) ? scenarios.find(s => s.id === selectedScenario)?.results.GPR.toFixed(0) : 'N/A'} V</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-500">Em (Contacto):</span>
                 <span className={`font-bold ${
                   scenarios.find(s => s.id === selectedScenario)?.results.touchSafe70 ? 'text-green-600' : 'text-red-600'
                 }`}>
-                  {scenarios.find(s => s.id === selectedScenario)?.results.Em?.toFixed(0)} V
+                  {isFinite(scenarios.find(s => s.id === selectedScenario)?.results.Em) ? scenarios.find(s => s.id === selectedScenario)?.results.Em.toFixed(0) : 'N/A'} V
                 </span>
               </div>
               <div className="flex justify-between">
@@ -224,7 +228,7 @@ export const ScenarioSimulator = ({ baseParams, darkMode }) => {
                 <span className={`font-bold ${
                   scenarios.find(s => s.id === selectedScenario)?.results.stepSafe70 ? 'text-green-600' : 'text-red-600'
                 }`}>
-                  {scenarios.find(s => s.id === selectedScenario)?.results.Es?.toFixed(0)} V
+                  {isFinite(scenarios.find(s => s.id === selectedScenario)?.results.Es) ? scenarios.find(s => s.id === selectedScenario)?.results.Es.toFixed(0) : 'N/A'} V
                 </span>
               </div>
               <div className="pt-2 mt-2 border-t">
@@ -244,44 +248,44 @@ export const ScenarioSimulator = ({ baseParams, darkMode }) => {
             </div>
           )}
         </div>
-      </div>
 
-      {/* Comparación de resultados */}
-      {comparisonData.length > 1 && (
-        <div className={`p-4 rounded-lg ${darkMode ? 'bg-gray-800' : 'bg-gray-100'}`}>
-          <h4 className="font-semibold mb-3 flex items-center gap-2">
-            <Layers size={16} /> Comparación de Resultados
-          </h4>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className={`border-b ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-                  <th className="text-left py-2">Escenario</th>
-                  <th className="text-right py-2">Rg (Ω)</th>
-                  <th className="text-right py-2">Em (V)</th>
-                  <th className="text-right py-2">Es (V)</th>
-                  <th className="text-right py-2">GPR (V)</th>
-                  <th className="text-right py-2">Mejora</th>
-                </tr>
-              </thead>
-              <tbody>
-                {comparisonData.map((scenario, idx) => (
-                  <tr key={idx} className={`border-b ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-                    <td className="py-2 font-medium">{scenario.name}</td>
-                    <td className="text-right py-2">{scenario.Rg?.toFixed(2)}</td>
-                    <td className="text-right py-2">{scenario.Em?.toFixed(0)}</td>
-                    <td className="text-right py-2">{scenario.Es?.toFixed(0)}</td>
-                    <td className="text-right py-2">{scenario.GPR?.toFixed(0)}</td>
-                    <td className={`text-right py-2 font-semibold ${parseFloat(scenario.improvement) > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                      {parseFloat(scenario.improvement) > 0 ? `↓${scenario.improvement}%` : `↑${Math.abs(scenario.improvement)}%`}
-                    </td>
+        {/* Comparación de resultados */}
+        {comparisonData.length > 1 && (
+          <div className={`p-4 rounded-lg ${darkMode ? 'bg-gray-800' : 'bg-gray-100'}`}>
+            <h4 className="font-semibold mb-3 flex items-center gap-2">
+              <Layers size={16} /> Comparación de Resultados
+            </h4>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className={`border-b ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+                    <th className="text-left py-2">Escenario</th>
+                    <th className="text-right py-2">Rg (Ω)</th>
+                    <th className="text-right py-2">Em (V)</th>
+                    <th className="text-right py-2">Es (V)</th>
+                    <th className="text-right py-2">GPR (V)</th>
+                    <th className="text-right py-2">Mejora</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {comparisonData.map((scenario, idx) => (
+                    <tr key={idx} className={`border-b ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+                      <td className="py-2 font-medium">{scenario.name}</td>
+                      <td className="text-right py-2">{isFinite(scenario.Rg) ? scenario.Rg.toFixed(2) : 'N/A'}</td>
+                      <td className="text-right py-2">{isFinite(scenario.Em) ? scenario.Em.toFixed(0) : 'N/A'}</td>
+                      <td className="text-right py-2">{isFinite(scenario.Es) ? scenario.Es.toFixed(0) : 'N/A'}</td>
+                      <td className="text-right py-2">{isFinite(scenario.GPR) ? scenario.GPR.toFixed(0) : 'N/A'}</td>
+                      <td className={`text-right py-2 font-semibold ${parseFloat(scenario.improvement) > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        {parseFloat(scenario.improvement) > 0 ? `↓${scenario.improvement}%` : `↑${Math.abs(scenario.improvement)}%`}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 };

@@ -14,7 +14,7 @@ const MexicanNormatives = ({ params, calculations, darkMode }) => {
   const nom022Compliance = useMemo(() => {
     const Rg = calculations?.Rg || 999;
     const complies = Rg <= 10; // NOM-022: <10Ω
-    const hasGravelLayer = params?.surfaceLayer >= 3000 && params?.surfaceDepth >= 0.10;
+    const hasGravelLayer = (params?.surfaceLayer || 0) >= 3000 && (params?.surfaceDepth || 0) >= 0.10;
     
     return {
       complies,
@@ -30,8 +30,10 @@ const MexicanNormatives = ({ params, calculations, darkMode }) => {
   // NMX-J-549-ANCE-2005 - Pararrayos (SPTE)
   // ============================================
   const nmx549Compliance = useMemo(() => {
-    const buildingPerimeter = 2 * (params?.gridLength + params?.gridWidth);
-    const buildingHeight = params?.buildingHeight || 10;
+    const gridLengthSafe = Math.max(1, params?.gridLength || 10);
+    const gridWidthSafe = Math.max(1, params?.gridWidth || 10);
+    const buildingPerimeter = 2 * (gridLengthSafe + gridWidthSafe);
+    const buildingHeight = Math.max(1, params?.buildingHeight || 10);
     const hasLightningRod = params?.hasLightningRod || false;
     
     // Niveles de protección según NMX-J-549
@@ -42,12 +44,13 @@ const MexicanNormatives = ({ params, calculations, darkMode }) => {
       IV: { radius: 60, description: 'Protección básica (estructuras sin riesgo)' }
     };
     
-    const currentLevel = protectionLevels[lightningProtectionLevel];
+    const currentLevel = protectionLevels[lightningProtectionLevel] || protectionLevels.III;
     
     // Cálculo del radio de protección (método esfera rodante)
     const calculateProtectionRadius = (height, level) => {
       // R = √(2rh - h²) según NMX-J-549
-      const r = protectionLevels[level].radius;
+      const levelData = protectionLevels[level] || protectionLevels.III;
+      const r = levelData.radius;
       const h = height;
       if (h >= r) return r;
       return Math.sqrt(2 * r * h - Math.pow(h, 2));
@@ -63,8 +66,8 @@ const MexicanNormatives = ({ params, calculations, darkMode }) => {
     const rodLengthOK = (params?.rodLength || 0) >= 2.40;
     
     // Distancia entre electrodos: mínimo 2× longitud
-    const rodSpacing = params?.gridLength / (params?.numRods || 1);
-    const spacingOK = rodSpacing >= (params?.rodLength || 3) * 2;
+    const rodSpacing = gridLengthSafe / Math.max(1, params?.numRods || 1);
+    const spacingOK = rodSpacing >= Math.max(1, params?.rodLength || 3) * 2;
     
     return {
       hasLightningRod,
@@ -86,13 +89,13 @@ const MexicanNormatives = ({ params, calculations, darkMode }) => {
   // ============================================
   const nom001Compliance = useMemo(() => {
     // Datos del alimentador principal
-    const voltage = params?.secondaryVoltage || 480;
+    const voltage = Math.max(1, params?.secondaryVoltage || 480);
     const current = calculations?.Ig || params?.faultCurrent || 1000;
-    const distance = params?.feederDistance || 50; // metros
+    const distance = Math.max(1, params?.feederDistance || 50); // metros
     const conductorAWG = params?.feederConductor || '4/0';
     const conductorMaterial = params?.conductorMaterial || 'Cobre';
-    const ambientTemp = params?.ambientTemp || 35;
-    const conductorsPerPhase = params?.conductorsPerPhase || 1;
+    const ambientTemp = Math.max(1, params?.ambientTemp || 35);
+    const conductorsPerPhase = Math.max(1, params?.conductorsPerPhase || 1);
     const insulationType = params?.insulationType || 'THHW-LS';
     
     // Resistencia del conductor (Ω/km) - Tabla 10-5
@@ -109,6 +112,9 @@ const MexicanNormatives = ({ params, calculations, darkMode }) => {
         '4': 1.36, '3': 1.08, '2': 0.85, '1': 0.67, '1/0': 0.53,
         '2/0': 0.42, '3/0': 0.33, '4/0': 0.26, '250': 0.23,
         '300': 0.18, '350': 0.16, '400': 0.14, '500': 0.11
+      },
+      'default': {
+        '4/0': 0.16
       }
     };
     
@@ -121,6 +127,10 @@ const MexicanNormatives = ({ params, calculations, darkMode }) => {
       'Aluminio': {
         '75°C': { '14': 20, '12': 25, '10': 30, '8': 40, '6': 50, '4': 65, '3': 75, '2': 90, '1': 100, '1/0': 120, '2/0': 135, '3/0': 155, '4/0': 180, '250': 205, '300': 230, '350': 255, '400': 280, '500': 320, '600': 355, '750': 395, '1000': 465 },
         '90°C': { '14': 25, '12': 30, '10': 35, '8': 45, '6': 60, '4': 80, '3': 90, '2': 105, '1': 120, '1/0': 140, '2/0': 160, '3/0': 185, '4/0': 210, '250': 235, '300': 265, '350': 290, '400': 320, '500': 365, '600': 405, '750': 450, '1000': 530 }
+      },
+      'default': {
+        '75°C': { '4/0': 230 },
+        '90°C': { '4/0': 265 }
       }
     };
     
@@ -134,15 +144,20 @@ const MexicanNormatives = ({ params, calculations, darkMode }) => {
     
     const tempFactor = tempCorrection[Math.floor(ambientTemp)] || 1.00;
     const groupFactor = conductorsPerPhase > 1 ? 0.8 : 1.0;
-    const adjustedAmpacity = (ampacityTable[conductorMaterial][params?.tempRating || '75°C'][conductorAWG] || 230) * tempFactor * groupFactor;
+    const safeMaterial = Object.keys(ampacityTable).includes(conductorMaterial) ? conductorMaterial : 'Cobre';
+    const safeTempRating = Object.keys(ampacityTable[safeMaterial]).includes(params?.tempRating || '75°C') ? (params?.tempRating || '75°C') : '75°C';
+    const adjustedAmpacity = (ampacityTable[safeMaterial]?.[safeTempRating]?.[conductorAWG] || 230) * tempFactor * groupFactor;
     const requiredAmpacity = current * (params?.continuousLoad ? 1.25 : 1);
     const ampacityOK = adjustedAmpacity >= requiredAmpacity;
     
     // Caída de tensión
-    const R = (conductorResistance[conductorMaterial][conductorAWG] || 0.16) * (conductorMaterial === 'Aluminio' ? 1.6 : 1);
+    const safeConductorMaterial = conductorMaterial || 'Cobre';
+    const safeConductorAWG = conductorAWG || '4/0';
+    const R = (conductorResistance[safeConductorMaterial]?.[safeConductorAWG] || 0.16) * (safeConductorMaterial === 'Aluminio' ? 1.6 : 1);
     const lengthKm = distance / 1000;
     const voltageDrop = Math.sqrt(3) * current * R * lengthKm;
-    const voltageDropPercent = (voltageDrop / voltage) * 100;
+    const voltageSafe = Math.max(1, voltage);
+    const voltageDropPercent = (voltageDrop / voltageSafe) * 100;
     const voltageDropOK = voltageDropPercent <= 3;
     
     // Factor de potencia mínimo (NOM-001 Artículo 430)
@@ -175,9 +190,9 @@ const MexicanNormatives = ({ params, calculations, darkMode }) => {
   // CFE 01J00-01 - Criterios de Puesta a Tierra
   // ============================================
   const cfeCompliance = useMemo(() => {
-    const voltageLevel = params?.voltageLevel || 13200; // Tensión del sistema (V)
+    const voltageLevel = Math.max(1, params?.voltageLevel || 13200); // Tensión del sistema (V)
     const substationType = params?.substationType || 'distribution'; // 'distribution' o 'transmission'
-    const faultDuration = params?.faultDuration || 0.5;
+    const faultDuration = Math.max(0, params?.faultDuration || 0.5);
     const Rg = calculations?.Rg || 999;
     
     // Resistencia máxima según nivel de tensión (CFE G0100-04)
@@ -227,7 +242,9 @@ const MexicanNormatives = ({ params, calculations, darkMode }) => {
   // Cálculo de electrodos según NMX-J-549
   // ============================================
   const calculateRequiredElectrodes = () => {
-    const perimeter = 2 * (params?.gridLength + params?.gridWidth);
+    const gridLengthSafe = Math.max(1, params?.gridLength || 10);
+    const gridWidthSafe = Math.max(1, params?.gridWidth || 10);
+    const perimeter = 2 * (gridLengthSafe + gridWidthSafe);
     const baseRods = Math.ceil(perimeter / 20);
     
     // Ajuste por nivel de protección
@@ -238,7 +255,8 @@ const MexicanNormatives = ({ params, calculations, darkMode }) => {
       IV: 0.8
     };
     
-    const totalRods = Math.ceil(baseRods * levelMultiplier[lightningProtectionLevel]);
+    const safeMultiplier = levelMultiplier[lightningProtectionLevel] || levelMultiplier.III;
+    const totalRods = Math.ceil(baseRods * safeMultiplier);
     
     return {
       baseRods,
@@ -254,8 +272,8 @@ const MexicanNormatives = ({ params, calculations, darkMode }) => {
   // ============================================
   const SphereMethodVisualization = () => {
     const canvasRef = React.useRef(null);
-    const buildingWidth = params?.gridWidth || 16;
-    const buildingHeight = params?.buildingHeight || 10;
+    const buildingWidth = Math.max(1, params?.gridWidth || 16);
+    const buildingHeight = Math.max(1, params?.buildingHeight || 10);
     const protectionRadius = nmx549Compliance.protectionRadius;
     
     React.useEffect(() => {
@@ -263,6 +281,7 @@ const MexicanNormatives = ({ params, calculations, darkMode }) => {
       if (!canvas) return;
       
       const ctx = canvas.getContext('2d');
+      if (!ctx) return;
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       
       const centerX = canvas.width / 2;
@@ -498,7 +517,7 @@ const MexicanNormatives = ({ params, calculations, darkMode }) => {
                   )}
                 </div>
                 <div className="text-lg font-bold mt-1 text-black dark:text-white">
-                  {params?.surfaceLayer?.toLocaleString()} Ω·m
+                  {(params?.surfaceLayer || 3000).toLocaleString()} Ω·m
                 </div>
                 <div className="text-xs mt-1 text-black dark:text-white">
                   Espesor: {params?.surfaceDepth} m

@@ -4,27 +4,30 @@ import { Info, Shield, Zap, TrendingDown, Maximize2, User, ArrowDown } from 'luc
 const SoilProfile = ({ params, darkMode }) => {
   const [showDetails, setShowDetails] = useState(false);
   const { 
-    soilResistivity, 
-    surfaceLayer, 
-    surfaceDepth, 
-    gridDepth, 
-    rodLength,
-    gridLength,
-    gridWidth
-  } = params;
+    soilResistivity = 100, 
+    surfaceLayer = 3000, 
+    surfaceDepth = 0.15, 
+    gridDepth = 0.6, 
+    rodLength = 3,
+    gridLength = 30,
+    gridWidth = 16
+  } = params || {};
   
   // Calcular profundidades correctas
-  const maxDepth = Math.max(gridDepth + rodLength, surfaceDepth + 2);
-  const scale = 220 / maxDepth;
+  const maxDepth = Math.max((gridDepth || 0.6) + (rodLength || 3), (surfaceDepth || 0.15) + 2, 5);
+  const scale = 220 / Math.max(1, maxDepth);
   
   // Posiciones en píxeles (desde la parte superior)
-  const surfaceBottom = surfaceDepth * scale;           // Fin de capa superficial
-  const mallaY = gridDepth * scale;                     // Posición de la malla
-  const varillaBottom = (gridDepth + rodLength) * scale; // Fin de la varilla
+  const surfaceBottom = (surfaceDepth || 0.15) * scale;           // Fin de capa superficial
+  const mallaY = (gridDepth || 0.6) * scale;                     // Posición de la malla
+  const varillaBottom = ((gridDepth || 0.6) + (rodLength || 3)) * scale; // Fin de la varilla
   
   // Calcular protección de la capa superficial (IEEE Std 80)
-  const Cs = 1 - (0.09 * (1 - soilResistivity / surfaceLayer)) / (2 * surfaceDepth + 0.09);
-  const touchLimitIncrease = (1000 + 1.5 * Cs * surfaceLayer) / 1000;
+  const safeSurfaceLayer = Math.max(1, surfaceLayer || 3000);
+  const safeSurfaceDepth = Math.max(0.01, surfaceDepth || 0.15);
+  const safeSoilResistivity = Math.max(1, soilResistivity || 100);
+  const Cs = 1 - (0.09 * (1 - safeSoilResistivity / safeSurfaceLayer)) / (2 * safeSurfaceDepth + 0.09);
+  const touchLimitIncrease = (1000 + 1.5 * Cs * safeSurfaceLayer) / 1000;
   const protectionIncrease = isFinite(touchLimitIncrease) ? ((touchLimitIncrease - 1) * 100).toFixed(0) : '0';
   
   // Determinar calidad del suelo
@@ -54,11 +57,11 @@ const SoilProfile = ({ params, darkMode }) => {
           className="absolute top-0 left-0 right-0 bg-gradient-to-b from-amber-300 to-amber-500 dark:from-amber-700 dark:to-amber-800"
           style={{ height: `${surfaceBottom}px` }}
         >
-          <div className="absolute top-4 left-3 text-xs font-medium text-blue-600 dark:text-blue-300 leading-relaxed">
+          <div className="absolute top-2 left-2 text-xs font-medium text-blue-600 dark:text-blue-300 leading-relaxed">
             <div className="font-bold mb-1">🌟 CAPA SUPERFICIAL</div>
             <div className="mb-0.5">Material: Grava / Asfalto</div>
-            <div className="mb-0.5">Resistividad: {surfaceLayer.toLocaleString()} Ω·m</div>
-            <div className="mb-0.5">Espesor: {surfaceDepth} m</div>
+            <div className="mb-0.5">Resistividad: {isFinite(surfaceLayer) ? surfaceLayer.toLocaleString() : (3000).toLocaleString()} Ω·m</div>
+            <div className="mb-0.5">Espesor: {surfaceDepth || 0.15} m</div>
             <div className="text-blue-600 dark:text-blue-300 mt-1">✓ Protege a las personas</div>
           </div>
           
@@ -79,7 +82,7 @@ const SoilProfile = ({ params, darkMode }) => {
         
         {/* Etiqueta de profundidad - límite capa superficial */}
         <div className="absolute left-1/2 transform -translate-x-1/2" style={{ top: `${mallaY - 30}px` }}>
-          <span className="text-[9px] text-gray-900 bg-white/80 dark:bg-gray-800/80 px-1 rounded">↑ {surfaceDepth}m</span>
+          <span className="text-[9px] text-gray-900 bg-white/80 dark:bg-gray-800/80 px-1 rounded">↑ {surfaceDepth || 0.15}m</span>
         </div>
         
         {/* SUELO NATURAL - DEBAJO DE LA CAPA SUPERFICIAL */}
@@ -100,7 +103,7 @@ const SoilProfile = ({ params, darkMode }) => {
           
           <div className="absolute left-2/3 transform -translate-x-1/2 text-xs font-medium text-brown-900 dark:text-brown-100 leading-relaxed text-center" style={{ top: `${surfaceBottom + 50}px` }}>
             <div className="font-bold mb-2">🌍 SUELO NATURAL</div>
-            <div className="mb-1">Resistividad: {soilResistivity} Ω·m</div>
+            <div className="mb-1">Resistividad: {soilResistivity || 100} Ω·m</div>
             <div className="mb-1">Calidad: <span className={soilColor}>{soilQuality}</span></div>
             <div className="text-blue-700 dark:text-blue-300 mt-2">✓ Disipa la corriente de falla</div>
           </div>
@@ -120,7 +123,7 @@ const SoilProfile = ({ params, darkMode }) => {
           className="absolute left-2/3 transform -translate-x-1/2 text-xs font-bold text-blue-500 bg-blue-50 dark:bg-blue-900/70 px-2 py-0.5 rounded whitespace-nowrap z-20"
           style={{ top: `${mallaY + 12}px` }}
         >
-          ═════ MALLA DE TIERRA a {gridDepth} m ═════
+          ═════ MALLA DE TIERRA a {gridDepth || 0.6} m ═════
         </div>
         
         {/* VARILLAS - desde la malla hacia abajo */}
@@ -141,7 +144,7 @@ const SoilProfile = ({ params, darkMode }) => {
           className="absolute text-xs font-bold text-green-600 bg-green-50 dark:bg-green-900/70 px-1 py-0.5 rounded whitespace-nowrap z-20"
           style={{ left: '42%', top: `${mallaY + (varillaBottom - mallaY) / 2 - 8}px` }}
         >
-          Varilla {rodLength}m
+          Varilla {rodLength || 3}m
         </div>
         
         {/* FLECHA DE CORRIENTE - mostrando el camino seguro */}
@@ -159,11 +162,11 @@ const SoilProfile = ({ params, darkMode }) => {
           <div className="flex flex-col items-start gap-0.5">
             <span>0 m (superficie)</span>
             <div className="w-8 h-px bg-gray-400" />
-            <span>{surfaceDepth} m (fin capa superficial)</span>
+            <span>{surfaceDepth || 0.15} m (fin capa superficial)</span>
             <div className="w-8 h-px bg-gray-400" />
-            <span>{gridDepth} m (malla)</span>
+            <span>{gridDepth || 0.6} m (malla)</span>
             <div className="w-8 h-px bg-gray-400" />
-            <span>{(gridDepth + rodLength).toFixed(1)} m (fin varilla)</span>
+            <span>{isFinite((gridDepth || 0.6) + (rodLength || 3)) ? ((gridDepth || 0.6) + (rodLength || 3)).toFixed(1) : 'N/A'} m (fin varilla)</span>
           </div>
         </div>
         
@@ -184,11 +187,11 @@ const SoilProfile = ({ params, darkMode }) => {
           <div className="grid grid-cols-2 gap-2 text-xs">
             <div>
               <span className={darkMode ? 'text-gray-100' : 'text-gray-600'}>Factor de reducción Cs:</span>
-              <span className="ml-1 font-semibold">{Cs.toFixed(3)}</span>
+              <span className="ml-1 font-semibold">{isFinite(Cs) ? Cs.toFixed(3) : 'N/A'}</span>
             </div>
             <div>
               <span className={darkMode ? 'text-gray-100' : 'text-gray-600'}>Límite de contacto seguro:</span>
-              <span className="ml-1 font-semibold text-green-600">{(touchLimitIncrease * 3804).toFixed(0)} V</span>
+              <span className="ml-1 font-semibold text-green-600">{isFinite((touchLimitIncrease || 1) * 3804) ? ((touchLimitIncrease || 1) * 3804).toFixed(0) : 'N/A'} V</span>
             </div>
             <div>
               <span className={darkMode ? 'text-gray-100' : 'text-gray-600'}>Incremento de seguridad:</span>
@@ -196,15 +199,15 @@ const SoilProfile = ({ params, darkMode }) => {
             </div>
             <div>
               <span className={darkMode ? 'text-gray-100' : 'text-gray-600'}>Profundidad efectiva:</span>
-              <span className="ml-1 font-semibold">{(gridDepth + rodLength).toFixed(1)} m</span>
+              <span className="ml-1 font-semibold">{isFinite((gridDepth || 0.6) + (rodLength || 3)) ? ((gridDepth || 0.6) + (rodLength || 3)).toFixed(1) : 'N/A'} m</span>
             </div>
             <div>
               <span className={darkMode ? 'text-gray-100' : 'text-gray-600'}>Área de influencia:</span>
-              <span className="ml-1 font-semibold">{(gridLength * gridWidth).toFixed(0)} m²</span>
+              <span className="ml-1 font-semibold">{isFinite((gridLength || 30) * (gridWidth || 16)) ? ((gridLength || 30) * (gridWidth || 16)).toFixed(0) : 'N/A'} m²</span>
             </div>
             <div>
               <span className={darkMode ? 'text-gray-100' : 'text-gray-600'}>Resistividad equivalente:</span>
-              <span className="ml-1 font-semibold">{Math.sqrt(soilResistivity * surfaceLayer).toFixed(0)} Ω·m</span>
+              <span className="ml-1 font-semibold">{isFinite(Math.sqrt((soilResistivity || 100) * (surfaceLayer || 3000))) ? Math.sqrt((soilResistivity || 100) * (surfaceLayer || 3000)).toFixed(0) : 'N/A'} Ω·m</span>
             </div>
           </div>
           
@@ -215,8 +218,8 @@ const SoilProfile = ({ params, darkMode }) => {
               que puede circular por una persona durante una falla.
             </p>
             <p className={`text-xs ${darkMode ? 'text-gray-100' : 'text-gray-600'} mt-1`}>
-              📐 Según IEEE Std 80, la tensión de contacto tolerable aumenta de 380V a {touchLimitIncrease.toFixed(1)}V
-              gracias a la capa de {surfaceDepth}m de {surfaceLayer.toLocaleString()} Ω·m.
+              📐 Según IEEE Std 80, la tensión de contacto tolerable aumenta de 380V a {isFinite(touchLimitIncrease) ? touchLimitIncrease.toFixed(1) : 'N/A'}V
+              gracias a la capa de {surfaceDepth || 0.15}m de {(surfaceLayer || 3000).toLocaleString()} Ω·m.
             </p>
           </div>
         </div>
@@ -248,8 +251,8 @@ const SoilProfile = ({ params, darkMode }) => {
           <Shield size={14} className="flex-shrink-0 mt-0.5" />
           <span>
             <strong>✅ ¿Cómo protege la capa superficial?</strong><br />
-            La alta resistividad ({surfaceLayer.toLocaleString()} Ω·m) de la capa superior <strong>bloquea el paso de corriente</strong> 
-            a través del cuerpo de las personas, elevando el límite de tensión de contacto seguro de 380V a más de {(touchLimitIncrease * 3804).toFixed(0)}V.
+            La alta resistividad ({(surfaceLayer || 3000).toLocaleString()} Ω·m) de la capa superior <strong>bloquea el paso de corriente</strong> 
+            a través del cuerpo de las personas, elevando el límite de tensión de contacto seguro de 380V a más de {isFinite((touchLimitIncrease || 1) * 3804) ? ((touchLimitIncrease || 1) * 3804).toFixed(0) : 'N/A'}V.
           </span>
         </p>
       </div>
@@ -260,7 +263,7 @@ const SoilProfile = ({ params, darkMode }) => {
           <p className="text-xs text-yellow-700 dark:text-yellow-300 flex items-start gap-2">
             <Zap size={14} className="flex-shrink-0 mt-0.5" />
             <span>
-              <strong>⚠️ Recomendación:</strong> Suelo de alta resistividad ({soilResistivity} Ω·m). 
+              <strong>⚠️ Recomendación:</strong> Suelo de alta resistividad ({soilResistivity || 100} Ω·m). 
               Considere tratamiento químico con bentonita, aumento de varillas o malla más densa.
             </span>
           </p>
@@ -272,7 +275,7 @@ const SoilProfile = ({ params, darkMode }) => {
         <p className="text-xs text-green-700 dark:text-green-300 flex items-start gap-2">
           <TrendingDown size={14} className="flex-shrink-0 mt-0.5" />
           <span>
-            <strong>✓ Configuración correcta:</strong> La malla va enterrada en el suelo natural a {gridDepth}m, 
+            <strong>✓ Configuración correcta:</strong> La malla va enterrada en el suelo natural a {gridDepth || 0.6}m, 
             no dentro de la capa superficial. La corriente de falla se disipa a través de la malla y las varillas, 
             <strong> sin pasar por las personas</strong> en la superficie.
           </span>

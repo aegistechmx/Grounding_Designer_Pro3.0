@@ -60,8 +60,9 @@ const FaultAnimation = ({ params, darkMode, onSimulate }) => {
   // CÁLCULOS
   // ============================================
   const calculateFaultCurrent = () => {
-    const maxCurrent = (transformerKVA * 1000) / (voltage * Math.sqrt(3));
-    const reduction = 1 / (1 + gridResistance / 10);
+    const safeVoltage = voltage || 13200;
+    const maxCurrent = (transformerKVA * 1000) / (safeVoltage * Math.sqrt(3));
+    const reduction = 1 / (1 + (gridResistance || 0) / 10);
     return maxCurrent * reduction;
   };
 
@@ -69,12 +70,15 @@ const FaultAnimation = ({ params, darkMode, onSimulate }) => {
   const percentOfMax = (faultCurrent / maxFaultCurrent) * 100;
 
   const calculateStepAndTouch = (current) => {
-    const Cs = 1 - (0.09 * (1 - soilResistivity / surfaceLayer)) / (2 * surfaceDepth + 0.09);
+    const safeSoilResistivity = soilResistivity || 100;
+    const safeSurfaceLayer = surfaceLayer || 10000;
+    const safeSurfaceDepth = surfaceDepth || 0.2;
+    const Cs = 1 - (0.09 * (1 - safeSoilResistivity / safeSurfaceLayer)) / (2 * safeSurfaceDepth + 0.09);
     const stepFactor = 0.15;
     const touchFactor = 0.5;
     return {
-      step: current * gridResistance * stepFactor * Cs,
-      touch: current * gridResistance * touchFactor * Cs,
+      step: current * (gridResistance || 0) * stepFactor * Cs,
+      touch: current * (gridResistance || 0) * touchFactor * Cs,
       Cs
     };
   };
@@ -83,34 +87,44 @@ const FaultAnimation = ({ params, darkMode, onSimulate }) => {
   // CÁLCULOS IEEE STD 80 - PROTECCIÓN
   // ============================================
   const calculateIEEE80Protection = () => {
-    const Cs = 1 - (0.09 * (1 - soilResistivity / surfaceLayer)) / (2 * surfaceDepth + 0.09);
+    const safeSoilResistivity = soilResistivity || 100;
+    const safeSurfaceLayer = surfaceLayer || 10000;
+    const safeSurfaceDepth = surfaceDepth || 0.2;
+    const safeFaultDuration = faultDuration || 0.5;
+    const safeGridLength = gridLength || 30;
+    const safeGridWidth = gridWidth || 16;
+    
+    const Cs = 1 - (0.09 * (1 - safeSoilResistivity / safeSurfaceLayer)) / (2 * safeSurfaceDepth + 0.09);
     
     // Tensión de contacto tolerable sin capa superficial (IEEE 80)
     const k = 0.157; // Factor para peso de 70kg
-    const EtouchWithoutSurface = (1000 + 1.5 * Cs * soilResistivity) * (k / Math.sqrt(faultDuration));
+    const safeFaultDurationSqrt = Math.sqrt(safeFaultDuration) || 1;
+    const EtouchWithoutSurface = (1000 + 1.5 * Cs * safeSoilResistivity) * (k / safeFaultDurationSqrt);
     
     // Tensión de contacto tolerable con capa superficial
-    const EtouchWithSurface = (1000 + 1.5 * Cs * surfaceLayer) * (k / Math.sqrt(faultDuration));
+    const EtouchWithSurface = (1000 + 1.5 * Cs * safeSurfaceLayer) * (k / safeFaultDurationSqrt);
     
     // Incremento de seguridad
-    const safetyIncrease = ((EtouchWithSurface - EtouchWithoutSurface) / EtouchWithoutSurface) * 100;
+    const safeEtouchWithoutSurface = EtouchWithoutSurface || 1;
+    const safetyIncrease = ((EtouchWithSurface - EtouchWithoutSurface) / safeEtouchWithoutSurface) * 100;
     
     // Profundidad efectiva de la capa superficial
-    const effectiveDepth = surfaceDepth + 0.09;
+    const effectiveDepth = safeSurfaceDepth + 0.09;
     
     // Área de influencia (aproximada)
-    const area = gridLength * gridWidth;
+    const area = safeGridLength * safeGridWidth;
     const influenceArea = area * 1.5;
     
     // Resistividad equivalente
-    const equivalentResistivity = (soilResistivity * surfaceLayer) / (soilResistivity + surfaceLayer) * 1000;
+    const resistivitySum = safeSoilResistivity + safeSurfaceLayer || 1;
+    const equivalentResistivity = (safeSoilResistivity * safeSurfaceLayer) / resistivitySum * 1000;
     
     return {
-      Cs: Cs.toFixed(3),
+      Cs: isFinite(Cs) ? Cs.toFixed(3) : 'N/A',
       EtouchWithoutSurface: Math.round(EtouchWithoutSurface),
       EtouchWithSurface: Math.round(EtouchWithSurface),
-      safetyIncrease: safetyIncrease.toFixed(0),
-      effectiveDepth: effectiveDepth.toFixed(1),
+      safetyIncrease: isFinite(safetyIncrease) ? safetyIncrease.toFixed(0) : 'N/A',
+      effectiveDepth: isFinite(effectiveDepth) ? effectiveDepth.toFixed(1) : 'N/A',
       influenceArea: Math.round(influenceArea),
       equivalentResistivity: Math.round(equivalentResistivity)
     };
@@ -167,7 +181,7 @@ const FaultAnimation = ({ params, darkMode, onSimulate }) => {
           const x = (i - 5) * 20;
           const y = (j - 5) * 20;
           const dist = Math.sqrt(x * x + y * y);
-          const voltage = maxFaultCurrent * gridResistance * Math.exp(-dist / 50);
+          const voltage = maxFaultCurrent * (gridResistance || 0) * Math.exp(-dist / 50);
           gradient.push({ x: i * 40, y: j * 40, voltage });
         }
       }
@@ -189,7 +203,7 @@ const FaultAnimation = ({ params, darkMode, onSimulate }) => {
             x,
             y,
             intensity: baseIntensity,
-            voltage: maxFaultCurrent * gridResistance * baseIntensity
+            voltage: maxFaultCurrent * (gridResistance || 0) * baseIntensity
           });
         }
       }
@@ -201,7 +215,8 @@ const FaultAnimation = ({ params, darkMode, onSimulate }) => {
 
   const runAnimationCycle = (mode) => {
     let startTime = null;
-    const duration = 2500 / animationSpeed;
+    const safeAnimationSpeed = animationSpeed || 1;
+    const duration = 2500 / safeAnimationSpeed;
 
     const animate = (timestamp) => {
       if (!startTime) startTime = timestamp;
@@ -771,7 +786,7 @@ const FaultAnimation = ({ params, darkMode, onSimulate }) => {
     ctx.textAlign = 'center';
     for (let i = 0; i <= 5; i++) {
       const x = (width / 5) * i;
-      const time = (i * 0.1).toFixed(1);
+      const time = isFinite(i * 0.1) ? (i * 0.1).toFixed(1) : 'N/A';
       ctx.fillText(`${time}s`, x, height - 5);
     }
     
@@ -779,7 +794,7 @@ const FaultAnimation = ({ params, darkMode, onSimulate }) => {
     ctx.textAlign = 'right';
     for (let i = 0; i <= 5; i++) {
       const y = height - (height / 5) * i;
-      const currentVal = (maxCurrentVal * i / 5).toFixed(0);
+      const currentVal = isFinite(maxCurrentVal * i / 5) ? (maxCurrentVal * i / 5).toFixed(0) : 'N/A';
       ctx.fillText(`${currentVal}A`, 25, y + 3);
     }
     
@@ -1206,7 +1221,7 @@ const FaultAnimation = ({ params, darkMode, onSimulate }) => {
               <div className="flex justify-between items-center">
                 <span className={`text-sm ${colors.textSecondary}`}>Corriente de Falla (If)</span>
                 <span className={`text-2xl font-bold ${colors.fault}`}>
-                  {faultCurrent.toFixed(0)} A
+                  {isFinite(faultCurrent) ? faultCurrent.toFixed(0) : 'N/A'} A
                 </span>
               </div>
               <div className="mt-1 w-full bg-gray-200 rounded-full h-2">
@@ -1217,7 +1232,7 @@ const FaultAnimation = ({ params, darkMode, onSimulate }) => {
               </div>
               <div className={`flex justify-between text-xs ${darkMode ? 'text-gray-100' : 'text-gray-600'} mt-1`}>
                 <span>0 A</span>
-                <span>{maxFaultCurrent.toFixed(0)} A (máx)</span>
+                <span>{isFinite(maxFaultCurrent) ? maxFaultCurrent.toFixed(0) : 'N/A'} A (máx)</span>
               </div>
             </div>
             
@@ -1225,7 +1240,7 @@ const FaultAnimation = ({ params, darkMode, onSimulate }) => {
               <div className="flex justify-between items-center">
                 <span className={`text-sm ${colors.textSecondary}`}>Potencial de Tierra (GPR)</span>
                 <span className={`text-2xl font-bold ${colors.gpr}`}>
-                  {gpr.toFixed(0)} V
+                  {isFinite(gpr) ? gpr.toFixed(0) : 'N/A'} V
                 </span>
               </div>
               <div className={`text-xs ${darkMode ? 'text-gray-100' : 'text-gray-600'} mt-1`}>
@@ -1237,7 +1252,7 @@ const FaultAnimation = ({ params, darkMode, onSimulate }) => {
               <div className="flex justify-between items-center">
                 <span className={`text-sm ${colors.textSecondary}`}>Corriente en Malla (Ig)</span>
                 <span className={`text-2xl font-bold ${colors.grid}`}>
-                  {gridCurrent.toFixed(0)} A
+                  {isFinite(gridCurrent) ? gridCurrent.toFixed(0) : 'N/A'} A
                 </span>
               </div>
               <div className={`text-xs ${darkMode ? 'text-gray-100' : 'text-gray-600'} mt-1`}>
@@ -1249,11 +1264,11 @@ const FaultAnimation = ({ params, darkMode, onSimulate }) => {
               <div className="grid grid-cols-2 gap-2">
                 <div className={`p-2 rounded-lg ${darkMode ? 'bg-green-900/30' : 'bg-green-50'}`} style={{ boxShadow: darkMode ? '0 0 12px rgba(34, 197, 94, 0.4), inset 0 0 4px rgba(34, 197, 94, 0.2)' : '0 0 12px rgba(22, 163, 74, 0.3), inset 0 0 4px rgba(22, 163, 74, 0.1)' }}>
                   <div className={`text-xs ${darkMode ? 'text-gray-100' : 'text-gray-600'}`}>Tensión de Paso</div>
-                  <div className={`text-lg font-bold ${colors.step}`}>{stepVoltage.toFixed(0)} V</div>
+                  <div className={`text-lg font-bold ${colors.step}`}>{isFinite(stepVoltage) ? stepVoltage.toFixed(0) : 'N/A'} V</div>
                 </div>
                 <div className={`p-2 rounded-lg ${darkMode ? 'bg-orange-900/30' : 'bg-orange-50'}`} style={{ boxShadow: darkMode ? '0 0 12px rgba(249, 115, 22, 0.4), inset 0 0 4px rgba(249, 115, 22, 0.2)' : '0 0 12px rgba(234, 88, 12, 0.3), inset 0 0 4px rgba(234, 88, 12, 0.1)' }}>
                   <div className={`text-xs ${darkMode ? 'text-gray-100' : 'text-gray-600'}`}>Tensión de Contacto</div>
-                  <div className={`text-lg font-bold ${colors.touch}`}>{touchVoltage.toFixed(0)} V</div>
+                  <div className={`text-lg font-bold ${colors.touch}`}>{isFinite(touchVoltage) ? touchVoltage.toFixed(0) : 'N/A'} V</div>
                 </div>
               </div>
             )}
@@ -1262,12 +1277,12 @@ const FaultAnimation = ({ params, darkMode, onSimulate }) => {
               <div className="mt-2">
                 <div className={`flex justify-between text-xs ${darkMode ? 'text-gray-100' : 'text-gray-600'} mb-1`}>
                   <span>Ciclo actual</span>
-                  <span>{Math.floor(animationProgress * 100)}%</span>
+                  <span>{isFinite(animationProgress) ? Math.floor(animationProgress * 100) : 'N/A'}%</span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-2">
                   <div 
                     className="bg-red-600 h-2 rounded-full transition-all duration-50"
-                    style={{ width: `${animationProgress * 100}%` }}
+                    style={{ width: `${isFinite(animationProgress) ? animationProgress * 100 : 0}%` }}
                   />
                 </div>
               </div>
@@ -1276,7 +1291,7 @@ const FaultAnimation = ({ params, darkMode, onSimulate }) => {
             <div className="flex justify-between items-center pt-2 border-t border-gray-600">
               <span className={`text-sm ${colors.textSecondary}`}>Intensidad de falla</span>
               <span className={`text-lg font-bold ${percentOfMax > 50 ? 'text-red-600' : 'text-yellow-600'}`}>
-                {percentOfMax.toFixed(0)}%
+                {isFinite(percentOfMax) ? percentOfMax.toFixed(0) : 'N/A'}%
               </span>
             </div>
           </div>
@@ -1293,6 +1308,52 @@ const FaultAnimation = ({ params, darkMode, onSimulate }) => {
             <strong className={darkMode ? 'text-blue-400' : 'text-blue-600'}> HACIA la malla de tierra</strong>, donde se disipa de manera segura.
           </span>
         </p>
+      </div>
+
+      {/* Detalles de protección IEEE Std 80 - SIEMPRE VISIBLE */}
+      <div className={`mt-4 p-4 rounded-lg border ${darkMode ? 'bg-purple-900/20 border-purple-700' : 'bg-purple-50 border-purple-200'}`} style={{ boxShadow: darkMode ? '0 0 15px rgba(147, 51, 234, 0.3), inset 0 0 8px rgba(147, 51, 234, 0.15)' : '0 0 15px rgba(139, 92, 246, 0.2), inset 0 0 8px rgba(139, 92, 246, 0.1)' }}>
+        <h4 className={`font-semibold mb-3 flex items-center gap-2 ${darkMode ? 'text-purple-300' : 'text-purple-800'}`}>
+          <Shield size={16} /> 📋 Detalles de protección (IEEE Std 80)
+        </h4>
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-xs">
+          <div className={`p-2 rounded ${darkMode ? 'bg-purple-900/30' : 'bg-purple-100'}`}>
+            <div className={`font-semibold mb-1 ${darkMode ? 'text-purple-300' : 'text-purple-700'}`}>Factor de reducción Cs</div>
+            <div className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-purple-900'}`}>{ieee80Data.Cs}</div>
+          </div>
+          <div className={`p-2 rounded ${darkMode ? 'bg-purple-900/30' : 'bg-purple-100'}`}>
+            <div className={`font-semibold mb-1 ${darkMode ? 'text-purple-300' : 'text-purple-700'}`}>Límite de contacto seguro</div>
+            <div className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-purple-900'}`}>{ieee80Data.EtouchWithSurface} V</div>
+          </div>
+          <div className={`p-2 rounded ${darkMode ? 'bg-purple-900/30' : 'bg-purple-100'}`}>
+            <div className={`font-semibold mb-1 ${darkMode ? 'text-purple-300' : 'text-purple-700'}`}>Incremento de seguridad</div>
+            <div className={`text-lg font-bold ${darkMode ? 'text-green-400' : 'text-green-700'}`}>+{ieee80Data.safetyIncrease}%</div>
+          </div>
+          <div className={`p-2 rounded ${darkMode ? 'bg-purple-900/30' : 'bg-purple-100'}`}>
+            <div className={`font-semibold mb-1 ${darkMode ? 'text-purple-300' : 'text-purple-700'}`}>Profundidad efectiva</div>
+            <div className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-purple-900'}`}>{ieee80Data.effectiveDepth} m</div>
+          </div>
+          <div className={`p-2 rounded ${darkMode ? 'bg-purple-900/30' : 'bg-purple-100'}`}>
+            <div className={`font-semibold mb-1 ${darkMode ? 'text-purple-300' : 'text-purple-700'}`}>Área de influencia</div>
+            <div className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-purple-900'}`}>{ieee80Data.influenceArea} m²</div>
+          </div>
+          <div className={`p-2 rounded ${darkMode ? 'bg-purple-900/30' : 'bg-purple-100'}`}>
+            <div className={`font-semibold mb-1 ${darkMode ? 'text-purple-300' : 'text-purple-700'}`}>Resistividad equivalente</div>
+            <div className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-purple-900'}`}>{ieee80Data.equivalentResistivity} Ω·m</div>
+          </div>
+        </div>
+        <div className={`mt-3 p-2 rounded ${darkMode ? 'bg-purple-900/40' : 'bg-purple-200'}`}>
+          <p className={`text-xs flex items-start gap-2 ${darkMode ? 'text-purple-200' : 'text-purple-800'}`}>
+            <Shield size={12} className="flex-shrink-0 mt-0.5" />
+            <span>
+              <strong>💡 La capa superficial de alta resistividad actúa como barrera:</strong> Aumentando la impedancia del cuerpo-tierra y reduciendo la corriente que puede circular por una persona durante una falla.
+            </span>
+          </p>
+        </div>
+        <div className={`mt-2 p-2 rounded ${darkMode ? 'bg-blue-900/40' : 'bg-blue-200'}`}>
+          <p className={`text-xs ${darkMode ? 'text-blue-200' : 'text-blue-800'}`}>
+            <strong>📐 Según IEEE Std 80:</strong> La tensión de contacto tolerable aumenta de {ieee80Data.EtouchWithoutSurface}V a {ieee80Data.EtouchWithSurface}V gracias a la capa de {surfaceDepth}m de {surfaceLayer} Ω·m.
+          </p>
+        </div>
       </div>
       
       {/* Datos adicionales */}
@@ -1311,7 +1372,7 @@ const FaultAnimation = ({ params, darkMode, onSimulate }) => {
         </div>
         <div className={`p-3 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-100'} text-center border ${colors.border}`}>
           <div className={`font-semibold mb-1 ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Corriente Máx</div>
-          <div className={`text-lg font-bold ${colors.text}`}>{maxFaultCurrent.toFixed(0)} A</div>
+          <div className={`text-lg font-bold ${colors.text}`}>{isFinite(maxFaultCurrent) ? maxFaultCurrent.toFixed(0) : 'N/A'} A</div>
         </div>
       </div>
       

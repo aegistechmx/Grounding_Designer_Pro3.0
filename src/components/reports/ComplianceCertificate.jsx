@@ -1,5 +1,6 @@
 import React from 'react';
 import { Shield, CheckCircle, XCircle, FileText, User, Calendar, Activity, Award } from 'lucide-react';
+import { formatResistance, formatVoltage, formatPercentage } from '../../utils/formatters';
 
 const ComplianceCertificate = ({ params, calculations, darkMode }) => {
   // ============================================
@@ -13,7 +14,7 @@ const ComplianceCertificate = ({ params, calculations, darkMode }) => {
 
   const safeNumber = (value, decimals = 2) => {
     if (value === undefined || value === null) return 'N/A';
-    if (typeof value !== 'number' || isNaN(value)) return 'N/A';
+    if (typeof value !== 'number' || isNaN(value) || !isFinite(value)) return 'N/A';
     return value.toFixed(decimals);
   };
 
@@ -25,12 +26,12 @@ const ComplianceCertificate = ({ params, calculations, darkMode }) => {
   const date = new Date().toLocaleDateString('es-MX');
   
   const complies = calculations?.complies === true;
-  const Rg = safeNumber(calculations?.Rg, 3);
-  const Em = safeNumber(calculations?.Em, 0);
-  const Es = safeNumber(calculations?.Es, 0);
-  const Etouch70 = safeNumber(calculations?.Etouch70, 0);
-  const Estep70 = safeNumber(calculations?.Estep70, 0);
-  const GPR = safeNumber(calculations?.GPR, 0);
+  const Rg = formatResistance(calculations?.Rg, 3);
+  const Em = formatVoltage(calculations?.Em, 0);
+  const Es = formatVoltage(calculations?.Es, 0);
+  const Etouch70 = formatVoltage(calculations?.Etouch70, 0);
+  const Estep70 = formatVoltage(calculations?.Estep70, 0);
+  const GPR = formatVoltage(calculations?.GPR, 0);
   
   // Valores numéricos para comparaciones (manejar 'N/A')
   const EmValue = parseFloat(Em) || 0;
@@ -40,10 +41,10 @@ const ComplianceCertificate = ({ params, calculations, darkMode }) => {
   
   // Calcular márgenes de seguridad
   const touchMargin = calculations?.Etouch70 && calculations?.Em 
-    ? ((calculations.Etouch70 - calculations.Em) / calculations.Etouch70 * 100).toFixed(1)
+    ? formatPercentage((calculations.Etouch70 - calculations.Em) / calculations.Etouch70 * 100, 1)
     : 'N/A';
   const stepMargin = calculations?.Estep70 && calculations?.Es
-    ? ((calculations.Estep70 - calculations.Es) / calculations.Estep70 * 100).toFixed(1)
+    ? formatPercentage((calculations.Estep70 - calculations.Es) / calculations.Estep70 * 100, 1)
     : 'N/A';
   
   // Número de certificado
@@ -147,26 +148,26 @@ const ComplianceCertificate = ({ params, calculations, darkMode }) => {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-center mb-4">
         <div className={`p-2 rounded ${darkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>
           <div className="text-xs text-gray-500">Resistencia (Rg)</div>
-          <div className="text-xl font-bold text-blue-600">{Rg} Ω</div>
+          <div className="text-xl font-bold text-blue-600">{Rg}</div>
           <div className="text-xs">Objetivo: &lt;5 Ω</div>
         </div>
         <div className={`p-2 rounded ${darkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>
           <div className="text-xs text-gray-500">GPR</div>
-          <div className="text-xl font-bold text-purple-600">{GPR} V</div>
+          <div className="text-xl font-bold text-purple-600">{GPR}</div>
         </div>
         <div className={`p-2 rounded ${darkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>
           <div className="text-xs text-gray-500">Contacto (Em)</div>
           <div className={`text-xl font-bold ${EmValue < Etouch70Value ? 'text-green-600' : 'text-red-600'}`}>
-            {Em} V
+            {Em}
           </div>
-          <div className="text-xs">Límite: {Etouch70} V</div>
+          <div className="text-xs">Límite: {Etouch70}</div>
         </div>
         <div className={`p-2 rounded ${darkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>
           <div className="text-xs text-gray-500">Paso (Es)</div>
           <div className={`text-xl font-bold ${EsValue < Estep70Value ? 'text-green-600' : 'text-red-600'}`}>
-            {Es} V
+            {Es}
           </div>
-          <div className="text-xs">Límite: {Estep70} V</div>
+          <div className="text-xs">Límite: {Estep70}</div>
         </div>
       </div>
       
@@ -177,13 +178,13 @@ const ComplianceCertificate = ({ params, calculations, darkMode }) => {
           <div>
             <span className="text-gray-500">Tensión de Contacto:</span>
             <span className={`ml-2 font-semibold ${(parseFloat(touchMargin) || 0) > 50 ? 'text-green-600' : 'text-yellow-600'}`}>
-              {touchMargin}%
+              {touchMargin}
             </span>
           </div>
           <div>
             <span className="text-gray-500">Tensión de Paso:</span>
             <span className={`ml-2 font-semibold ${(parseFloat(stepMargin) || 0) > 50 ? 'text-green-600' : 'text-yellow-600'}`}>
-              {stepMargin}%
+              {stepMargin}
             </span>
           </div>
         </div>

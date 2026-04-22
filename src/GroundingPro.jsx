@@ -4,6 +4,7 @@ import { calculateComplete } from './core/ieee80';
 import { validateSystem } from './core/safety';
 import { generateMemoryReport, generateShortReport } from './utils/reportGenerator';
 import { exportGridToDXF } from './export/cadExporter';
+import { formatResistance, formatVoltage } from './utils/formatters';
 
 const GroundingPro = ({ params, darkMode }) => {
   const [results, setResults] = useState(null);
@@ -130,22 +131,22 @@ const GroundingPro = ({ params, darkMode }) => {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className={`p-4 rounded-lg text-center ${darkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>
               <div className="text-sm text-gray-500">Resistencia (Rg)</div>
-              <div className="text-2xl font-bold text-blue-600">{results.Rg.toFixed(2)} Ω</div>
+              <div className="text-2xl font-bold text-blue-600">{formatResistance(results.Rg, 2)}</div>
             </div>
             <div className={`p-4 rounded-lg text-center ${darkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>
               <div className="text-sm text-gray-500">GPR</div>
-              <div className="text-2xl font-bold text-purple-600">{results.validation.GPR.toFixed(0)} V</div>
+              <div className="text-2xl font-bold text-purple-600">{formatVoltage(results.validation.GPR, 0)}</div>
             </div>
             <div className={`p-4 rounded-lg text-center ${darkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>
               <div className="text-sm text-gray-500">Em (Contacto)</div>
               <div className={`text-2xl font-bold ${results.validation.touchSafe ? 'text-green-600' : 'text-red-600'}`}>
-                {results.validation.Em.toFixed(0)} V
+                {formatVoltage(results.validation.Em, 0)}
               </div>
             </div>
             <div className={`p-4 rounded-lg text-center ${darkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>
               <div className="text-sm text-gray-500">Es (Paso)</div>
               <div className={`text-2xl font-bold ${results.validation.stepSafe ? 'text-green-600' : 'text-red-600'}`}>
-                {results.validation.Es.toFixed(0)} V
+                {formatVoltage(results.validation.Es, 0)}
               </div>
             </div>
           </div>
@@ -166,7 +167,7 @@ const GroundingPro = ({ params, darkMode }) => {
       {report && (
         <div className="mt-6">
           <h3 className="font-semibold mb-3">📄 Memoria de Cálculo</h3>
-          <pre className={`p-4 rounded-lg text-xs font-mono overflow-auto max-h-96 ${darkMode ? 'bg-gray-900 text-gray-300' : 'bg-gray-100 text-gray-800'}`}>
+          <pre className={`p-4 rounded-lg text-xs font-mono overflow-auto max-h-96 ${darkMode ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-800'}`}>
             {report}
           </pre>
         </div>

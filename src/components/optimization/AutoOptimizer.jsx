@@ -36,7 +36,7 @@ const AutoOptimizer = ({ params, darkMode, onOptimize }) => {
       const currentResults = calculateIEEE80(params);
       
       // Validar que currentResults existe
-      if (!currentResults) {
+      if (!currentResults || !currentResults.Rg) {
         throw new Error('No se pudieron calcular los resultados actuales');
       }
       

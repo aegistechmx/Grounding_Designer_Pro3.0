@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { calculateIEEE80 } from '../utils/groundingMath_clean';
 
 export const useOptimization = (initialParams) => {
@@ -7,12 +7,14 @@ export const useOptimization = (initialParams) => {
   const [optimizationResults, setOptimizationResults] = useState(null);
   const [currentStep, setCurrentStep] = useState('');
   const [progress, setProgress] = useState(0);
+  
+  const timeoutRefs = useRef([]);
 
   const optimizeForCost = useCallback(async (onProgress) => {
     setIsOptimizing(true);
     
     return new Promise((resolve) => {
-      setTimeout(() => {
+      const timeoutId = setTimeout(() => {
         let bestParams = { ...params };
         let bestCost = Infinity;
         let bestResults = null;
@@ -43,6 +45,8 @@ export const useOptimization = (initialParams) => {
         setIsOptimizing(false);
         resolve(bestParams);
       }, 1000);
+      
+      timeoutRefs.current.push(timeoutId);
     });
   }, [params]);
 
@@ -52,9 +56,9 @@ export const useOptimization = (initialParams) => {
     setProgress(0);
     
     return new Promise((resolve) => {
-      setTimeout(() => {
+      const timeoutId = setTimeout(() => {
         let bestParams = { ...params };
-        let bestGPR = calculateIEEE80(params).GPR || Infinity;
+        let bestGPR = isFinite(calculateIEEE80(params).GPR) ? calculateIEEE80(params).GPR : Infinity;
         let improvements = [];
         
         const strategies = [
@@ -97,6 +101,8 @@ export const useOptimization = (initialParams) => {
         setProgress(0);
         resolve(bestParams);
       }, 1000);
+      
+      timeoutRefs.current.push(timeoutId);
     });
   }, [params]);
 
@@ -104,7 +110,7 @@ export const useOptimization = (initialParams) => {
     setIsOptimizing(true);
     
     return new Promise((resolve) => {
-      setTimeout(() => {
+      const timeoutId = setTimeout(() => {
         let bestParams = { ...params };
         let bestSafetyFactor = 0;
         
@@ -140,6 +146,8 @@ export const useOptimization = (initialParams) => {
         setIsOptimizing(false);
         resolve(bestParams);
       }, 1000);
+      
+      timeoutRefs.current.push(timeoutId);
     });
   }, [params]);
 
@@ -147,7 +155,7 @@ export const useOptimization = (initialParams) => {
     setIsOptimizing(true);
     
     return new Promise((resolve) => {
-      setTimeout(() => {
+      const timeoutId = setTimeout(() => {
         let bestParams = { ...params };
         let bestScore = Infinity;
         
@@ -194,6 +202,8 @@ export const useOptimization = (initialParams) => {
         setIsOptimizing(false);
         resolve(bestParams);
       }, 1000);
+      
+      timeoutRefs.current.push(timeoutId);
     });
   }, [params]);
 
@@ -202,7 +212,7 @@ export const useOptimization = (initialParams) => {
     setCurrentStep(`Optimización rápida: ${strategy}`);
     
     return new Promise((resolve) => {
-      setTimeout(() => {
+      const timeoutId = setTimeout(() => {
         const optimizedParams = { ...params };
         
         switch (strategy) {
@@ -235,8 +245,22 @@ export const useOptimization = (initialParams) => {
         setCurrentStep('');
         resolve(optimizedParams);
       }, 500);
+      
+      timeoutRefs.current.push(timeoutId);
     });
   }, [params]);
+
+  // Cleanup de todos los timeouts al desmontar
+  useEffect(() => {
+    return () => {
+      timeoutRefs.current.forEach(timeoutId => {
+        if (timeoutId) {
+          clearTimeout(timeoutId);
+        }
+      });
+      timeoutRefs.current = [];
+    };
+  }, []);
 
   return {
     params,

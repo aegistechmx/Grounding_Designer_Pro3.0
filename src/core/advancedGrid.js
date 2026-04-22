@@ -124,22 +124,27 @@ export const calcAdvancedGridResistance = (params) => {
 // ============================================
 
 export const calcTwoLayerResistance = ({ rho1, rho2, h1, totalLength, area }) => {
+  const areaSafe = Math.max(1, area || 100);
+  const rho1Safe = Math.max(0.1, rho1 || 100);
+  const rho2Safe = Math.max(0.1, rho2 || 100);
+  const h1Safe = Math.max(0, h1 || 0);
+  
   // Resistividad equivalente para suelo bicapa (método simplificado)
-  const depth = Math.sqrt(area);
-  const ratio = rho2 / rho1;
+  const depth = Math.sqrt(areaSafe);
+  const ratio = rho2Safe / rho1Safe;
   
   let rhoEq;
-  if (depth <= h1) {
-    rhoEq = rho1;
+  if (depth <= h1Safe) {
+    rhoEq = rho1Safe;
   } else {
-    const penetration = (depth - h1) / depth;
-    rhoEq = rho1 * (1 - penetration) + rho2 * penetration;
+    const penetration = (depth - h1Safe) / depth;
+    rhoEq = rho1Safe * (1 - penetration) + rho2Safe * penetration;
   }
   
   return calcBaseGridResistance({
     soilResistivity: rhoEq,
-    totalLength,
-    area
+    totalLength: totalLength || 100,
+    area: areaSafe
   });
 };
 

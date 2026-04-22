@@ -47,13 +47,17 @@ export const computeElectricField = (grid, dx = 1, dy = 1) => {
 // ============================================
 
 export const drawElectricField = (ctx, field, bounds, scale = 5, color = 'rgba(255, 255, 255, 0.6)') => {
-  if (!field || field.length === 0) return;
+  if (!field || field.length === 0 || !bounds) return;
+  
+  const rangeX = bounds.maxX - bounds.minX;
+  const rangeY = bounds.maxY - bounds.minY;
+  if (rangeX === 0 || rangeY === 0) return;
   
   ctx.strokeStyle = color;
   ctx.lineWidth = 1;
   
-  const scaleX = bounds.width / (bounds.maxX - bounds.minX);
-  const scaleY = bounds.height / (bounds.maxY - bounds.minY);
+  const scaleX = bounds.width / Math.max(1, rangeX);
+  const scaleY = bounds.height / Math.max(1, rangeY);
   
   for (const v of field) {
     const startX = v.x * scaleX;
@@ -61,8 +65,8 @@ export const drawElectricField = (ctx, field, bounds, scale = 5, color = 'rgba(2
     
     // Normalizar vector para visualización
     const mag = v.magnitude || 1;
-    const normX = v.ex / mag;
-    const normY = v.ey / mag;
+    const normX = v.ex / Math.max(0.1, mag);
+    const normY = v.ey / Math.max(0.1, mag);
     
     const endX = startX + normX * scale;
     const endY = startY + normY * scale;
@@ -97,24 +101,28 @@ export const drawElectricField = (ctx, field, bounds, scale = 5, color = 'rgba(2
 // ============================================
 
 export const drawElectricFieldColored = (ctx, field, bounds, scale = 5, maxMagnitude = 100) => {
-  if (!field || field.length === 0) return;
+  if (!field || field.length === 0 || !bounds) return;
   
-  const scaleX = bounds.width / (bounds.maxX - bounds.minX);
-  const scaleY = bounds.height / (bounds.maxY - bounds.minY);
+  const rangeX = bounds.maxX - bounds.minX;
+  const rangeY = bounds.maxY - bounds.minY;
+  if (rangeX === 0 || rangeY === 0) return;
+  
+  const scaleX = bounds.width / Math.max(1, rangeX);
+  const scaleY = bounds.height / Math.max(1, rangeY);
   
   for (const v of field) {
     const startX = v.x * scaleX;
     const startY = v.y * scaleY;
     
     const mag = v.magnitude || 1;
-    const normX = v.ex / mag;
-    const normY = v.ey / mag;
+    const normX = v.ex / Math.max(0.1, mag);
+    const normY = v.ey / Math.max(0.1, mag);
     
     const endX = startX + normX * scale;
     const endY = startY + normY * scale;
     
     // Color basado en magnitud (azul = bajo, rojo = alto)
-    const t = Math.min(mag / maxMagnitude, 1);
+    const t = Math.min(mag / Math.max(0.1, maxMagnitude), 1);
     const r = Math.floor(255 * t);
     const g = Math.floor(255 * (1 - t) * 0.5);
     const b = Math.floor(255 * (1 - t));
@@ -138,6 +146,8 @@ export const generatePotentialGrid = (nodes, resolution = 50, width = 600, heigh
   
   const grid = [];
   const values = nodes.map(n => n.value || 0);
+  if (values.length === 0) return [];
+  
   const min = Math.min(...values);
   const max = Math.max(...values);
   
@@ -156,7 +166,7 @@ export const generatePotentialGrid = (nodes, resolution = 50, width = 600, heigh
         den += w;
       }
       
-      grid[i][j] = num / den;
+      grid[i][j] = den > 0 ? num / den : 0;
     }
   }
   
@@ -168,6 +178,8 @@ export const generatePotentialGrid = (nodes, resolution = 50, width = 600, heigh
 // ============================================
 
 export const generateStreamlines = (field, startPoints, steps = 100, stepSize = 2) => {
+  if (!field || field.length === 0 || !startPoints || startPoints.length === 0) return [];
+  
   const streamlines = [];
   
   for (const start of startPoints) {
@@ -191,8 +203,8 @@ export const generateStreamlines = (field, startPoints, steps = 100, stepSize = 
       if (!nearest) break;
       
       // Avanzar en dirección del campo
-      x += (nearest.ex / (nearest.magnitude || 1)) * stepSize;
-      y += (nearest.ey / (nearest.magnitude || 1)) * stepSize;
+      x += (nearest.ex / Math.max(0.1, nearest.magnitude || 1)) * stepSize;
+      y += (nearest.ey / Math.max(0.1, nearest.magnitude || 1)) * stepSize;
       
       line.push({ x, y });
     }
@@ -204,8 +216,14 @@ export const generateStreamlines = (field, startPoints, steps = 100, stepSize = 
 };
 
 export const drawStreamlines = (ctx, streamlines, bounds, color = 'rgba(255, 255, 0, 0.5)') => {
-  const scaleX = bounds.width / (bounds.maxX - bounds.minX);
-  const scaleY = bounds.height / (bounds.maxY - bounds.minY);
+  if (!streamlines || streamlines.length === 0 || !bounds) return;
+  
+  const rangeX = bounds.maxX - bounds.minX;
+  const rangeY = bounds.maxY - bounds.minY;
+  if (rangeX === 0 || rangeY === 0) return;
+  
+  const scaleX = bounds.width / Math.max(1, rangeX);
+  const scaleY = bounds.height / Math.max(1, rangeY);
   
   ctx.strokeStyle = color;
   ctx.lineWidth = 1;

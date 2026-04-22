@@ -37,6 +37,12 @@ const useStore = create(
         } catch (error) {
           console.error('Error en cálculos:', error);
           set({ isLoading: false });
+          // Notificar al usuario del error
+          get().addNotification({
+            type: 'error',
+            title: 'Error en cálculos',
+            message: error.message || 'Ocurrió un error al procesar los parámetros'
+          });
         }
       },
       
@@ -72,20 +78,48 @@ const useStore = create(
       // PERFILES
       // ============================================
       saveProfile: (name) => {
+        if (!name || typeof name !== 'string' || name.trim() === '') {
+          get().addNotification({
+            type: 'error',
+            title: 'Error al guardar perfil',
+            message: 'El nombre del perfil no puede estar vacío'
+          });
+          return { success: false, message: 'Nombre inválido' };
+        }
         const { params, savedProfiles } = get();
         const newProfile = {
           id: Date.now(),
-          name,
+          name: name.trim(),
           data: { ...params },
           date: new Date().toISOString(),
           summary: `Trafo: ${params.transformerKVA}kVA, Malla: ${params.gridLength}x${params.gridWidth}m`
         };
         set({ savedProfiles: [...savedProfiles, newProfile] });
+        get().addNotification({
+          type: 'success',
+          title: 'Perfil guardado',
+          message: `Perfil "${name}" guardado exitosamente`
+        });
+        return { success: true, message: 'Perfil guardado' };
       },
       
       loadProfile: (profile) => {
+        if (!profile || !profile.data || typeof profile.data !== 'object') {
+          get().addNotification({
+            type: 'error',
+            title: 'Error al cargar perfil',
+            message: 'El perfil no tiene datos válidos'
+          });
+          return { success: false, message: 'Perfil inválido' };
+        }
         const { setParams } = get();
         setParams(profile.data);
+        get().addNotification({
+          type: 'success',
+          title: 'Perfil cargado',
+          message: `Perfil "${profile.name}" cargado exitosamente`
+        });
+        return { success: true, message: 'Perfil cargado' };
       },
       
       deleteProfile: (id) => {
@@ -102,8 +136,16 @@ const useStore = create(
       // OPTIMIZACIONES
       // ============================================
       reduceGPR: (targetGPR) => {
+        if (targetGPR === undefined || targetGPR === null || targetGPR < 0) {
+          get().addNotification({
+            type: 'error',
+            title: 'Error en optimización',
+            message: 'El valor objetivo de GPR no es válido'
+          });
+          return { success: false, message: 'Valor objetivo inválido' };
+        }
         const { params, setParams, calculations } = get();
-        const currentGPR = calculations?.GPR || 0;
+        const currentGPR = isFinite(calculations?.GPR) ? calculations.GPR : 0;
         
         if (currentGPR <= targetGPR) {
           return { success: true, message: 'GPR ya dentro del objetivo' };
@@ -129,6 +171,11 @@ const useStore = create(
         }
         
         setParams(optimizedParams);
+        get().addNotification({
+          type: 'success',
+          title: 'Optimización aplicada',
+          message: `Optimización aplicada: ${improvements.join(', ')}`
+        });
         
         return { 
           success: true, 

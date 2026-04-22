@@ -4,7 +4,7 @@ import { calculateIEEE80 } from '../../utils/groundingMath_clean';
 
 const MultiScenarioSimulation = ({ baseParams, darkMode, onLoadScenario }) => {
   const [scenarios, setScenarios] = useState([
-    { id: 1, name: 'Escenario Base', params: { ...baseParams }, results: null, color: '#3b82f6' }
+    { id: 1, name: 'Escenario Base', params: { ...(baseParams || {}) }, results: null, color: '#3b82f6' }
   ]);
   const [isSimulating, setIsSimulating] = useState(false);
   const [selectedScenarios, setSelectedScenarios] = useState([1]);
@@ -12,11 +12,11 @@ const MultiScenarioSimulation = ({ baseParams, darkMode, onLoadScenario }) => {
   const colors = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16'];
 
   const addScenario = useCallback(() => {
-    const newId = Math.max(...scenarios.map(s => s.id)) + 1;
+    const newId = scenarios.length > 0 ? Math.max(...scenarios.map(s => s.id)) + 1 : 1;
     const newScenario = {
       id: newId,
       name: `Escenario ${newId}`,
-      params: { ...baseParams },
+      params: { ...(baseParams || {}) },
       results: null,
       color: colors[newId % colors.length]
     };
@@ -38,7 +38,7 @@ const MultiScenarioSimulation = ({ baseParams, darkMode, onLoadScenario }) => {
     const scenario = scenarios.find(s => s.id === id);
     if (!scenario) return;
     
-    const newId = Math.max(...scenarios.map(s => s.id)) + 1;
+    const newId = scenarios.length > 0 ? Math.max(...scenarios.map(s => s.id)) + 1 : 1;
     const newScenario = {
       id: newId,
       name: `${scenario.name} (copia)`,
@@ -56,6 +56,10 @@ const MultiScenarioSimulation = ({ baseParams, darkMode, onLoadScenario }) => {
     try {
       const updatedScenarios = await Promise.all(scenarios.map(async (scenario) => {
         const results = calculateIEEE80(scenario.params);
+        if (!results || !results.Rg) {
+          console.warn('No se pudieron calcular resultados para escenario:', scenario.name);
+          return { ...scenario, results: null };
+        }
         return { ...scenario, results };
       }));
       
@@ -80,10 +84,10 @@ const MultiScenarioSimulation = ({ baseParams, darkMode, onLoadScenario }) => {
       ['Escenario', 'Rg (Ω)', 'GPR (V)', 'Em (V)', 'Es (V)', 'Cumple IEEE 80'],
       ...scenarios.filter(s => s.results).map(s => [
         s.name,
-        s.results.Rg?.toFixed(2) || 'N/A',
-        s.results.GPR?.toFixed(0) || 'N/A',
-        s.results.Em?.toFixed(0) || 'N/A',
-        s.results.Es?.toFixed(0) || 'N/A',
+        isFinite(s.results.Rg) ? s.results.Rg.toFixed(2) : 'N/A',
+        isFinite(s.results.GPR) ? s.results.GPR.toFixed(0) : 'N/A',
+        isFinite(s.results.Em) ? s.results.Em.toFixed(0) : 'N/A',
+        isFinite(s.results.Es) ? s.results.Es.toFixed(0) : 'N/A',
         s.results.complies ? 'SÍ' : 'NO'
       ])
     ].map(row => row.join(',')).join('\n');
@@ -178,7 +182,7 @@ const MultiScenarioSimulation = ({ baseParams, darkMode, onLoadScenario }) => {
                     <input
                       type="number"
                       value={scenario.params.soilResistivity}
-                      onChange={(e) => updateScenarioParams(scenario.id, { soilResistivity: parseFloat(e.target.value) })}
+                      onChange={(e) => updateScenarioParams(scenario.id, { soilResistivity: parseFloat(e.target.value) || 100 })}
                       className={`w-full p-1 rounded text-xs ${darkMode ? 'bg-gray-700 text-white' : 'bg-white text-gray-800'}`}
                     />
                   </div>
@@ -187,7 +191,7 @@ const MultiScenarioSimulation = ({ baseParams, darkMode, onLoadScenario }) => {
                     <input
                       type="number"
                       value={scenario.params.numParallel}
-                      onChange={(e) => updateScenarioParams(scenario.id, { numParallel: parseInt(e.target.value) })}
+                      onChange={(e) => updateScenarioParams(scenario.id, { numParallel: parseInt(e.target.value) || 4 })}
                       className={`w-full p-1 rounded text-xs ${darkMode ? 'bg-gray-700 text-white' : 'bg-white text-gray-800'}`}
                     />
                   </div>
@@ -196,7 +200,7 @@ const MultiScenarioSimulation = ({ baseParams, darkMode, onLoadScenario }) => {
                     <input
                       type="number"
                       value={scenario.params.numRods}
-                      onChange={(e) => updateScenarioParams(scenario.id, { numRods: parseInt(e.target.value) })}
+                      onChange={(e) => updateScenarioParams(scenario.id, { numRods: parseInt(e.target.value) || 6 })}
                       className={`w-full p-1 rounded text-xs ${darkMode ? 'bg-gray-700 text-white' : 'bg-white text-gray-800'}`}
                     />
                   </div>
@@ -205,7 +209,7 @@ const MultiScenarioSimulation = ({ baseParams, darkMode, onLoadScenario }) => {
                     <input
                       type="number"
                       value={scenario.params.gridLength}
-                      onChange={(e) => updateScenarioParams(scenario.id, { gridLength: parseFloat(e.target.value) })}
+                      onChange={(e) => updateScenarioParams(scenario.id, { gridLength: parseFloat(e.target.value) || 30 })}
                       className={`w-full p-1 rounded text-xs ${darkMode ? 'bg-gray-700 text-white' : 'bg-white text-gray-800'}`}
                     />
                   </div>
@@ -222,10 +226,10 @@ const MultiScenarioSimulation = ({ baseParams, darkMode, onLoadScenario }) => {
                       <span className="text-xs font-semibold">Resultados:</span>
                     </div>
                     <div className="grid grid-cols-2 gap-1 text-xs">
-                      <div>Rg: {scenario.results.Rg?.toFixed(2)}Ω</div>
-                      <div>Em: {scenario.results.Em?.toFixed(0)}V</div>
-                      <div>Es: {scenario.results.Es?.toFixed(0)}V</div>
-                      <div>GPR: {scenario.results.GPR?.toFixed(0)}V</div>
+                      <div>Rg: {isFinite(scenario.results.Rg) ? scenario.results.Rg.toFixed(2) : 'N/A'}Ω</div>
+                      <div>Em: {isFinite(scenario.results.Em) ? scenario.results.Em.toFixed(0) : 'N/A'}V</div>
+                      <div>Es: {isFinite(scenario.results.Es) ? scenario.results.Es.toFixed(0) : 'N/A'}V</div>
+                      <div>GPR: {isFinite(scenario.results.GPR) ? scenario.results.GPR.toFixed(0) : 'N/A'}V</div>
                     </div>
                   </div>
                 )}
@@ -254,8 +258,8 @@ const MultiScenarioSimulation = ({ baseParams, darkMode, onLoadScenario }) => {
                   <div className="space-y-1">
                     {scenarios.filter(s => s.results && selectedScenarios.includes(s.id)).map((scenario) => {
                       const value = scenario.results[metric] || 0;
-                      const maxValue = Math.max(...scenarios.filter(s => s.results).map(s => s.results[metric] || 0));
-                      const percentage = (value / maxValue) * 100;
+                      const maxValue = Math.max(...scenarios.filter(s => s.results).map(s => s.results[metric] || 0), 1);
+                      const percentage = maxValue > 0 ? (value / maxValue) * 100 : 0;
                       return (
                         <div key={scenario.id} className="flex items-center gap-2">
                           <div className="w-20 text-xs truncate" title={scenario.name}>
@@ -271,7 +275,7 @@ const MultiScenarioSimulation = ({ baseParams, darkMode, onLoadScenario }) => {
                             />
                           </div>
                           <div className="w-16 text-xs text-right">
-                            {value.toFixed(2)}
+                            {isFinite(value) ? value.toFixed(2) : 'N/A'}
                           </div>
                         </div>
                       );
@@ -292,7 +296,7 @@ const MultiScenarioSimulation = ({ baseParams, darkMode, onLoadScenario }) => {
                         />
                         <span className="text-xs">{scenario.name}</span>
                       </div>
-                      {scenario.results.complies ? (
+                      {scenario.results?.complies ? (
                         <span className="text-xs text-green-600 font-semibold flex items-center gap-1">
                           <CheckCircle size={12} /> CUMPLE
                         </span>

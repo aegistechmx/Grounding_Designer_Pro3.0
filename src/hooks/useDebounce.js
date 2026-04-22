@@ -1,21 +1,15 @@
-import { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
 
-/**
- * Hook de debounce para retrasar la ejecución de cálculos costosos
- * @param {any} value - Valor a debounce
- * @param {number} delay - Retraso en milisegundos (default: 300ms)
- * @returns {any} Valor debounced
- */
-export const useDebounce = (value, delay = 300) => {
+export const useDebounce = (value, delay) => {
   const [debouncedValue, setDebouncedValue] = useState(value);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
+    const handler = setTimeout(() => {
       setDebouncedValue(value);
     }, delay);
 
     return () => {
-      clearTimeout(timer);
+      clearTimeout(handler);
     };
   }, [value, delay]);
 

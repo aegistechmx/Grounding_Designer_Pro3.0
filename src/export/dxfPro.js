@@ -4,6 +4,11 @@
  */
 
 export const exportDXFPro = (grid, results, filename = 'grounding_pro.dxf') => {
+  if (!grid || !grid.nodes || !Array.isArray(grid.nodes)) {
+    console.error('exportDXFPro: grid o grid.nodes inválido');
+    return null;
+  }
+  
   let dxf = `0
 SECTION
 2
@@ -71,12 +76,13 @@ ENTITIES
 `;
 
   // Exportar conductores (capa MALLA_TIERRA)
-  for (const conductor of grid.conductors) {
-    const fromNode = grid.nodes?.find(n => n.id === conductor.from);
-    const toNode = grid.nodes?.find(n => n.id === conductor.to);
-    
-    if (fromNode && toNode) {
-      dxf += `0
+  if (grid.conductors && Array.isArray(grid.conductors)) {
+    for (const conductor of grid.conductors) {
+      const fromNode = grid.nodes.find(n => n.id === conductor.from);
+      const toNode = grid.nodes.find(n => n.id === conductor.to);
+      
+      if (fromNode && toNode) {
+        dxf += `0
 LINE
 8
 MALLA_TIERRA
@@ -93,6 +99,7 @@ ${toNode.y.toFixed(3)}
 31
 ${toNode.z || 0}
 `;
+      }
     }
   }
   
@@ -186,19 +193,37 @@ EOF`;
 };
 
 const getBounds = (nodes) => {
+  if (!nodes || !Array.isArray(nodes) || nodes.length === 0) {
+    return { minX: 0, maxX: 0, minY: 0, maxY: 0 };
+  }
+  
   let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
   
   for (const node of nodes) {
-    minX = Math.min(minX, node.x);
-    maxX = Math.max(maxX, node.x);
-    minY = Math.min(minY, node.y);
-    maxY = Math.max(maxY, node.y);
+    if (node.x !== undefined && !isNaN(node.x)) {
+      minX = Math.min(minX, node.x);
+      maxX = Math.max(maxX, node.x);
+    }
+    if (node.y !== undefined && !isNaN(node.y)) {
+      minY = Math.min(minY, node.y);
+      maxY = Math.max(maxY, node.y);
+    }
+  }
+  
+  // Si no se encontraron coordenadas válidas
+  if (minX === Infinity) {
+    return { minX: 0, maxX: 0, minY: 0, maxY: 0 };
   }
   
   return { minX, maxX, minY, maxY };
 };
 
 export const exportContoursToDXF = (contours, bounds, filename = 'contours.dxf') => {
+  if (!contours || !Array.isArray(contours)) {
+    console.error('exportContoursToDXF: contours inválido');
+    return null;
+  }
+  
   let dxf = `0
 SECTION
 2
@@ -206,6 +231,8 @@ ENTITIES
 `;
   
   for (const contour of contours) {
+    if (!contour.points || !Array.isArray(contour.points)) continue;
+    
     for (const point of contour.points) {
       dxf += `0
 POINT

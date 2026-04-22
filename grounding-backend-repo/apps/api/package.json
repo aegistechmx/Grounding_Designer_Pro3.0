@@ -1,0 +1,27 @@
+{
+  "name": "@grounding/api",
+  "version": "1.0.0",
+  "main": "dist/main.js",
+  "scripts": {
+    "build": "nest build",
+    "start": "nest start",
+    "start:dev": "nest start --watch"
+  },
+  "dependencies": {
+    "@nestjs/common": "^10.0.0",
+    "@nestjs/core": "^10.0.0",
+    "@nestjs/config": "^3.0.0",
+    "@nestjs/bull": "^10.0.0",
+    "@nestjs/throttler": "^5.0.0",
+    "@prisma/client": "^5.0.0",
+    "nestjs-pino": "^3.0.0",
+    "bull": "^4.10.0",
+    "class-validator": "^0.14.0",
+    "class-transformer": "^0.5.1"
+  },
+  "devDependencies": {
+    "@nestjs/cli": "^10.0.0",
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0"
+  }
+}

@@ -25,7 +25,7 @@ const KPICard = ({ title, value, unit, status, trend, onClick }) => {
         <div>
           <p className="text-sm text-gray-500 dark:text-gray-400">{title}</p>
           <p className="text-2xl font-bold">
-            {typeof value === 'number' ? value.toFixed(1) : value}
+            {typeof value === 'number' && !isNaN(value) ? value.toFixed(1) : value}
             <span className="text-sm font-normal ml-1">{unit}</span>
           </p>
         </div>
@@ -40,7 +40,7 @@ const KPICard = ({ title, value, unit, status, trend, onClick }) => {
             <TrendingDown className="text-red-500" size={14} />
           )}
           <span className={trend.up ? 'text-green-500' : 'text-red-500'}>
-            {trend.value}% vs objetivo
+            {trend.value || 0}% vs objetivo
           </span>
         </div>
       )}

@@ -84,11 +84,12 @@ export class ParticleFlow {
   }
   
   sampleField(field, x, y) {
-    if (!field) return 0;
+    if (!field || !field.data || !field.width || !field.height) return 0;
     const xi = Math.floor(x);
     const yi = Math.floor(y);
     if (xi >= 0 && xi < field.width && yi >= 0 && yi < field.height) {
-      return field.data[yi * field.width + xi];
+      const idx = yi * field.width + xi;
+      return field.data[idx] !== undefined ? field.data[idx] : 0;
     }
     return 0;
   }
@@ -132,7 +133,21 @@ export class ParticleFlow {
   destroy() {
     if (this.gl) {
       // Limpiar recursos WebGL
+      if (this.vertexBuffer) {
+        this.gl.deleteBuffer(this.vertexBuffer);
+      }
+      if (this.program) {
+        this.gl.deleteProgram(this.program);
+      }
+      if (this.vertexShader) {
+        this.gl.deleteShader(this.vertexShader);
+      }
+      if (this.fragmentShader) {
+        this.gl.deleteShader(this.fragmentShader);
+      }
     }
+    this.particles = [];
+    this.flowField = null;
   }
 }
 
