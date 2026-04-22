@@ -1,7 +1,10 @@
 /**
  * Optimizador multiobjetivo NSGA-II para sistemas de puesta a tierra
  * Minimiza costo y resistencia, maximizando seguridad IEEE 80
+ * Integrado con motor de cálculo profesional
  */
+
+import CalculationEngineAdapter from '../utils/calculationEngineAdapter.js';
 
 // ============================================
 // 1. FUNCIÓN OBJETIVO (COSTO REAL)
@@ -286,10 +289,10 @@ export const quickOptimize = (params) => {
   console.log('📊 Diseños evaluados:', designs.map(d => ({
     config: `${d.numParallel}x${d.numParallelY}`,
     rods: d.numRods,
-    Rg: d.resistance?.toFixed(2),
+    Rg: isFinite(d.resistance) ? d.resistance.toFixed(2) : 'N/A',
     feasible: d.constraints.feasible,
-    Em: d.constraints.Em?.toFixed(0),
-    limit: d.constraints.Etouch70?.toFixed(0)
+    Em: isFinite(d.constraints.Em) ? d.constraints.Em.toFixed(0) : 'N/A',
+    limit: isFinite(d.constraints.Etouch70) ? d.constraints.Etouch70.toFixed(0) : 'N/A'
   })));
   
   const feasible = designs.filter(d => d.constraints.feasible);
@@ -314,7 +317,7 @@ export const quickOptimize = (params) => {
 };
 
 // ============================================
-// 7. OPTIMIZADOR PRINCIPAL
+// 7. ALGORITMO NSGA-II PRINCIPAL
 // ============================================
 
 export const optimizeGrounding = (params, options = {}) => {
@@ -414,5 +417,6 @@ export default {
   nonDominatedSort,
   crowdingDistance,
   optimizeGrounding,
-  quickOptimize
+  quickOptimize,
+  calculateWithProfessionalEngine
 };

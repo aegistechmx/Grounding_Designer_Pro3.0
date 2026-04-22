@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useGroundingCalculator } from './hooks/useGroundingCalculator';
-import { Header, Sidebar, DesignPanel, DashboardPanel, VisualizationPanel, ValidationPanel, OptimizationPanel, FeedersPanel, NormativesPanel, ReportsPanel, ResultsPanel, PredictiveAI, ScenarioSimulator, ToastNotifications, SetupWizard, TransformerTemplates, DocumentationViewer } from './components';
+import { Header, Sidebar, DesignPanel, DashboardPanel, VisualizationPanel, ValidationPanel, OptimizationPanel, NormativesPanel, ReportsPanel, ResultsPanel, PredictiveAI, ScenarioSimulator, ToastNotifications, SetupWizard, TransformerTemplates, DocumentationViewer } from './components';
 import { ProjectManager } from './components/Projects/ProjectManager';
 import SensitivityChart from './components/analysis/SensitivityCharts';
 import { useSensitivityAnalysis } from './hooks/useSensitivityAnalysis';
@@ -108,8 +108,6 @@ const App = () => {
         return <ValidationPanel calculations={calculations} darkMode={darkMode} />;
       case 'optimization':
         return <OptimizationPanel params={params} calculations={calculations} updateParam={updateParam} darkMode={darkMode} />;
-      case 'feeders':
-        return <FeedersPanel params={params} darkMode={darkMode} />;
       case 'normatives':
         return <NormativesPanel params={params} calculations={calculations} darkMode={darkMode} />;
       case 'ai':

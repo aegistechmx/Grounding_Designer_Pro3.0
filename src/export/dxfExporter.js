@@ -72,15 +72,15 @@ LINE
 8
 GRID
 10
-${fromNode.x.toFixed(3)}
+${isFinite(fromNode.x) ? fromNode.x.toFixed(3) : '0'}
 20
-${fromNode.y.toFixed(3)}
+${isFinite(fromNode.y) ? fromNode.y.toFixed(3) : '0'}
 30
 ${fromNode.z || 0}
 11
-${toNode.x.toFixed(3)}
+${isFinite(toNode.x) ? toNode.x.toFixed(3) : '0'}
 21
-${toNode.y.toFixed(3)}
+${isFinite(toNode.y) ? toNode.y.toFixed(3) : '0'}
 31
 ${toNode.z || 0}
 `;
@@ -96,13 +96,13 @@ CIRCLE
 8
 RODS
 10
-${rod.x.toFixed(3)}
+${isFinite(rod.x) ? rod.x.toFixed(3) : '0'}
 20
-${rod.y.toFixed(3)}
+${isFinite(rod.y) ? rod.y.toFixed(3) : '0'}
 30
 ${rod.z || 0}
 40
-0.15
+${isFinite(rod.radius) ? rod.radius.toFixed(3) : '0.05'}
 `;
     }
   }

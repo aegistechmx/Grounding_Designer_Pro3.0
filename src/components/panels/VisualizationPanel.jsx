@@ -6,12 +6,63 @@ import GroundingGrid3D from '../GroundingGrid3D';
 import SoilProfile from '../visualizations/SoilProfile';
 import FaultAnimation from '../visualizations/FaultAnimation';
 import HeatMap from '../visualizations/HeatMap';
+import HeatmapCanvas from '../../visual/HeatmapCanvas';
+import ETAPVisualizationControls from '../ETAPVisualizationControls';
+import ProfileChart from '../ProfileChart';
 import { importDXF, extractGridFromDXF } from '../../import/dxfImporter';
 
 export const VisualizationPanel = ({ params, calculations, darkMode, updateParams }) => {
   const [dxfData, setDxfData] = useState(null);
   const [dxfValidation, setDxfValidation] = useState(null);
   const [isImporting, setIsImporting] = useState(false);
+  
+  // ETAP Visualization State
+  const [interpolationPower, setInterpolationPower] = useState(2);
+  const [smoothingLevel, setSmoothingLevel] = useState(0.5);
+  const [showContours, setShowContours] = useState(true);
+  const [numContours, setNumContours] = useState(10);
+  const [contourThickness, setContourThickness] = useState(2);
+  
+  // Slice/Profile State
+  const [slice, setSlice] = useState({ mode: 'none', position: 0 });
+  const [profileData, setProfileData] = useState([]);
+
+  const handleSliceChange = (newSlice) => {
+    setSlice(newSlice);
+    if (newSlice.mode !== 'none') {
+      const sampleData = calculations ? generateSampleData(calculations) : [];
+      const resolution = 100;
+      const gridValues = [];
+      
+      // Simple interpolated field for profile
+      for (let i = 0; i < resolution; i++) {
+        gridValues[i] = [];
+        for (let j = 0; j < resolution; j++) {
+          const x = (i / resolution) * 30 - 15;
+          const y = (j / resolution) * 30 - 15;
+          const distance = Math.sqrt(x * x + y * y);
+          const potential = (calculations?.touchVoltage || 500) * Math.exp(-distance / 3) + (calculations?.stepVoltage || 300) * 0.3;
+          gridValues[i][j] = potential;
+        }
+      }
+      
+      const data = [];
+      if (newSlice.mode === 'x') {
+        const j = Math.floor((newSlice.position / 400) * resolution);
+        for (let i = 0; i < resolution; i++) {
+          data.push({ x: i, v: gridValues[i][j] });
+        }
+      } else if (newSlice.mode === 'y') {
+        const i = Math.floor((newSlice.position / 500) * resolution);
+        for (let j = 0; j < resolution; j++) {
+          data.push({ x: j, v: gridValues[i][j] });
+        }
+      }
+      setProfileData(data);
+    } else {
+      setProfileData([]);
+    }
+  };
 
   const handleDXFImport = async (e) => {
     const file = e.target.files[0];
@@ -73,6 +124,47 @@ export const VisualizationPanel = ({ params, calculations, darkMode, updateParam
         </div>
         <SoilProfile params={params} darkMode={darkMode} />
         <HeatMap params={params} calculations={calculations} darkMode={darkMode} />
+        
+        {/* ETAP Level Visualization */}
+        <div className={`p-4 rounded-lg ${darkMode ? 'bg-gray-800' : 'bg-white'} mb-4`}>
+          <h3 className="text-lg font-bold mb-4">🎨 ETAP Level: Advanced Voltage Visualization</h3>
+          
+          <ETAPVisualizationControls
+            interpolationPower={interpolationPower}
+            smoothingLevel={smoothingLevel}
+            showContours={showContours}
+            numContours={numContours}
+            contourThickness={contourThickness}
+            onInterpolationPowerChange={setInterpolationPower}
+            onSmoothingLevelChange={setSmoothingLevel}
+            onShowContoursChange={setShowContours}
+            onNumContoursChange={setNumContours}
+            onContourThicknessChange={setContourThickness}
+            darkMode={darkMode}
+          />
+          
+          {calculations && calculations.touchVoltage && (
+            <>
+              <HeatmapCanvas
+                data={generateSampleData(calculations)}
+                width={500}
+                height={400}
+                interpolationPower={interpolationPower}
+                smoothingLevel={smoothingLevel}
+                showContours={showContours}
+                numContours={numContours}
+                contourThickness={contourThickness}
+                onSliceChange={handleSliceChange}
+              />
+              {profileData.length > 0 && (
+                <div className="mt-4">
+                  <ProfileChart data={profileData} mode={slice.mode} />
+                </div>
+              )}
+            </>
+          )}
+        </div>
+        
         <GroundingGridSVG params={params} darkMode={darkMode} dxfData={dxfData} />
         <GroundingGrid3D params={params} darkMode={darkMode} />
         <FaultAnimation params={params} darkMode={darkMode} />
@@ -80,3 +172,30 @@ export const VisualizationPanel = ({ params, calculations, darkMode, updateParam
     </div>
   );
 };
+
+// Helper function to generate sample data for ETAP visualization
+function generateSampleData(calculations) {
+  const data = [];
+  const gridSize = 10;
+  const touchVoltage = calculations.touchVoltage || 500;
+  const stepVoltage = calculations.stepVoltage || 300;
+  
+  for (let i = 0; i < gridSize; i++) {
+    for (let j = 0; j < gridSize; j++) {
+      const x = i - gridSize / 2;
+      const y = j - gridSize / 2;
+      const distance = Math.sqrt(x * x + y * y);
+      
+      const potential = touchVoltage * Math.exp(-distance / 3) + stepVoltage * 0.3;
+      
+      data.push({
+        x: x,
+        y: y,
+        potential: potential,
+        isRod: (i === 0 && j === 0)
+      });
+    }
+  }
+  
+  return data;
+}

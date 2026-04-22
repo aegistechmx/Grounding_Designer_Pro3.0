@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Heatmap Test</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        function HeatmapCanvas({ nodes, voltages }) {
+            const canvasRef = useRef(null);
+
+            const drawEngineeringOverlay = (ctx, nodes, size) => {
+                // Draw conductors as lines between adjacent nodes
+                ctx.strokeStyle = 'rgba(0, 0, 0, 0.6)';
+                ctx.lineWidth = 2;
+                
+                // Simple grid conductor visualization
+                const gridSize = Math.sqrt(nodes.length);
+                const spacing = size / (gridSize - 1);
+                
+                // Draw horizontal conductors
+                for (let row = 0; row < gridSize; row++) {
+                    ctx.beginPath();
+                    for (let col = 0; col < gridSize; col++) {
+                        const x = col * spacing;
+                        const y = row * spacing;
+                        if (col === 0) {
+                            ctx.moveTo(x, y);
+                        } else {
+                            ctx.lineTo(x, y);
+                        }
+                    }
+                    ctx.stroke();
+                }
+                
+                // Draw vertical conductors
+                for (let col = 0; col < gridSize; col++) {
+                    ctx.beginPath();
+                    for (let row = 0; row < gridSize; row++) {
+                        const x = col * spacing;
+                        const y = row * spacing;
+                        if (row === 0) {
+                            ctx.moveTo(x, y);
+                        } else {
+                            ctx.lineTo(x, y);
+                        }
+                    }
+                    ctx.stroke();
+                }
+                
+                // Draw nodes as points
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+                nodes.forEach(node => {
+                    const x = (node.x / 50) * size;
+                    const y = (node.y / 50) * size;
+                    ctx.beginPath();
+                    ctx.arc(x, y, 3, 0, 2 * Math.PI);
+                    ctx.fill();
+                    ctx.strokeStyle = 'rgba(0, 0, 0, 0.8)';
+                    ctx.stroke();
+                });
+                
+                // Draw ground rods (corner nodes - typical placement)
+                ctx.fillStyle = 'rgba(139, 69, 19, 0.8)'; // Brown color for rods
+                const cornerNodes = [
+                    nodes[0], // Top-left
+                    nodes[gridSize - 1], // Top-right
+                    nodes[nodes.length - gridSize], // Bottom-left
+                    nodes[nodes.length - 1] // Bottom-right
+                ];
+                
+                cornerNodes.forEach(node => {
+                    if (node) {
+                        const x = (node.x / 50) * size;
+                        const y = (node.y / 50) * size;
+                        ctx.beginPath();
+                        ctx.arc(x, y, 5, 0, 2 * Math.PI);
+                        ctx.fill();
+                        ctx.strokeStyle = 'rgba(0, 0, 0, 0.8)';
+                        ctx.stroke();
+                    }
+                });
+            };
+
+            useEffect(() => {
+                const canvas = canvasRef.current;
+                if (!canvas || !nodes || !voltages || nodes.length === 0) return;
+                
+                const ctx = canvas.getContext('2d');
+                
+                const size = 400;
+                canvas.width = size;
+                canvas.height = size;
+
+                // Clear canvas
+                ctx.fillStyle = '#f3f4f6';
+                ctx.fillRect(0, 0, size, size);
+
+                const max = Math.max(...voltages);
+                const min = Math.min(...voltages);
+                const range = max - min || 1;
+
+                // Draw voltage heatmap
+                nodes.forEach((node, i) => {
+                    const voltage = voltages[i];
+                    
+                    // Normalize coordinates (assuming grid is 50x50 max)
+                    const x = (node.x / 50) * size;
+                    const y = (node.y / 50) * size;
+
+                    // Normalize voltage to 0-1 range
+                    const t = (voltage - min) / range;
+
+                    // Color scale: blue (cold) -> red (hot)
+                    const r = Math.floor(255 * t);
+                    const g = Math.floor(50 * (1 - Math.abs(t - 0.5) * 2));
+                    const b = Math.floor(255 * (1 - t));
+
+                    ctx.fillStyle = `rgb(${r},${g},${b})`;
+                    
+                    // Draw voltage as small rectangles
+                    const cellSize = 8;
+                    ctx.fillRect(x - cellSize/2, y - cellSize/2, cellSize, cellSize);
+                });
+
+                // Draw grid overlay
+                ctx.strokeStyle = 'rgba(0, 0, 0, 0.1)';
+                ctx.lineWidth = 0.5;
+                
+                // Draw grid lines every 50 pixels (representing 5m)
+                for (let i = 0; i <= 10; i++) {
+                    const pos = (i / 10) * size;
+                    ctx.beginPath();
+                    ctx.moveTo(pos, 0);
+                    ctx.lineTo(pos, size);
+                    ctx.stroke();
+                    
+                    ctx.beginPath();
+                    ctx.moveTo(0, pos);
+                    ctx.lineTo(size, pos);
+                    ctx.stroke();
+                }
+
+                // Draw engineering overlay
+                drawEngineeringOverlay(ctx, nodes, size);
+
+            }, [nodes, voltages]);
+
+            return (
+                <div className="relative">
+                    <canvas 
+                        ref={canvasRef} 
+                        className="border rounded-lg shadow-lg"
+                        style={{ width: '400px', height: '400px' }}
+                    />
+                    
+                    {/* Color Legend */}
+                    <div className="mt-4 flex items-center justify-center space-x-4">
+                        <div className="flex items-center space-x-2">
+                            <div className="w-4 h-4 bg-blue-500 rounded"></div>
+                            <span className="text-sm text-gray-600">Low Voltage</span>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                            <div className="w-4 h-4 bg-green-500 rounded"></div>
+                            <span className="text-sm text-gray-600">Medium</span>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                            <div className="w-4 h-4 bg-red-500 rounded"></div>
+                            <span className="text-sm text-gray-600">High Voltage</span>
+                        </div>
+                    </div>
+                    
+                    {/* Voltage Range Display */}
+                    {voltages && voltages.length > 0 && (
+                        <div className="mt-2 text-center text-sm text-gray-500">
+                            Range: {Math.min(...voltages).toFixed(0)}V - {Math.max(...voltages).toFixed(0)}V
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        function TestApp() {
+            const [testData, setTestData] = useState({
+                nodes: [
+                    {x: 0, y: 0}, {x: 8.33, y: 0}, {x: 16.67, y: 0}, {x: 25, y: 0}, {x: 33.33, y: 0}, {x: 41.67, y: 0}, {x: 50, y: 0},
+                    {x: 0, y: 7.5}, {x: 8.33, y: 7.5}, {x: 16.67, y: 7.5}, {x: 25, y: 7.5}, {x: 33.33, y: 7.5}, {x: 41.67, y: 7.5}, {x: 50, y: 7.5},
+                    {x: 0, y: 15}, {x: 8.33, y: 15}, {x: 16.67, y: 15}, {x: 25, y: 15}, {x: 33.33, y: 15}, {x: 41.67, y: 15}, {x: 50, y: 15},
+                    {x: 0, y: 22.5}, {x: 8.33, y: 22.5}, {x: 16.67, y: 22.5}, {x: 25, y: 22.5}, {x: 33.33, y: 22.5}, {x: 41.67, y: 22.5}, {x: 50, y: 22.5},
+                    {x: 0, y: 30}, {x: 8.33, y: 30}, {x: 16.67, y: 30}, {x: 25, y: 30}, {x: 33.33, y: 30}, {x: 41.67, y: 30}, {x: 50, y: 30}
+                ],
+                voltages: [
+                    1200, 1150, 1100, 1050, 1000, 950, 900,
+                    1180, 1130, 1080, 1030, 980, 930, 880,
+                    1160, 1110, 1060, 1010, 960, 910, 860,
+                    1140, 1090, 1040, 990, 940, 890, 840,
+                    1120, 1070, 1020, 970, 920, 870, 820
+                ]
+            });
+
+            return (
+                <div className="min-h-screen bg-gray-50 p-8">
+                    <div className="max-w-4xl mx-auto">
+                        <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
+                            <h1 className="text-3xl font-bold text-gray-800 mb-2">
+                                IEEE 80 Spatial Voltage Visualization Test
+                            </h1>
+                            <p className="text-gray-600">
+                                Real-time visualization of voltage distribution across grounding grid.
+                                Red areas indicate higher voltage concentrations (higher risk zones).
+                            </p>
+                        </div>
+
+                        <div className="bg-white rounded-lg shadow-lg p-6">
+                            <h2 className="text-xl font-bold text-gray-800 mb-4">
+                                Spatial Voltage Distribution (Discrete Method)
+                            </h2>
+                            <div className="flex flex-col items-center space-y-4">
+                                <HeatmapCanvas 
+                                    nodes={testData.nodes}
+                                    voltages={testData.voltages}
+                                />
+                                <div className="text-sm text-gray-600 text-center max-w-md">
+                                    This visualization shows the actual electric field distribution calculated by the discrete nodal analysis method.
+                                    The color gradient represents voltage magnitude at each grid node.
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="bg-white rounded-lg shadow-lg p-6 mt-6">
+                            <h3 className="text-lg font-bold text-gray-800 mb-3">Engineering Analysis</h3>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div className="bg-red-50 p-4 rounded-lg">
+                                    <h4 className="font-semibold text-red-800">High Risk Zones</h4>
+                                    <p className="text-sm text-red-700 mt-1">
+                                        Red areas show voltage concentration at grid edges - typical edge effect in grounding systems.
+                                    </p>
+                                </div>
+                                <div className="bg-blue-50 p-4 rounded-lg">
+                                    <h4 className="font-semibold text-blue-800">Safe Zones</h4>
+                                    <p className="text-sm text-blue-700 mt-1">
+                                        Blue areas indicate lower voltage distribution in grid interior.
+                                    </p>
+                                </div>
+                                <div className="bg-green-50 p-4 rounded-lg">
+                                    <h4 className="font-semibold text-green-800">Engineering Elements</h4>
+                                    <p className="text-sm text-green-700 mt-1">
+                                        White points: Grid nodes, Brown circles: Ground rods at corners.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        ReactDOM.render(<TestApp />, document.getElementById('root'));
+    </script>
+</body>
+</html>

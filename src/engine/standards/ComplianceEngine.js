@@ -116,7 +116,7 @@ export class ComplianceEngine {
         standard: 'NOM-001-SEDE-2012',
         section: '250-95',
         type: 'TOUCH_VOLTAGE',
-        message: `Tensión de contacto: ${touchCheck.value.toFixed(0)} V > ${touchCheck.limit.toFixed(0)} V`,
+        message: `Tensión de contacto: ${isFinite(touchCheck.value) ? touchCheck.value.toFixed(0) : 'N/A'} V > ${isFinite(touchCheck.limit) ? touchCheck.limit.toFixed(0) : 'N/A'} V`,
         severity: 'CRITICAL'
       });
     }
@@ -126,7 +126,7 @@ export class ComplianceEngine {
         standard: 'NOM-001-SEDE-2012',
         section: '250-95',
         type: 'STEP_VOLTAGE',
-        message: `Tensión de paso: ${stepCheck.value.toFixed(0)} V > ${stepCheck.limit.toFixed(0)} V`,
+        message: `Tensión de paso: ${isFinite(stepCheck.value) ? stepCheck.value.toFixed(0) : 'N/A'} V > ${isFinite(stepCheck.limit) ? stepCheck.limit.toFixed(0) : 'N/A'} V`,
         severity: 'HIGH'
       });
     }
@@ -136,7 +136,7 @@ export class ComplianceEngine {
         standard: 'NOM-001-SEDE-2012',
         section: '250-56',
         type: 'GROUND_RESISTANCE',
-        message: `Resistencia: ${resistanceCheck.value.toFixed(2)} Ω > ${resistanceCheck.limit} Ω`,
+        message: `Resistencia: ${isFinite(resistanceCheck.value) ? resistanceCheck.value.toFixed(2) : 'N/A'} Ω > ${isFinite(resistanceCheck.limit) ? resistanceCheck.limit : 'N/A'} Ω`,
         severity: 'MEDIUM'
       });
     }

@@ -1,6 +1,7 @@
 import { useEffect, useCallback } from 'react';
 import useStore from '../store/useStore';
 import { useDebounce } from './useDebounce';
+import CalculationEngineAdapter from '../utils/calculationEngineAdapter';
 
 export const useGroundingCalculator = () => {
   const {
@@ -57,7 +58,7 @@ export const useGroundingCalculator = () => {
       newNotifications.push({
         type: 'warning',
         title: 'Resistencia de Malla Alta',
-        message: `Rg = ${calculations.Rg?.toFixed(2)} Ω > 5 Ω recomendado`,
+        message: `Rg = ${isFinite(calculations.Rg) ? calculations.Rg.toFixed(2) : 'N/A'} Ω > 5 Ω recomendado`,
         action: 'Agregar más varillas',
         duration: 6000
       });
@@ -78,6 +79,65 @@ export const useGroundingCalculator = () => {
     });
   }, [calculations, addNotification]);
   
+  // Professional calculation function
+  const calculateWithProfessionalEngine = useCallback((inputParams) => {
+    try {
+      const results = CalculationEngineAdapter.calculate(inputParams || params);
+      
+      // Check if results are from professional engine
+      if (CalculationEngineAdapter.isProfessionalEngine(results)) {
+        console.log('Using professional calculation engine v2.0');
+        
+        // Add professional engine notification
+        addNotification({
+          type: 'info',
+          title: 'Motor Profesional',
+          message: 'Cálculo realizado con motor profesional IEEE 80',
+          duration: 3000
+        });
+      }
+      
+      return results;
+    } catch (error) {
+      console.error('Professional calculation failed:', error);
+      
+      // Fallback to old method
+      addNotification({
+        type: 'warning',
+        title: 'Error en Motor Profesional',
+        message: 'Usando método de cálculo alternativo',
+        duration: 5000
+      });
+      
+      throw error;
+    }
+  }, [params, addNotification]);
+
+  // Validation function
+  const validateParameters = useCallback((inputParams) => {
+    return CalculationEngineAdapter.validate(inputParams || params);
+  }, [params]);
+
+  // Get recommendations function
+  const getEngineRecommendations = useCallback((inputParams) => {
+    return CalculationEngineAdapter.getRecommendations(inputParams || params);
+  }, [params]);
+
+  // Export results function
+  const exportResults = useCallback((results, format = 'json') => {
+    return CalculationEngineAdapter.export(results || calculations, format);
+  }, [calculations]);
+
+  // Batch calculation function
+  const batchCalculate = useCallback((scenarios) => {
+    return CalculationEngineAdapter.batchCalculate(scenarios);
+  }, []);
+
+  // Get calculation statistics
+  const getCalculationStatistics = useCallback((results) => {
+    return CalculationEngineAdapter.getStatistics(results || calculations);
+  }, [calculations]);
+
   return {
     // Estado
     params,
@@ -89,7 +149,7 @@ export const useGroundingCalculator = () => {
     activeTab,
     notifications,
     
-    // Acciones
+    // Acciones existentes
     setParams,
     updateParam,
     setDarkMode,
@@ -99,7 +159,15 @@ export const useGroundingCalculator = () => {
     saveProfile,
     loadProfile,
     deleteProfile,
-    resetToDefaults
+    resetToDefaults,
+    
+    // Nuevas funciones del motor profesional
+    calculateWithProfessionalEngine,
+    validateParameters,
+    getEngineRecommendations,
+    exportResults,
+    batchCalculate,
+    getCalculationStatistics
   };
 };
 

@@ -87,15 +87,15 @@ LINE
 8
 MALLA_TIERRA
 10
-${fromNode.x.toFixed(3)}
+${isFinite(fromNode.x) ? fromNode.x.toFixed(3) : '0'}
 20
-${fromNode.y.toFixed(3)}
+${isFinite(fromNode.y) ? fromNode.y.toFixed(3) : '0'}
 30
 ${fromNode.z || 0}
 11
-${toNode.x.toFixed(3)}
+${isFinite(toNode.x) ? toNode.x.toFixed(3) : '0'}
 21
-${toNode.y.toFixed(3)}
+${isFinite(toNode.y) ? toNode.y.toFixed(3) : '0'}
 31
 ${toNode.z || 0}
 `;
@@ -111,9 +111,9 @@ CIRCLE
 8
 VARILLAS
 10
-${rod.x.toFixed(3)}
+${isFinite(rod.x) ? rod.x.toFixed(3) : '0'}
 20
-${rod.y.toFixed(3)}
+${isFinite(rod.y) ? rod.y.toFixed(3) : '0'}
 30
 ${rod.z || 0}
 40
@@ -128,9 +128,9 @@ POINT
 8
 NODOS
 10
-${node.x.toFixed(3)}
+${isFinite(node.x) ? node.x.toFixed(3) : '0'}
 20
-${node.y.toFixed(3)}
+${isFinite(node.y) ? node.y.toFixed(3) : '0'}
 30
 ${node.z || 0}
 `;

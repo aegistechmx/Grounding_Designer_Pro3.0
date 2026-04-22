@@ -25,14 +25,14 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/71</span>
+                <span class='fraction'>0/77</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>0/11</span>
+                <span class='fraction'>0/30</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/68</span>
+                <span class='fraction'>0/72</span>
             </div>
         
             
@@ -263,7 +263,11 @@
 <a name='L198'></a><a href='#L198'>198</a>
 <a name='L199'></a><a href='#L199'>199</a>
 <a name='L200'></a><a href='#L200'>200</a>
-<a name='L201'></a><a href='#L201'>201</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L201'></a><a href='#L201'>201</a>
+<a name='L202'></a><a href='#L202'>202</a>
+<a name='L203'></a><a href='#L203'>203</a>
+<a name='L204'></a><a href='#L204'>204</a>
+<a name='L205'></a><a href='#L205'>205</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -386,9 +390,12 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -453,6 +460,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -522,10 +530,10 @@ export class FEMAssembler {
     
     // Punto de inyección de corriente (falla)
     const faultPoint = <span class="cstat-no" title="statement not covered" >{</span>
-      x: project.grid.length / 2,
-      y: project.grid.width / 2
+      x: (project.grid?.length || 10) / 2,
+      y: (project.grid?.width || 10) / 2
     };
-    const Ig = <span class="cstat-no" title="statement not covered" >project.scenarios[0].Ig;</span>
+    const Ig = <span class="cstat-no" title="statement not covered" >project.scenarios?.[0]?.Ig || 1000;</span>
 <span class="cstat-no" title="statement not covered" >    bcManager.identifySourceNodes(nodes, faultPoint, Ig);</span>
     
     // Puntos de la malla conductora
@@ -584,15 +592,18 @@ export class FEMAssembler {
    * Genera puntos de la malla conductora
    */
 <span class="fstat-no" title="function not covered" >  ge</span>nerateConductorPoints(grid) {
-    const points = <span class="cstat-no" title="statement not covered" >[];</span>
-    const { length, width, nx, ny } = <span class="cstat-no" title="statement not covered" >grid;</span>
+<span class="cstat-no" title="statement not covered" >    if (!grid) <span class="cstat-no" title="statement not covered" >return [];</span></span>
+    const points = <span class="cstat-no" title="statement not covered" >[]</span>
+    const { length = <span class="branch-0 cbranch-no" title="branch not covered" >10,</span> width = <span class="branch-0 cbranch-no" title="branch not covered" >10,</span> nx = <span class="branch-0 cbranch-no" title="branch not covered" >8,</span> ny = <span class="branch-0 cbranch-no" title="branch not covered" >8 </span>} = <span class="cstat-no" title="statement not covered" >grid;</span>
     
-    const dx = <span class="cstat-no" title="statement not covered" >length / nx;</span>
-    const dy = <span class="cstat-no" title="statement not covered" >width / ny;</span>
+    const nxSafe = <span class="cstat-no" title="statement not covered" >Math.max(1, nx);</span>
+    const nySafe = <span class="cstat-no" title="statement not covered" >Math.max(1, ny);</span>
+    const dx = <span class="cstat-no" title="statement not covered" >length / nxSafe;</span>
+    const dy = <span class="cstat-no" title="statement not covered" >width / nySafe;</span>
     
     // Líneas horizontales
-<span class="cstat-no" title="statement not covered" >    for (let i = <span class="cstat-no" title="statement not covered" >0;</span> i &lt;= nx; i++) {</span>
-<span class="cstat-no" title="statement not covered" >      for (let j = <span class="cstat-no" title="statement not covered" >0;</span> j &lt;= ny; j++) {</span>
+<span class="cstat-no" title="statement not covered" >    for (let i = <span class="cstat-no" title="statement not covered" >0;</span> i &lt;= nxSafe; i++) {</span>
+<span class="cstat-no" title="statement not covered" >      for (let j = <span class="cstat-no" title="statement not covered" >0;</span> j &lt;= nySafe; j++) {</span>
 <span class="cstat-no" title="statement not covered" >        points.push({ x: i * dx, y: j * dy });</span>
       }
     }
@@ -653,12 +664,13 @@ export class FEMAssembler {
    * Calcula resistencia de malla a partir de resultados FEM
    */
 <span class="fstat-no" title="function not covered" >  co</span>mputeGroundResistance(voltageField, injectedCurrent) {
-<span class="cstat-no" title="statement not covered" >    if (injectedCurrent === 0) <span class="cstat-no" title="statement not covered" >return 0;</span></span>
+<span class="cstat-no" title="statement not covered" >    if (!injectedCurrent || injectedCurrent === 0) <span class="cstat-no" title="statement not covered" >return 0;</span></span>
+<span class="cstat-no" title="statement not covered" >    if (!voltageField || !Array.isArray(voltageField) || voltageField.length === 0) <span class="cstat-no" title="statement not covered" >return 0;</span></span>
     
     // Potencial máximo (en el punto de inyección)
     const maxPotential = <span class="cstat-no" title="statement not covered" >Math.max(...voltageField);</span>
     
-<span class="cstat-no" title="statement not covered" >    return maxPotential / injectedCurrent;</span>
+<span class="cstat-no" title="statement not covered" >    return maxPotential / Math.max(0.1, injectedCurrent);</span>
   }
 }
 &nbsp;
@@ -670,7 +682,7 @@ export default FEMAssembler;
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-04-21T18:33:41.556Z
+                at 2026-04-22T08:10:13.923Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

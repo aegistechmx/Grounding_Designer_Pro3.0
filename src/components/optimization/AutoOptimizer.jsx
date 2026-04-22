@@ -360,19 +360,19 @@ const AutoOptimizer = ({ params, darkMode, onOptimize }) => {
               <div className="flex justify-between items-center">
                 <span className="text-sm">Tensión Contacto:</span>
                 <span className={`text-sm font-bold ${(optimizationResults.best?.improvement?.Em || 0) > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  {(optimizationResults.best?.improvement?.Em || 0) > 0 ? '↓' : '↑'} {Math.abs(optimizationResults.best?.improvement?.Em || 0).toFixed(1)}%
+                  {(optimizationResults.best?.improvement?.Em || 0) > 0 ? '↓' : '↑'} {isFinite(Math.abs(optimizationResults.best?.improvement?.Em || 0)) ? Math.abs(optimizationResults.best?.improvement?.Em || 0).toFixed(1) : '0'}%
                 </span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-sm">Tensión Paso:</span>
                 <span className={`text-sm font-bold ${(optimizationResults.best?.improvement?.Es || 0) > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  {(optimizationResults.best?.improvement?.Es || 0) > 0 ? '↓' : '↑'} {Math.abs(optimizationResults.best?.improvement?.Es || 0).toFixed(1)}%
+                  {(optimizationResults.best?.improvement?.Es || 0) > 0 ? '↓' : '↑'} {isFinite(Math.abs(optimizationResults.best?.improvement?.Es || 0)) ? Math.abs(optimizationResults.best?.improvement?.Es || 0).toFixed(1) : '0'}%
                 </span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-sm">Resistencia Malla:</span>
                 <span className={`text-sm font-bold ${(optimizationResults.best?.improvement?.Rg || 0) > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  {(optimizationResults.best?.improvement?.Rg || 0) > 0 ? '↓' : '↑'} {Math.abs(optimizationResults.best?.improvement?.Rg || 0).toFixed(1)}%
+                  {(optimizationResults.best?.improvement?.Rg || 0) > 0 ? '↓' : '↑'} {isFinite(Math.abs(optimizationResults.best?.improvement?.Rg || 0)) ? Math.abs(optimizationResults.best?.improvement?.Rg || 0).toFixed(1) : '0'}%
                 </span>
               </div>
             </div>

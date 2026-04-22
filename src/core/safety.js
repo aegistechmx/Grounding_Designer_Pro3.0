@@ -43,7 +43,7 @@ export const validateTouchSafety = (params) => {
     calculated: Em,
     allowable,
     safe: Em <= allowable,
-    margin: allowable > 0 ? ((allowable - Em) / Math.max(1, allowable) * 100).toFixed(1) : '0'
+    margin: allowable > 0 && isFinite((allowable - Em) / Math.max(1, allowable) * 100) ? ((allowable - Em) / Math.max(1, allowable) * 100).toFixed(1) : '0'
   };
 };
 
@@ -80,7 +80,7 @@ export const validateStepSafety = (params) => {
     calculated: Es,
     allowable,
     safe: Es <= allowable,
-    margin: allowable > 0 ? ((allowable - Es) / Math.max(1, allowable) * 100).toFixed(1) : '0'
+    margin: allowable > 0 && isFinite((allowable - Es) / Math.max(1, allowable) * 100) ? ((allowable - Es) / Math.max(1, allowable) * 100).toFixed(1) : '0'
   };
 };
 

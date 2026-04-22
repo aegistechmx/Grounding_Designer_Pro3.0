@@ -25,14 +25,14 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/131</span>
+                <span class='fraction'>0/132</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>0/60</span>
+                <span class='fraction'>0/76</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/113</span>
+                <span class='fraction'>0/114</span>
             </div>
         
             
@@ -382,7 +382,8 @@
 <a name='L317'></a><a href='#L317'>317</a>
 <a name='L318'></a><a href='#L318'>318</a>
 <a name='L319'></a><a href='#L319'>319</a>
-<a name='L320'></a><a href='#L320'>320</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L320'></a><a href='#L320'>320</a>
+<a name='L321'></a><a href='#L321'>321</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -686,6 +687,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -829,10 +831,10 @@ export class FEMEngine {
    */
 <span class="fstat-no" title="function not covered" >  ge</span>nerateSeedPoints(project) {
     const points = <span class="cstat-no" title="statement not covered" >[];</span>
-    const { length, width, nx, ny } = <span class="cstat-no" title="statement not covered" >project.grid;</span>
+    const { length = <span class="branch-0 cbranch-no" title="branch not covered" >10,</span> width = <span class="branch-0 cbranch-no" title="branch not covered" >10,</span> nx = <span class="branch-0 cbranch-no" title="branch not covered" >8,</span> ny = <span class="branch-0 cbranch-no" title="branch not covered" >8 </span>} = <span class="cstat-no" title="statement not covered" >project.grid || {};</span>
     
-    const dx = <span class="cstat-no" title="statement not covered" >length / nx;</span>
-    const dy = <span class="cstat-no" title="statement not covered" >width / ny;</span>
+    const dx = <span class="cstat-no" title="statement not covered" >length / Math.max(1, nx);</span>
+    const dy = <span class="cstat-no" title="statement not covered" >width / Math.max(1, ny);</span>
     
     // Puntos de la malla conductora
 <span class="cstat-no" title="statement not covered" >    for (let i = <span class="cstat-no" title="statement not covered" >0;</span> i &lt;= nx; i++) {</span>
@@ -919,7 +921,7 @@ export class FEMEngine {
     const c2 = <span class="cstat-no" title="statement not covered" >p1.x - p3.x;</span>
     const c3 = <span class="cstat-no" title="statement not covered" >p2.x - p1.x;</span>
     
-    const twoA = <span class="cstat-no" title="statement not covered" >2 * area;</span>
+    const twoA = <span class="cstat-no" title="statement not covered" >Math.max(1e-10, 2 * area);</span>
     
 <span class="cstat-no" title="statement not covered" >    return [</span>
       [b1 / twoA, b2 / twoA, b3 / twoA],
@@ -959,7 +961,7 @@ export class FEMEngine {
    * Aplica condiciones de borde
    */
 <span class="fstat-no" title="function not covered" >  ap</span>plyBoundaryConditions(K, F, mesh, project) {
-    const { length, width } = <span class="cstat-no" title="statement not covered" >project.grid;</span>
+    const { length = <span class="branch-0 cbranch-no" title="branch not covered" >10,</span> width = <span class="branch-0 cbranch-no" title="branch not covered" >10 </span>} = <span class="cstat-no" title="statement not covered" >project.grid || {};</span>
     const tolerance = <span class="cstat-no" title="statement not covered" >0.01;</span>
     
 <span class="cstat-no" title="statement not covered" >    for (let i = <span class="cstat-no" title="statement not covered" >0;</span> i &lt; mesh.nodes.length; i++) {</span>
@@ -979,8 +981,8 @@ export class FEMEngine {
     }
     
     // Punto de inyección de corriente (falla)
-    const faultX = <span class="cstat-no" title="statement not covered" >length / 2;</span>
-    const faultY = <span class="cstat-no" title="statement not covered" >width / 2;</span>
+    const faultX = <span class="cstat-no" title="statement not covered" >(length || 10) / 2;</span>
+    const faultY = <span class="cstat-no" title="statement not covered" >(width || 10) / 2;</span>
     let minDist = <span class="cstat-no" title="statement not covered" >Infinity;</span>
     let faultNode = <span class="cstat-no" title="statement not covered" >-1;</span>
     
@@ -994,7 +996,7 @@ export class FEMEngine {
     }
     
 <span class="cstat-no" title="statement not covered" >    if (faultNode &gt;= 0) {</span>
-      const Ig = <span class="cstat-no" title="statement not covered" >project.scenarios[0].Ig;</span>
+      const Ig = <span class="cstat-no" title="statement not covered" >project.scenarios?.[0]?.Ig || 1000;</span>
 <span class="cstat-no" title="statement not covered" >      F[faultNode] += Ig;</span>
     }
   }
@@ -1003,8 +1005,9 @@ export class FEMEngine {
    * Calcula área de triángulo
    */
 <span class="fstat-no" title="function not covered" >  tr</span>iangleArea(p1, p2, p3) {
-<span class="cstat-no" title="statement not covered" >    return Math.abs((p2.x - p1.x) * (p3.y - p1.y) - </span>
-                    (p3.x - p1.x) * (p2.y - p1.y)) / 2;
+    const area = <span class="cstat-no" title="statement not covered" >Math.abs((p2.x - p1.x) * (p3.y - p1.y) - </span>
+                          (p3.x - p1.x) * (p2.y - p1.y)) / 2;
+<span class="cstat-no" title="statement not covered" >    return Math.max(1e-10, area);</span>
   }
 &nbsp;
   /**
@@ -1027,7 +1030,7 @@ export default FEMEngine;
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-04-21T18:33:41.556Z
+                at 2026-04-22T08:10:13.923Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>

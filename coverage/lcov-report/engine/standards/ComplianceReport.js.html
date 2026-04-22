@@ -25,14 +25,14 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/30</span>
+                <span class='fraction'>0/36</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>0/40</span>
+                <span class='fraction'>0/70</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/26</span>
+                <span class='fraction'>0/30</span>
             </div>
         
             
@@ -225,7 +225,14 @@
 <a name='L160'></a><a href='#L160'>160</a>
 <a name='L161'></a><a href='#L161'>161</a>
 <a name='L162'></a><a href='#L162'>162</a>
-<a name='L163'></a><a href='#L163'>163</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L163'></a><a href='#L163'>163</a>
+<a name='L164'></a><a href='#L164'>164</a>
+<a name='L165'></a><a href='#L165'>165</a>
+<a name='L166'></a><a href='#L166'>166</a>
+<a name='L167'></a><a href='#L167'>167</a>
+<a name='L168'></a><a href='#L168'>168</a>
+<a name='L169'></a><a href='#L169'>169</a>
+<a name='L170'></a><a href='#L170'>170</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -239,6 +246,10 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -287,6 +298,9 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -400,6 +414,10 @@ export class ComplianceReport {
    * Genera reporte en formato HTML
    */
 <span class="fstat-no" title="function not covered" >  to</span>HTML() {
+<span class="cstat-no" title="statement not covered" >    if (!this.validation || !this.project) {</span>
+<span class="cstat-no" title="statement not covered" >      return '&lt;html&gt;&lt;body&gt;&lt;h1&gt;Error: Datos de validación inválidos&lt;/h1&gt;&lt;/body&gt;&lt;/html&gt;';</span>
+    }
+    
 <span class="cstat-no" title="statement not covered" >    return `</span>
       &lt;!DOCTYPE html&gt;
       &lt;html&gt;
@@ -427,8 +445,8 @@ export class ComplianceReport {
         &lt;/div&gt;
         
         &lt;div class="status-${this.getStatusClass()}"&gt;
-          &lt;h2&gt;Estado Global: ${this.validation.summary.status}&lt;/h2&gt;
-          &lt;p&gt;${this.validation.summary.message}&lt;/p&gt;
+          &lt;h2&gt;Estado Global: ${this.validation.summary?.status || 'UNKNOWN'}&lt;/h2&gt;
+          &lt;p&gt;${this.validation.summary?.message || 'Sin información'}&lt;/p&gt;
         &lt;/div&gt;
         
         ${this.renderStandards()}
@@ -449,10 +467,13 @@ export class ComplianceReport {
    * Renderiza cada estándar
    */
 <span class="fstat-no" title="function not covered" >  re</span>nderStandards() {
+<span class="cstat-no" title="statement not covered" >    if (!this.validation?.standards) <span class="cstat-no" title="statement not covered" >return '';</span></span>
+    
     let html = <span class="cstat-no" title="statement not covered" >'';</span>
 <span class="cstat-no" title="statement not covered" >    for (const [name, standard] of Object.entries(this.validation.standards)) {</span>
+<span class="cstat-no" title="statement not covered" >      if (!standard) <span class="cstat-no" title="statement not covered" >continue;</span></span>
 <span class="cstat-no" title="statement not covered" >      html += `</span>
-        &lt;h2&gt;${standard.standard} - ${standard.title}&lt;/h2&gt;
+        &lt;h2&gt;${standard.standard || name} - ${standard.title || 'N/A'}&lt;/h2&gt;
         &lt;div class="${standard.compliant ? 'status-approved' : 'status-rejected'}"&gt;
           Estado: ${standard.compliant ? '✓ CUMPLE' : '✗ NO CUMPLE'}
         &lt;/div&gt;
@@ -467,17 +488,17 @@ export class ComplianceReport {
    * Renderiza violaciones
    */
 <span class="fstat-no" title="function not covered" >  re</span>nderViolations(violations) {
-<span class="cstat-no" title="statement not covered" >    if (!violations || violations.length === 0) {</span>
+<span class="cstat-no" title="statement not covered" >    if (!violations || !Array.isArray(violations) || violations.length === 0) {</span>
 <span class="cstat-no" title="statement not covered" >      return '&lt;p&gt;✅ No se encontraron violaciones&lt;/p&gt;';</span>
     }
     
     let html = <span class="cstat-no" title="statement not covered" >'&lt;h3&gt;Violaciones Detectadas&lt;/h3&gt;';</span>
 <span class="cstat-no" title="statement not covered" >    for (const v of violations) {</span>
 <span class="cstat-no" title="statement not covered" >      html += `</span>
-        &lt;div class="violation-${v.severity?.toLowerCase()}"&gt;
-          &lt;strong&gt;${v.type || v.title}&lt;/strong&gt;&lt;br&gt;
-          ${v.message || v.description}&lt;br&gt;
-          &lt;small&gt;Norma: ${v.standard} - Sección: ${v.section || 'N/A'}&lt;/small&gt;
+        &lt;div class="violation-${v.severity?.toLowerCase() || 'high'}"&gt;
+          &lt;strong&gt;${v.type || v.title || 'N/A'}&lt;/strong&gt;&lt;br&gt;
+          ${v.message || v.description || 'Sin descripción'}&lt;br&gt;
+          &lt;small&gt;Norma: ${v.standard || 'N/A'} - Sección: ${v.section || 'N/A'}&lt;/small&gt;
         &lt;/div&gt;
       `;
     }
@@ -526,12 +547,12 @@ export class ComplianceReport {
    * Renderiza recomendaciones
    */
 <span class="fstat-no" title="function not covered" >  re</span>nderRecommendations() {
-    const recs = <span class="cstat-no" title="statement not covered" >this.validation.summary.recommendations;</span>
-<span class="cstat-no" title="statement not covered" >    if (!recs || recs.length === 0) <span class="cstat-no" title="statement not covered" >return '';</span></span>
+    const recs = <span class="cstat-no" title="statement not covered" >this.validation?.summary?.recommendations;</span>
+<span class="cstat-no" title="statement not covered" >    if (!recs || !Array.isArray(recs) || recs.length === 0) <span class="cstat-no" title="statement not covered" >return '';</span></span>
     
     let html = <span class="cstat-no" title="statement not covered" >'&lt;h2&gt;Recomendaciones&lt;/h2&gt;&lt;ul&gt;';</span>
 <span class="cstat-no" title="statement not covered" >    for (const rec of recs) {</span>
-<span class="cstat-no" title="statement not covered" >      html += `&lt;li&gt;&lt;strong&gt;[${rec.priority}]&lt;/strong&gt; ${rec.standard}: ${rec.action}&lt;/li&gt;`;</span>
+<span class="cstat-no" title="statement not covered" >      html += `&lt;li&gt;&lt;strong&gt;[${rec.priority || 'MEDIUM'}]&lt;/strong&gt; ${rec.standard || 'N/A'}: ${rec.action || 'Sin acción'}&lt;/li&gt;`;</span>
     }
 <span class="cstat-no" title="statement not covered" >    html += '&lt;/ul&gt;';</span>
 <span class="cstat-no" title="statement not covered" >    return html;</span>
@@ -541,7 +562,7 @@ export class ComplianceReport {
    * Obtiene clase de estado
    */
 <span class="fstat-no" title="function not covered" >  ge</span>tStatusClass() {
-    const status = <span class="cstat-no" title="statement not covered" >this.validation.summary.status;</span>
+    const status = <span class="cstat-no" title="statement not covered" >this.validation?.summary?.status;</span>
 <span class="cstat-no" title="statement not covered" >    if (status === 'APPROVED') <span class="cstat-no" title="statement not covered" >return 'approved';</span></span>
 <span class="cstat-no" title="statement not covered" >    if (status === 'REJECTED') <span class="cstat-no" title="statement not covered" >return 'rejected';</span></span>
 <span class="cstat-no" title="statement not covered" >    return 'warning';</span>
@@ -556,7 +577,7 @@ export default ComplianceReport;
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-04-21T18:33:41.556Z
+                at 2026-04-22T08:10:13.923Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

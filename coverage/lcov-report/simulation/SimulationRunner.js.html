@@ -25,14 +25,14 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/52</span>
+                <span class='fraction'>0/59</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>0/12</span>
+                <span class='fraction'>0/34</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/49</span>
+                <span class='fraction'>0/56</span>
             </div>
         
             
@@ -246,7 +246,15 @@
 <a name='L181'></a><a href='#L181'>181</a>
 <a name='L182'></a><a href='#L182'>182</a>
 <a name='L183'></a><a href='#L183'>183</a>
-<a name='L184'></a><a href='#L184'>184</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L184'></a><a href='#L184'>184</a>
+<a name='L185'></a><a href='#L185'>185</a>
+<a name='L186'></a><a href='#L186'>186</a>
+<a name='L187'></a><a href='#L187'>187</a>
+<a name='L188'></a><a href='#L188'>188</a>
+<a name='L189'></a><a href='#L189'>189</a>
+<a name='L190'></a><a href='#L190'>190</a>
+<a name='L191'></a><a href='#L191'>191</a>
+<a name='L192'></a><a href='#L192'>192</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -307,6 +315,15 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -323,13 +340,6 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -366,6 +376,8 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -398,6 +410,10 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -488,7 +504,9 @@ export class SimulationRunner {
     });
     
     // 2. Corriente de malla y GPR
-    const Ig = <span class="cstat-no" title="statement not covered" >scenario.Ig || scenario.current * scenario.divisionFactor;</span>
+    const currentSafe = <span class="cstat-no" title="statement not covered" >Math.max(0.1, scenario.current || 0);</span>
+    const divisionFactorSafe = <span class="cstat-no" title="statement not covered" >Math.max(0.1, scenario.divisionFactor || 0.2);</span>
+    const Ig = <span class="cstat-no" title="statement not covered" >scenario.Ig || (currentSafe * divisionFactorSafe);</span>
     const { GPR: gpr, Em: em } = <span class="cstat-no" title="statement not covered" >calcTouchVoltage({ faultCurrent: Ig, Rg });</span>
     
     // 3. Factor de capa superficial
@@ -548,20 +566,22 @@ export class SimulationRunner {
    */
 <span class="fstat-no" title="function not covered" >  si</span>mulateStepVoltageAtPoint(x, y, scenario) {
     const { grid, soil } = <span class="cstat-no" title="statement not covered" >this.project;</span>
+    const gridLength = <span class="cstat-no" title="statement not covered" >Math.max(1, grid?.length || 30);</span>
+    const gridWidth = <span class="cstat-no" title="statement not covered" >Math.max(1, grid?.width || 16);</span>
     const Rg = <span class="cstat-no" title="statement not covered" >calcGridResistance({</span>
-      soilResistivity: soil.resistivity,
-      gridArea: grid.area,
-      totalConductorLength: grid.totalConductorLength,
-      burialDepth: grid.depth
+      soilResistivity: soil?.resistivity || 100,
+      gridArea: grid?.area || 1,
+      totalConductorLength: grid?.totalConductorLength || 0,
+      burialDepth: grid?.depth || 0.6
     });
     const Ig = <span class="cstat-no" title="statement not covered" >scenario.Ig || scenario.current * scenario.divisionFactor;</span>
     const { GPR: gpr } = <span class="cstat-no" title="statement not covered" >calcTouchVoltage({ faultCurrent: Ig, Rg });</span>
     
     // Decaimiento de tensión con distancia
-    const centerX = <span class="cstat-no" title="statement not covered" >grid.length / 2;</span>
-    const centerY = <span class="cstat-no" title="statement not covered" >grid.width / 2;</span>
+    const centerX = <span class="cstat-no" title="statement not covered" >gridLength / 2;</span>
+    const centerY = <span class="cstat-no" title="statement not covered" >gridWidth / 2;</span>
     const distance = <span class="cstat-no" title="statement not covered" >Math.sqrt(Math.pow(x - centerX, 2) + Math.pow(y - centerY, 2));</span>
-    const maxDistance = <span class="cstat-no" title="statement not covered" >Math.max(grid.length, grid.width) / 2;</span>
+    const maxDistance = <span class="cstat-no" title="statement not covered" >Math.max(gridLength, gridWidth) / 2;</span>
     
     let voltage = <span class="cstat-no" title="statement not covered" >gpr * (1 - distance / maxDistance);</span>
 <span class="cstat-no" title="statement not covered" >    voltage = Math.max(0, voltage);</span>
@@ -583,15 +603,19 @@ export class SimulationRunner {
    */
 <span class="fstat-no" title="function not covered" >  ge</span>nerateVoltageMap(resolution = <span class="branch-0 cbranch-no" title="branch not covered" >20)</span> {
     const { grid } = <span class="cstat-no" title="statement not covered" >this.project;</span>
-    const scenario = <span class="cstat-no" title="statement not covered" >this.project.scenarios[0];</span>
+    const scenario = <span class="cstat-no" title="statement not covered" >this.project.scenarios?.[0];</span>
 <span class="cstat-no" title="statement not covered" >    if (!scenario) <span class="cstat-no" title="statement not covered" >return [];</span></span>
     
-    const map = <span class="cstat-no" title="statement not covered" >[];</span>
-    const stepX = <span class="cstat-no" title="statement not covered" >grid.length / resolution;</span>
-    const stepY = <span class="cstat-no" title="statement not covered" >grid.width / resolution;</span>
+    const gridLength = <span class="cstat-no" title="statement not covered" >Math.max(1, grid?.length || 30);</span>
+    const gridWidth = <span class="cstat-no" title="statement not covered" >Math.max(1, grid?.width || 16);</span>
+    const resolutionSafe = <span class="cstat-no" title="statement not covered" >Math.max(1, resolution || 20);</span>
     
-<span class="cstat-no" title="statement not covered" >    for (let i = <span class="cstat-no" title="statement not covered" >0;</span> i &lt;= resolution; i++) {</span>
-<span class="cstat-no" title="statement not covered" >      for (let j = <span class="cstat-no" title="statement not covered" >0;</span> j &lt;= resolution; j++) {</span>
+    const map = <span class="cstat-no" title="statement not covered" >[];</span>
+    const stepX = <span class="cstat-no" title="statement not covered" >gridLength / resolutionSafe;</span>
+    const stepY = <span class="cstat-no" title="statement not covered" >gridWidth / resolutionSafe;</span>
+    
+<span class="cstat-no" title="statement not covered" >    for (let i = <span class="cstat-no" title="statement not covered" >0;</span> i &lt;= resolutionSafe; i++) {</span>
+<span class="cstat-no" title="statement not covered" >      for (let j = <span class="cstat-no" title="statement not covered" >0;</span> j &lt;= resolutionSafe; j++) {</span>
         const x = <span class="cstat-no" title="statement not covered" >i * stepX;</span>
         const y = <span class="cstat-no" title="statement not covered" >j * stepY;</span>
         const voltage = <span class="cstat-no" title="statement not covered" >this.simulateStepVoltageAtPoint(x, y, scenario);</span>
@@ -619,7 +643,7 @@ export default SimulationRunner;
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-04-21T18:33:41.556Z
+                at 2026-04-22T08:10:13.923Z
             </div>
         <script src="../prettify.js"></script>
         <script>
