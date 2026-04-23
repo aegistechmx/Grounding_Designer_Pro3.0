@@ -3,14 +3,14 @@
  * API endpoints for PDF, Excel, and DXF report generation
  */
 
-const express = require('express');
+import express from 'express';
 const router = express.Router();
-const authMiddleware = require('../middleware/auth');
-const reportService = require('../services/report.service');
-const { addJob, getJobStatus } = require('../jobs/queue');
-const { Pool } = require('pg');
-const fs = require('fs').promises;
-const path = require('path');
+import authMiddleware from '../middleware/auth';
+import reportService from '../services/report.service';
+import { addJob, getJobStatus } from '../jobs/queue.js';
+import { Pool } from 'pg';
+import fs from 'fs/promises';
+import path from 'path';
 
 // Database connection
 const pool = new Pool({
@@ -305,4 +305,4 @@ router.get('/project/:projectId', authMiddleware, async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;

@@ -1,6 +1,6 @@
 import express from 'express';
 import { pdfQueue } from '../jobs/queue.js';
-import calculationRateLimiter from '../middleware/security.js';
+import { calculationRateLimiter } from '../middleware/security.js';
 
 const router = express.Router();
 

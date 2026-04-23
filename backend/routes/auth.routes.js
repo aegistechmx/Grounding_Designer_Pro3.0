@@ -3,9 +3,9 @@
  * API endpoints for user authentication and registration
  */
 
-const express = require('express');
+import express from 'express';
 const router = express.Router();
-const authService = require('../services/auth.service');
+import authService from '../services/auth.service.js';
 
 /**
  * Register new user
@@ -148,4 +148,4 @@ router.get('/limits', async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;

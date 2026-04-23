@@ -9,6 +9,7 @@ import { buildExecutiveSummary } from '../builders/executiveSummary';
 import { buildParametersSection } from '../builders/parametersSection';
 import { buildResultsSection } from '../builders/resultsSection';
 import { buildHeatmapSection } from '../builders/heatmapSection';
+import { buildCurveChartSection } from '../builders/curveChartSection';
 import { buildComplianceSection } from '../builders/complianceSection';
 import { buildRecommendationsSection } from '../builders/recommendationsSection';
 
@@ -18,6 +19,7 @@ export const generateProPDF = async (data) => {
     calculations,
     params,
     heatmapImage,
+    discreteGrid,
     recommendations = [],
     compliance,
     projectName = 'Grounding Design Project',
@@ -70,14 +72,21 @@ export const generateProPDF = async (data) => {
     });
   }
 
-  // 6. Compliance Section
+  // 6. Curve Chart Section (ETAP-style)
+  yPos = await buildCurveChartSection(doc, {
+    calculations,
+    discreteGrid,
+    yPos
+  });
+
+  // 7. Compliance Section
   yPos = buildComplianceSection(doc, {
     calculations,
     compliance,
     yPos
   });
 
-  // 7. Recommendations Section
+  // 8. Recommendations Section
   if (recommendations.length > 0) {
     yPos = buildRecommendationsSection(doc, {
       recommendations,

@@ -3,19 +3,12 @@
  * API endpoints for project management
  */
 
-const express = require('express');
+import express from 'express';
 const router = express.Router();
-const authMiddleware = require('../middleware/auth');
-const { Pool } = require('pg');
+import authMiddleware from '../middleware/auth';
+import { getPool } from '../database/pool';
 
-// Database connection
-const pool = new Pool({
-  host: process.env.DB_HOST || 'localhost',
-  port: process.env.DB_PORT || 5432,
-  database: process.env.DB_NAME || 'grounding_saas',
-  user: process.env.DB_USER || 'postgres',
-  password: process.env.DB_PASSWORD
-});
+const pool = getPool();
 
 /**
  * Get all projects for current user
@@ -257,4 +250,4 @@ router.get('/:id/compare', authMiddleware, async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;

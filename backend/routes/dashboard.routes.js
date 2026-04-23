@@ -3,10 +3,10 @@
  * API endpoints for SaaS dashboard data
  */
 
-const express = require('express');
+import express from 'express';
 const router = express.Router();
-const authMiddleware = require('../middleware/auth');
-const dashboardService = require('../services/dashboard.service');
+import authMiddleware from '../middleware/auth';
+import dashboardService from '../services/dashboard.service';
 
 /**
  * Get dashboard overview
@@ -139,4 +139,4 @@ router.get('/top-projects', authMiddleware, async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;

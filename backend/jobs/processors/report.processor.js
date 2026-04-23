@@ -2,6 +2,7 @@
  * Report Job Processor
  * Handles PDF, Excel, and DXF generation jobs in the queue
  * Integrates with storage service for cloud upload
+ * Sends email notifications when jobs complete
  */
 
 const { Worker } = require('bullmq');
@@ -10,6 +11,7 @@ const fs = require('fs');
 const path = require('path');
 const PDFDocument = require('pdfkit');
 const storageService = require('../../services/storage.service');
+const emailService = require('../../services/notification/email.service');
 
 // Redis connection
 const connection = new Redis({
@@ -108,6 +110,21 @@ async function processPDFJob(job) {
       jobId: job.id
     });
 
+    // Send email notification
+    if (job.data.userEmail) {
+      try {
+        await emailService.sendPDFReady({
+          to: job.data.userEmail,
+          projectName: projectName || 'Project',
+          pdfUrl: uploadResult.url,
+          jobId: job.id
+        });
+      } catch (emailError) {
+        console.error('Failed to send email notification:', emailError);
+        // Don't fail the job if email fails
+      }
+    }
+
     return {
       success: true,
       downloadUrl: uploadResult.url,
@@ -122,6 +139,7 @@ async function processPDFJob(job) {
 
 /**
  * Process Excel generation job
+ * TODO: Implement Excel generation with xlsx library
  */
 async function processExcelJob(job) {
   const { jobId, reportData } = job.data;
@@ -129,19 +147,14 @@ async function processExcelJob(job) {
   try {
     await job.updateProgress(10);
 
-    // Process Excel generation
-    const result = await reportService.processExcel(jobId);
-
-    await job.updateProgress(50);
-
-    // Save result to database
-    await job.updateProgress(80);
+    // TODO: Implement Excel generation
+    // const result = await reportService.processExcel(jobId);
 
     await job.updateProgress(100);
 
     return {
-      success: true,
-      excelPath: result.excelPath,
+      success: false,
+      error: 'Excel generation not yet implemented',
       jobId
     };
   } catch (error) {
@@ -152,6 +165,7 @@ async function processExcelJob(job) {
 
 /**
  * Process batch report job
+ * TODO: Implement batch ZIP generation with archiver
  */
 async function processBatchJob(job) {
   const { jobId, reportData } = job.data;
@@ -159,27 +173,15 @@ async function processBatchJob(job) {
   try {
     await job.updateProgress(10);
 
-    // Process each report in batch
-    const results = [];
-    const reports = reportData.reports || [];
+    // TODO: Implement batch processing
+    // const results = [];
+    // const reports = reportData.reports || [];
 
-    for (let i = 0; i < reports.length; i++) {
-      await job.updateProgress(Math.round((i / reports.length) * 80) + 10);
-
-      // Process individual report
-      const result = await reportService.processPDF(`${jobId}_${i}`);
-      results.push(result);
-    }
-
-    await job.updateProgress(90);
-
-    // Create ZIP file (would use archiver)
     await job.updateProgress(100);
 
     return {
-      success: true,
-      results,
-      zipPath: `batch_${jobId}.zip`,
+      success: false,
+      error: 'Batch generation not yet implemented',
       jobId
     };
   } catch (error) {

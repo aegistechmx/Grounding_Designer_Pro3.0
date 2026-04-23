@@ -3,21 +3,14 @@
  * API endpoints for multi-export functionality (ZIP generation)
  */
 
-const express = require('express');
+import express from 'express';
 const router = express.Router();
-const authMiddleware = require('../middleware/auth');
-const batchService = require('../services/batch.service');
-const storageService = require('../services/storage.service');
-const { Pool } = require('pg');
+import authMiddleware from '../middleware/auth';
+import batchService from '../services/batch.service';
+import storageService from '../services/storage.service';
+import { getPool } from '../database/pool';
 
-// Database connection
-const pool = new Pool({
-  host: process.env.DB_HOST || 'localhost',
-  port: process.env.DB_PORT || 5432,
-  database: process.env.DB_NAME || 'grounding_saas',
-  user: process.env.DB_USER || 'postgres',
-  password: process.env.DB_PASSWORD
-});
+const pool = getPool();
 
 /**
  * Generate batch reports for a project
@@ -149,4 +142,4 @@ router.get('/download/:key', authMiddleware, async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;
