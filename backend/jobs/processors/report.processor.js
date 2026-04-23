@@ -12,6 +12,7 @@ const path = require('path');
 const PDFDocument = require('pdfkit');
 const storageService = require('../../services/storage.service');
 const emailService = require('../../services/notification/email.service');
+const pdfChartsService = require('../../services/pdfCharts.service');
 
 // Redis connection
 const connection = new Redis({
@@ -30,7 +31,7 @@ if (!fs.existsSync(outputsDir)) {
  * Process PDF generation job with pdfkit
  */
 async function processPDFJob(job) {
-  const { calculations, params, heatmapImage, projectName, clientName, engineer } = job.data;
+  const { calculations, params, heatmapData, projectName, clientName, engineer } = job.data;
 
   try {
     await job.updateProgress(10);
@@ -75,18 +76,21 @@ async function processPDFJob(job) {
 
     await job.updateProgress(70);
 
-    // Heatmap
-    if (heatmapImage) {
+    // Heatmap - Generate ETAP-style chart with contours
+    if (heatmapData && heatmapData.length > 0) {
       doc.fontSize(14).text('Distribución de Potencial', { underline: true });
       doc.moveDown();
 
-      const base64Data = heatmapImage.replace(/^data:image\/png;base64,/, "");
-      const imgBuffer = Buffer.from(base64Data, 'base64');
-
-      doc.image(imgBuffer, {
-        fit: [500, 300],
-        align: 'center'
-      });
+      try {
+        const chartImage = pdfChartsService.generateHeatmapChart(heatmapData);
+        doc.image(chartImage, {
+          fit: [500, 300],
+          align: 'center'
+        });
+      } catch (chartError) {
+        console.error('Failed to generate heatmap chart:', chartError);
+        doc.fontSize(10).text('Error generating heatmap chart');
+      }
     }
 
     await job.updateProgress(90);
