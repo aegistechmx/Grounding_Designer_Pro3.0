@@ -21,16 +21,19 @@ export const drawCover = (doc, params) => {
   // Dark blue background
   doc.rect(0, 0, 595, 842).fill('#0f172a');
 
-  // White text
+  // White text - Title
   doc.fillColor('#ffffff')
-    .fontSize(28)
-    .text('GROUNDING DESIGN REPORT', 50, 200);
+    .fontSize(24)
+    .text('GROUNDING SYSTEM ANALYSIS REPORT', 50, 200, { align: 'center' });
 
-  doc.fontSize(14)
-    .text(`Proyecto: ${params.projectName || 'N/A'}`, 50, 260)
-    .text(`Cliente: ${params.clientName || 'N/A'}`, 50, 280)
-    .text(`Ingeniero: ${params.engineer || 'N/A'}`, 50, 300)
-    .text(`Fecha: ${new Date().toLocaleDateString()}`, 50, 320);
+  doc.moveDown();
+
+  // Project information
+  doc.fontSize(12)
+    .text(`Project: ${params.projectName || 'N/A'}`, 50, 260)
+    .text(`Client: ${params.clientName || 'N/A'}`, 50, 280)
+    .text(`Engineer: ${params.engineer || 'N/A'}`, 50, 300)
+    .text(`Date: ${new Date().toLocaleDateString()}`, 50, 320);
 
   // Add decorative line
   doc.moveTo(50, 350)
@@ -38,10 +41,16 @@ export const drawCover = (doc, params) => {
     .lineWidth(2)
     .stroke('#1E88E5');
 
-  // Add subtitle
+  // Engineering standards
   doc.fontSize(12)
     .fillColor('#94a3b8')
-    .text('IEEE 80 Grounding System Analysis', 50, 380);
+    .text('Standard: IEEE 80', 50, 380)
+    .text('Grounding System Safety Analysis', 50, 400);
+
+  // Add company logo placeholder
+  doc.fontSize(10)
+    .fillColor('#64748b')
+    .text('Grounding Designer Pro', 50, 750);
 };
 
 export const drawHeader = (doc, title) => {

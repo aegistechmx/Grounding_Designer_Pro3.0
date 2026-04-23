@@ -5,15 +5,19 @@
 
 import { createCanvas } from 'canvas';
 import { contours } from 'd3-contour';
+import { generateContourLines, createInterpolatedField, generateContourLevels as genLevels } from '../../utils/contourLines';
+import { drawLegend, drawScaleBar } from './pdfLegend';
+import { mapX, mapY, normalize, generateContourLevels } from './pdfUtils';
 
 /**
  * Generate heatmap with equipotential contour lines (ETAP-style)
  * @param {Array} data - Grid data with potential values
  * @param {number} width - Canvas width
  * @param {number} height - Canvas height
+ * @param {Object} params - Grid parameters (gridLength, gridWidth)
  * @returns {Buffer} PNG image buffer
  */
-export function generateHeatmapWithContours(data, width = 800, height = 500) {
+export function generateHeatmapWithContours(data, width = 800, height = 500, params = {}) {
   const canvas = createCanvas(width, height);
   const ctx = canvas.getContext('2d');
 
@@ -55,7 +59,10 @@ export function generateHeatmapWithContours(data, width = 800, height = 500) {
     }
   }
 
-  // Equipotential contour lines
+  // AutoCAD-style grid overlay
+  drawGridOverlay(ctx, width, height);
+
+  // Equipotential contour lines using d3-contour
   const contourGen = contours()
     .size([size, size])
     .thresholds(10); // Number of contour lines
@@ -81,7 +88,41 @@ export function generateHeatmapWithContours(data, width = 800, height = 500) {
     });
   });
 
+  // Draw spatial scale
+  const gridLength = params.gridLength || 30;
+  const scaleLength = (10 / gridLength) * (width - 100); // 10m scale
+  drawScaleBar(ctx, 50, height - 30, scaleLength, 10);
+
   return canvas.toBuffer('image/png');
+}
+
+/**
+ * Draw AutoCAD-style grid overlay
+ * @param {CanvasRenderingContext2D} ctx - Canvas context
+ * @param {number} width - Canvas width
+ * @param {number} height - Canvas height
+ */
+function drawGridOverlay(ctx, width, height) {
+  const gridSize = 50;
+  
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+  ctx.lineWidth = 0.5;
+
+  // Vertical lines
+  for (let x = 0; x < width; x += gridSize) {
+    ctx.beginPath();
+    ctx.moveTo(x, 0);
+    ctx.lineTo(x, height);
+    ctx.stroke();
+  }
+
+  // Horizontal lines
+  for (let y = 0; y < height; y += gridSize) {
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+    ctx.lineTo(width, y);
+    ctx.stroke();
+  }
 }
 
 /**

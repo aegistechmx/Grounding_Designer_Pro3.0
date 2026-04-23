@@ -2,7 +2,7 @@ import PDFDocument from 'pdfkit';
 import fs from 'fs';
 import path from 'path';
 import { drawCover, drawHeader, drawFooter } from './pdfLayout';
-import { addProjectInfo, addResultsTable, addConclusion, drawResults } from './pdfSections';
+import { addProjectInfo, addResultsTable, addConclusion, drawResults, drawInputData, drawCompliance, drawRecommendations } from './pdfSections';
 import { generateHeatmapWithContours, addHeatmap } from './pdfCharts';
 
 /**
@@ -17,9 +17,10 @@ import { generateHeatmapWithContours, addHeatmap } from './pdfCharts';
  * @param {Object} data.results - Calculation results
  * @param {Object} data.params - Project parameters
  * @param {Array} data.data - Grid data for heatmap
+ * @param {Array} data.recommendations - AI-generated recommendations
  * @returns {Promise<string>} - File path of generated PDF
  */
-export async function generateCorporatePDF({ results, params, data }) {
+export async function generateCorporatePDF({ results, params, data, recommendations = [] }) {
   const doc = new PDFDocument({ size: 'A4' });
 
   const outputsDir = path.join(process.cwd(), 'outputs');
@@ -30,24 +31,33 @@ export async function generateCorporatePDF({ results, params, data }) {
   const filePath = path.join(outputsDir, `report-${Date.now()}.pdf`);
   doc.pipe(fs.createWriteStream(filePath));
 
-  // ===== COVER PAGE =====
+  // ===== 1. COVER PAGE =====
   drawCover(doc, params);
 
-  // ===== RESULTS SECTION =====
+  // ===== 2. INPUT DATA SECTION =====
+  drawInputData(doc, params);
+
+  // ===== 3. RESULTS SECTION =====
   drawResults(doc, results);
 
-  // ===== HEATMAP WITH EQUIPOTENTIAL CONTOURS (ETAP-style) =====
+  // ===== 4. HEATMAP WITH EQUIPOTENTIAL CONTOURS (ETAP-style) =====
   if (data && data.length > 0) {
     doc.addPage();
     doc.fontSize(16).text('Distribución de Potencial', 50, 50);
 
-    const heatmapImage = generateHeatmapWithContours(data);
+    const heatmapImage = generateHeatmapWithContours(data, 800, 500, params);
     doc.image(heatmapImage, 50, 100, {
       width: 500
     });
   }
 
-  // ===== CONCLUSION =====
+  // ===== 5. COMPLIANCE SECTION =====
+  drawCompliance(doc, results);
+
+  // ===== 6. RECOMMENDATIONS SECTION =====
+  drawRecommendations(doc, recommendations);
+
+  // ===== 7. CONCLUSION =====
   doc.addPage();
   addConclusion(doc, results);
 
