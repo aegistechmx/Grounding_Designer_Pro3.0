@@ -215,4 +215,4 @@ class SocketService {
   }
 }
 
-export default new SocketService();
+module.exports = new SocketService();

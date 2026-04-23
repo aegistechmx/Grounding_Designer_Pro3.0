@@ -284,4 +284,4 @@ class VersionService {
   }
 }
 
-export default new VersionService();
+module.exports = new VersionService();

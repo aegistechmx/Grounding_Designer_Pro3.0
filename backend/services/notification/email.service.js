@@ -189,4 +189,4 @@ class EmailService {
   }
 }
 
-export default new EmailService();
+module.exports = new EmailService();

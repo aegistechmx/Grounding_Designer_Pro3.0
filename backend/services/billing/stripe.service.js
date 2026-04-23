@@ -338,4 +338,4 @@ class StripeService {
   }
 }
 
-export default new StripeService();
+module.exports = new StripeService();
