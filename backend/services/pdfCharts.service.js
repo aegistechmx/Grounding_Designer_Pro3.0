@@ -361,37 +361,40 @@ function drawContours(ctx, data, mapper, min, max) {
   // Build scalar field with IDW interpolation
   const grid = buildScalarField(data, mapper);
 
-  // Generate contours using Marching Squares
-  const allContours = [];
+  // Generate contours using Marching Squares, organized by level
+  const contoursByLevel = [];
 
   levels.forEach(level => {
     const segments = marchingSquares(grid, level);
     const lines = connectLines(segments);
-    allContours.push(...lines);
+    contoursByLevel.push(lines);
   });
 
-  // Apply ETAP-style smoothing to contours
-  const smoothedContours = allContours.map(line => 
-    contourSmoothingService.smoothContour(line, 0.5, 12)
+  // Apply ETAP-style smoothing to contours per level
+  const smoothedContoursByLevel = contoursByLevel.map(lines =>
+    lines.map(line => contourSmoothingService.smoothContour(line, 0.5, 12))
   );
 
   // Draw contours with smoothing
   ctx.strokeStyle = '#000';
   ctx.lineWidth = 1.2;
 
-  smoothedContours.forEach(line => {
-    ctx.beginPath();
-    line.forEach((point, i) => {
-      const px = mapper.mapX(point.x);
-      const py = mapper.mapY(point.y);
-      if (i === 0) ctx.moveTo(px, py);
-      else ctx.lineTo(px, py);
+  smoothedContoursByLevel.forEach(lines => {
+    lines.forEach(line => {
+      ctx.beginPath();
+      line.forEach((point, i) => {
+        const px = mapper.mapX(point.x);
+        const py = mapper.mapY(point.y);
+        if (i === 0) ctx.moveTo(px, py);
+        else ctx.lineTo(px, py);
+      });
+      ctx.stroke();
     });
-    ctx.stroke();
   });
 
-  // Draw ETAP-style rotated labels on contours
-  contourLabelsService.drawContourLabels(ctx, smoothedContours, levels, mapper);
+  // Draw ETAP-style rotated labels on contours (one label per level)
+  const representativeContours = smoothedContoursByLevel.map(lines => lines[0] || []);
+  contourLabelsService.drawContourLabels(ctx, representativeContours, levels, mapper);
 }
 
 // ================================
