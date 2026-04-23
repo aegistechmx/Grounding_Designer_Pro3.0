@@ -178,6 +178,11 @@ function interpolateIDW(x, y, points, power = 2) {
 // 🗺️ GENERAR GRID ESCALAR
 // ================================
 function buildScalarField(data, mapper) {
+  if (!data || data.length === 0) {
+    console.warn('No data provided for scalar field generation');
+    return [];
+  }
+
   const grid = [];
 
   for (let i = 0; i <= GRID_SIZE; i++) {

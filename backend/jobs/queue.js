@@ -61,14 +61,16 @@ if (!skipRedis) {
   console.log('Redis skipped - job queues disabled (SKIP_REDIS=true)');
 }
 
-// Export pdfQueue for direct use
-module.exports.pdfQueue = skipRedis ? null : queues.pdf;
+// Export pdfQueue for direct use - use getter to handle async queue creation
+Object.defineProperty(module.exports, 'pdfQueue', {
+  get: () => skipRedis ? null : queues.pdf
+});
 
 /**
  * Check if queues are available
  */
 module.exports.isAvailable = function() {
-  return !skipRedis && connection !== null;
+  return !skipRedis && connection !== null && queues.pdf !== undefined;
 };
 
 /**

@@ -55,7 +55,7 @@ if (!fs.existsSync(outputsDir)) {
  * Process PDF generation job with pdfkit
  */
 async function processPDFJob(job) {
-  const { calculations, params, heatmapData, projectName, clientName, engineer } = job.data;
+  const { calculations, params, heatmapData, projectName, clientName, engineer, userEmail } = job.data;
 
   try {
     await job.updateProgress(10);
@@ -163,10 +163,10 @@ async function processPDFJob(job) {
     }
 
     // Send email notification
-    if (job.data.userEmail) {
+    if (userEmail) {
       try {
         await emailService.sendPDFReady({
-          to: job.data.userEmail,
+          to: userEmail,
           projectName: projectName || 'Project',
           pdfUrl: uploadResult.url,
           jobId: job.id
@@ -244,6 +244,7 @@ async function processBatchJob(job) {
 
 /**
  * Create PDF worker
+ * @returns {Worker|null} Returns null if Redis is disabled or not connected
  */
 function createPDFWorker() {
   if (skipRedis || !connection) {
@@ -274,6 +275,7 @@ function createPDFWorker() {
 
 /**
  * Create report worker (legacy)
+ * @returns {Worker|null} Returns null if Redis is disabled or not connected
  */
 function createReportWorker() {
   if (skipRedis || !connection) {
