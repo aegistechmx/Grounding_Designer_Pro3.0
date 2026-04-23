@@ -4,7 +4,15 @@
  * Server-side only - uses Node.js canvas library
  */
 
-const { createCanvas } = require('canvas');
+let createCanvas;
+try {
+  const canvas = require('canvas');
+  createCanvas = canvas.createCanvas;
+} catch (error) {
+  console.warn('Canvas library not available - heatmap generation disabled');
+  console.warn('Install canvas with: npm install canvas (requires native compilation)');
+  createCanvas = null;
+}
 
 // ================================
 // 🎨 CONFIG
@@ -240,6 +248,11 @@ function drawScale(ctx, mapper) {
 // 🏁 EXPORT PRINCIPAL
 // ================================
 function generateHeatmapChart(data = []) {
+  if (!createCanvas) {
+    console.warn('Cannot generate heatmap - canvas library not available');
+    return null;
+  }
+
   const canvas = createCanvas(WIDTH, HEIGHT);
   const ctx = canvas.getContext('2d');
 
@@ -274,5 +287,6 @@ function generateHeatmapChart(data = []) {
 }
 
 module.exports = {
-  generateHeatmapChart
+  generateHeatmapChart,
+  isAvailable: () => createCanvas !== null
 };

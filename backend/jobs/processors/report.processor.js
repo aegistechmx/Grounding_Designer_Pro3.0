@@ -82,11 +82,20 @@ async function processPDFJob(job) {
       doc.moveDown();
 
       try {
-        const chartImage = pdfChartsService.generateHeatmapChart(heatmapData);
-        doc.image(chartImage, {
-          fit: [500, 300],
-          align: 'center'
-        });
+        if (pdfChartsService.isAvailable()) {
+          const chartImage = pdfChartsService.generateHeatmapChart(heatmapData);
+          if (chartImage) {
+            doc.image(chartImage, {
+              fit: [500, 300],
+              align: 'center'
+            });
+          } else {
+            doc.fontSize(10).text('Heatmap generation failed - canvas not available');
+          }
+        } else {
+          doc.fontSize(10).text('Heatmap generation disabled - canvas library not installed');
+          doc.fontSize(8).text('Install canvas with: npm install canvas (requires native compilation)');
+        }
       } catch (chartError) {
         console.error('Failed to generate heatmap chart:', chartError);
         doc.fontSize(10).text('Error generating heatmap chart');
