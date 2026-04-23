@@ -35,6 +35,23 @@ export const addResultsTable = (doc, results) => {
   doc.text(`Step Voltage 70kg: ${results.Estep70 || 'N/A'} V`);
 };
 
+/**
+ * Draw engineering results section (ETAP-style)
+ * @param {PDFDocument} doc - PDFKit document
+ * @param {Object} results - Calculation results
+ */
+export function drawResults(doc, results) {
+  doc.addPage();
+
+  doc.fontSize(18).text('Resultados de Diseño', 50, 50);
+
+  doc.fontSize(12)
+    .text(`Rg: ${results.Rg?.toFixed(3) || 'N/A'} Ω`, 50, 100)
+    .text(`GPR: ${results.GPR?.toFixed(0) || 'N/A'} V`, 50, 120)
+    .text(`Touch Voltage: ${results.Em?.toFixed(0) || 'N/A'} V`, 50, 140)
+    .text(`Step Voltage: ${results.Es?.toFixed(0) || 'N/A'} V`, 50, 160);
+}
+
 export const addConclusion = (doc, results) => {
   doc.moveDown();
 
