@@ -18,8 +18,8 @@ export const SensitivityChart = ({ data, darkMode, onParameterSelect }) => {
     );
   }
   
-  const colors = darkMode 
-    ? ['#3b82f6', '#60a5fa', '#93c5fd', '#bfdbfe', '#dbeafe']
+  const colors = darkMode
+    ? ['#3b82f6', '#8b5cf6', '#ec4899', '#f97316', '#14b8a6']
     : ['#2563eb', '#3b82f6', '#60a5fa', '#93c5fd', '#bfdbfe'];
   
   return (

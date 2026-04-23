@@ -29,6 +29,22 @@ export const DesignPanel = ({ params, calculations, updateParam, darkMode, recal
   const [pipelineResults, setPipelineResults] = useState(null);
   const timeoutRef = useRef(null);
   const heatmapCanvasRef = useRef(null);
+  const heatmapRef = useRef(null);
+
+  const handleExportPDF = async () => {
+    const heatmapImage = heatmapRef.current?.exportImage();
+
+    if (!heatmapImage) {
+      console.error('No se pudo exportar el heatmap');
+      return;
+    }
+
+    await generateCorporatePDF({
+      calculations,
+      params,
+      heatmapImage
+    });
+  };
 
   const sensitivityAnalysis = useSensitivityAnalysis(localParams);
   const optimizer = useDesignOptimizer();
@@ -287,20 +303,20 @@ export const DesignPanel = ({ params, calculations, updateParam, darkMode, recal
         </div>
 
         {/* Botones de acción */}
-        <button onClick={() => { 
+        <button onClick={() => {
           alert('Recalculando...');
-          if (recalculate) recalculate(); 
-        }} className="w-full mt-3 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg font-semibold flex items-center justify-center gap-2">
+          if (recalculate) recalculate();
+        }} className="w-full mt-3 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg font-semibold flex items-center justify-center gap-2 text-white">
           <RefreshCw size={16} /> Recalcular
         </button>
 
-        <button onClick={() => { 
+        <button onClick={() => {
           alert(showSensitivity ? 'Ocultando análisis...' : 'Mostrando análisis...');
           if (!showSensitivity && sensitivityAnalysis.analyzeAllParameters) {
             sensitivityAnalysis.analyzeAllParameters();
           }
-          setShowSensitivity(!showSensitivity); 
-        }} className="w-full mt-2 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg font-semibold flex items-center justify-center gap-2">
+          setShowSensitivity(!showSensitivity);
+        }} className="w-full mt-2 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg font-semibold flex items-center justify-center gap-2 text-white">
           <Zap size={16} /> {showSensitivity ? 'Ocultar Análisis de Sensibilidad' : 'Análisis de Sensibilidad'}
         </button>
 
@@ -321,15 +337,15 @@ export const DesignPanel = ({ params, calculations, updateParam, darkMode, recal
             if (optimized.grid.rodLength) handleParamChange('rodLength', optimized.grid.rodLength);
           }
           alert('Optimización completada');
-        }} disabled={optimizer.isOptimizing} className="w-full mt-2 py-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-600 rounded-lg font-semibold flex items-center justify-center gap-2">
+        }} disabled={optimizer.isOptimizing} className="w-full mt-2 py-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-600 rounded-lg font-semibold flex items-center justify-center gap-2 text-white">
           <Settings size={16} /> {optimizer.isOptimizing ? 'Optimizando...' : '🎯 Optimizar Diseño'}
         </button>
 
-        <button onClick={handleRunPipeline} disabled={isRunningPipeline} className="w-full mt-2 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-600 rounded-lg font-semibold flex items-center justify-center gap-2">
+        <button onClick={handleRunPipeline} disabled={isRunningPipeline} className="w-full mt-2 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-600 rounded-lg font-semibold flex items-center justify-center gap-2 text-white">
           <Brain size={16} /> {isRunningPipeline ? 'Ejecutando Pipeline...' : '🚀 Pipeline Completo (Avanzado)'}
         </button>
 
-        <button onClick={handleGenerateReport} className="w-full mt-2 py-2 bg-orange-600 hover:bg-orange-700 rounded-lg font-semibold flex items-center justify-center gap-2">
+        <button onClick={handleGenerateReport} className="w-full mt-2 py-2 bg-orange-600 hover:bg-orange-700 rounded-lg font-semibold flex items-center justify-center gap-2 text-white">
           <FileText size={16} /> 📄 Generar Reporte Ingeniería
         </button>
 
@@ -391,14 +407,21 @@ export const DesignPanel = ({ params, calculations, updateParam, darkMode, recal
           }}
         >
           <h3 className="text-lg font-semibold mb-4" style={{ color: TEXT_COLORS.primary }}>🌡️ Distribución de Potencial (Heatmap)</h3>
-          <div ref={heatmapCanvasRef} className="w-full">
+          <div className="w-full">
             <HeatmapCanvas
+              ref={heatmapRef}
               data={calculations?.discreteGrid || []}
               width={600}
               height={400}
               darkMode={darkMode}
             />
           </div>
+          <button
+            onClick={handleExportPDF}
+            className="mt-4 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded font-semibold"
+          >
+            📄 Generar PDF PRO
+          </button>
         </div>
       </ValidatedSection>
     </div>

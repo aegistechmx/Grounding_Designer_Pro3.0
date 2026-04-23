@@ -4,18 +4,18 @@
  */
 
 // ============================================
-// COLORES DE TEXTO (NEGRO PARA LEGIBILIDAD)
+// COLORES DE TEXTO (BLANCO PARA LEGIBILIDAD EN DARK MODE)
 // ============================================
 export const TEXT_COLORS = {
-  // Primarios - Negro y grises para legibilidad
-  primary: '#000000',
-  secondary: '#1a1a1a',
-  tertiary: '#2d2d2d',
-  
+  // Primarios - Blanco y grises para legibilidad en fondo oscuro
+  primary: '#ffffff',
+  secondary: '#e5e7eb',
+  tertiary: '#d1d5db',
+
   // Grises para texto secundario
-  muted: '#6b7280',
-  light: '#9ca3af',
-  
+  muted: '#9ca3af',
+  light: '#6b7280',
+
   // Estados
   success: '#16a34a',
 };

@@ -43,36 +43,36 @@ const IEEESection = ({
       container: darkMode ? 'bg-blue-900/20 border-blue-700' : 'bg-blue-50 border-blue-200',
       inner: darkMode ? 'bg-blue-900/30' : 'bg-blue-100',
       info: darkMode ? 'bg-blue-900/40' : 'bg-blue-200',
-      title: darkMode ? 'text-blue-300' : 'text-blue-800',
-      label: darkMode ? 'text-blue-300' : 'text-blue-700',
+      title: darkMode ? 'text-white' : 'text-blue-800',
+      label: darkMode ? 'text-white' : 'text-blue-700',
       value: darkMode ? 'text-white' : 'text-blue-900',
-      infoText: darkMode ? 'text-blue-200' : 'text-blue-800',
-      shadow: darkMode 
-        ? '0 0 15px rgba(59, 130, 246, 0.3), inset 0 0 8px rgba(59, 130, 246, 0.15)' 
+      infoText: darkMode ? 'text-white' : 'text-blue-800',
+      shadow: darkMode
+        ? '0 0 15px rgba(59, 130, 246, 0.3), inset 0 0 8px rgba(59, 130, 246, 0.15)'
         : '0 0 15px rgba(59, 130, 246, 0.2), inset 0 0 8px rgba(59, 130, 246, 0.1)'
     },
     green: {
       container: darkMode ? 'bg-green-900/20 border-green-700' : 'bg-green-50 border-green-200',
       inner: darkMode ? 'bg-green-900/30' : 'bg-green-100',
       info: darkMode ? 'bg-green-900/40' : 'bg-green-200',
-      title: darkMode ? 'text-green-300' : 'text-green-800',
-      label: darkMode ? 'text-green-300' : 'text-green-700',
+      title: darkMode ? 'text-white' : 'text-green-800',
+      label: darkMode ? 'text-white' : 'text-green-700',
       value: darkMode ? 'text-white' : 'text-green-900',
-      infoText: darkMode ? 'text-green-200' : 'text-green-800',
-      shadow: darkMode 
-        ? '0 0 15px rgba(34, 197, 94, 0.3), inset 0 0 8px rgba(34, 197, 94, 0.15)' 
+      infoText: darkMode ? 'text-white' : 'text-green-800',
+      shadow: darkMode
+        ? '0 0 15px rgba(34, 197, 94, 0.3), inset 0 0 8px rgba(34, 197, 94, 0.15)'
         : '0 0 15px rgba(34, 197, 94, 0.2), inset 0 0 8px rgba(34, 197, 94, 0.1)'
     },
     red: {
       container: darkMode ? 'bg-red-900/20 border-red-700' : 'bg-red-50 border-red-200',
       inner: darkMode ? 'bg-red-900/30' : 'bg-red-100',
       info: darkMode ? 'bg-red-900/40' : 'bg-red-200',
-      title: darkMode ? 'text-red-300' : 'text-red-800',
-      label: darkMode ? 'text-red-300' : 'text-red-700',
+      title: darkMode ? 'text-white' : 'text-red-800',
+      label: darkMode ? 'text-white' : 'text-red-700',
       value: darkMode ? 'text-white' : 'text-red-900',
-      infoText: darkMode ? 'text-red-200' : 'text-red-800',
-      shadow: darkMode 
-        ? '0 0 15px rgba(239, 68, 68, 0.3), inset 0 0 8px rgba(239, 68, 68, 0.15)' 
+      infoText: darkMode ? 'text-white' : 'text-red-800',
+      shadow: darkMode
+        ? '0 0 15px rgba(239, 68, 68, 0.3), inset 0 0 8px rgba(239, 68, 68, 0.15)'
         : '0 0 15px rgba(239, 68, 68, 0.2), inset 0 0 8px rgba(239, 68, 68, 0.1)'
     }
   };

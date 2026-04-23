@@ -240,36 +240,36 @@ export const ProDashboard = ({ calculations, params, darkMode }) => {
           className="w-full flex justify-between items-center"
         >
           <div className="flex items-center gap-2">
-            <Brain size={18} className={darkMode ? 'text-blue-300' : 'text-blue-800'} />
-            <h4 className={`font-semibold ${darkMode ? 'text-blue-300' : 'text-blue-800'}`}>🤖 IA Predictiva - Análisis Inteligente</h4>
-            <span className={`text-xs ${darkMode ? 'bg-blue-500/20 text-blue-300' : 'bg-blue-100 text-blue-700'} px-2 py-0.5 rounded-full`}>Machine Learning</span>
+            <Brain size={18} className={darkMode ? 'text-blue-400' : 'text-blue-800'} />
+            <h4 className={`font-semibold ${darkMode ? 'text-white' : 'text-blue-800'}`}>🤖 IA Predictiva - Análisis Inteligente</h4>
+            <span className={`text-xs ${darkMode ? 'bg-blue-500/20 text-blue-400' : 'bg-blue-100 text-blue-700'} px-2 py-0.5 rounded-full`}>Machine Learning</span>
           </div>
-          {showAI ? <ChevronUp size={18} className={darkMode ? 'text-blue-300' : 'text-blue-800'} /> : <ChevronDown size={18} className={darkMode ? 'text-blue-300' : 'text-blue-800'} />}
+          {showAI ? <ChevronUp size={18} className={darkMode ? 'text-blue-400' : 'text-blue-800'} /> : <ChevronDown size={18} className={darkMode ? 'text-blue-400' : 'text-blue-800'} />}
         </button>
-        
+
         {showAI && (
           <div className="mt-4 space-y-4">
             <div className="grid grid-cols-4 gap-3 text-xs">
               <div className={`p-2 rounded ${darkMode ? 'bg-blue-900/30' : 'bg-blue-100'}`}>
-                <div className={`font-semibold mb-1 ${darkMode ? 'text-blue-300' : 'text-blue-700'}`}>Score</div>
+                <div className={`font-semibold mb-1 ${darkMode ? 'text-white' : 'text-blue-700'}`}>Score</div>
                 <div className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-blue-900'}`}>{designScore}</div>
               </div>
               <div className={`p-2 rounded ${darkMode ? 'bg-green-900/30' : 'bg-green-100'}`}>
-                <div className={`font-semibold mb-1 ${darkMode ? 'text-green-300' : 'text-green-700'}`}>Riesgo</div>
+                <div className={`font-semibold mb-1 ${darkMode ? 'text-white' : 'text-green-700'}`}>Riesgo</div>
                 <div className={`text-lg font-bold ${darkMode ? 'text-green-400' : 'text-green-700'}`}>Bajo</div>
               </div>
               <div className={`p-2 rounded ${darkMode ? 'bg-blue-900/30' : 'bg-blue-100'}`}>
-                <div className={`font-semibold mb-1 ${darkMode ? 'text-blue-300' : 'text-blue-700'}`}>Seguridad</div>
+                <div className={`font-semibold mb-1 ${darkMode ? 'text-white' : 'text-blue-700'}`}>Seguridad</div>
                 <div className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-blue-900'}`}>{safetyMargin}</div>
               </div>
               <div className={`p-2 rounded ${darkMode ? 'bg-blue-900/30' : 'bg-blue-100'}`}>
-                <div className={`font-semibold mb-1 ${darkMode ? 'text-blue-300' : 'text-blue-700'}`}>Eficiencia</div>
+                <div className={`font-semibold mb-1 ${darkMode ? 'text-white' : 'text-blue-700'}`}>Eficiencia</div>
                 <div className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-blue-900'}`}>{efficiency}</div>
               </div>
             </div>
-            
+
             <div className={`p-3 rounded ${darkMode ? 'bg-blue-900/40' : 'bg-blue-200'}`}>
-              <p className={`text-xs flex items-start gap-2 ${darkMode ? 'text-blue-200' : 'text-blue-800'}`}>
+              <p className={`text-xs flex items-start gap-2 ${darkMode ? 'text-white' : 'text-blue-800'}`}>
                 <Brain size={12} className="flex-shrink-0 mt-0.5" />
                 <span>
                   <strong>💡 Análisis predictivo:</strong> El diseño presenta un balance óptimo entre seguridad, eficiencia y costo según el modelo de IA.
@@ -279,10 +279,10 @@ export const ProDashboard = ({ calculations, params, darkMode }) => {
           </div>
         )}
       </div>
-      
+
       {/* Recomendaciones IA */}
       <div className={`p-4 rounded-lg border ${darkMode ? 'bg-blue-900/20 border-blue-700' : 'bg-blue-50 border-blue-200'}`} style={{ boxShadow: darkMode ? '0 0 15px rgba(59, 130, 246, 0.3), inset 0 0 8px rgba(59, 130, 246, 0.15)' : '0 0 15px rgba(59, 130, 246, 0.2), inset 0 0 8px rgba(59, 130, 246, 0.1)' }}>
-        <h4 className={`font-semibold mb-3 flex items-center gap-2 ${darkMode ? 'text-blue-300' : 'text-blue-800'}`}>
+        <h4 className={`font-semibold mb-3 flex items-center gap-2 ${darkMode ? 'text-white' : 'text-blue-800'}`}>
           <Brain size={16} /> 📋 Recomendaciones IA
         </h4>
         <div className="space-y-2">

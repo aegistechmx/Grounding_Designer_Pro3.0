@@ -47,19 +47,19 @@ export const IADashboardFull = ({ calculations, params, darkMode }) => {
       
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <div className="bg-blue-500/10 rounded-xl p-3 text-center border border-blue-500">
-          <div className="text-xs text-gray-400">Score General</div>
+          <div className="text-xs text-white">Score General</div>
           <div className="text-2xl font-bold text-blue-400">{predictions?.overallScore}%</div>
         </div>
         <div className="bg-green-500/10 rounded-xl p-3 text-center border border-green-500">
-          <div className="text-xs text-gray-400">Seguridad</div>
+          <div className="text-xs text-white">Seguridad</div>
           <div className="text-2xl font-bold text-green-400">{predictions?.safetyScore}%</div>
         </div>
         <div className="bg-orange-500/10 rounded-xl p-3 text-center border border-orange-500">
-          <div className="text-xs text-gray-400">Eficiencia</div>
+          <div className="text-xs text-white">Eficiencia</div>
           <div className="text-2xl font-bold text-orange-400">{predictions?.efficiencyScore}%</div>
         </div>
         <div className="bg-blue-500/10 rounded-xl p-3 text-center border border-blue-500">
-          <div className="text-xs text-gray-400">Costo</div>
+          <div className="text-xs text-white">Costo</div>
           <div className="text-2xl font-bold text-blue-400">{predictions?.costScore}%</div>
         </div>
       </div>
@@ -68,32 +68,32 @@ export const IADashboardFull = ({ calculations, params, darkMode }) => {
         <div className="bg-gray-700/30 rounded-lg p-3 text-center">
           <div className="flex items-center justify-center gap-2 mb-1">
             <Shield size={14} className={`text-${predictions?.riskColor}-400`} />
-            <span className="text-xs text-gray-400">Riesgo</span>
+            <span className="text-xs text-white">Riesgo</span>
           </div>
           <div className={`text-xl font-bold text-${predictions?.riskColor}-400`}>{predictions?.riskLevel}</div>
         </div>
         <div className="bg-gray-700/30 rounded-lg p-3 text-center">
           <div className="flex items-center justify-center gap-2 mb-1">
             <Calendar size={14} className="text-blue-400" />
-            <span className="text-xs text-gray-400">Vida útil</span>
+            <span className="text-xs text-white">Vida útil</span>
           </div>
           <div className="text-xl font-bold text-blue-400">{predictions?.estimatedLifespan} años</div>
         </div>
       </div>
-      
+
       <div className="bg-gray-700/30 rounded-lg p-3">
         <h4 className="text-sm font-semibold text-white mb-2">📈 Predicción de Desempeño</h4>
         <div className="grid grid-cols-3 gap-2 text-center">
-          <div><div className="text-xs text-gray-500">1 año</div><div className="text-sm font-semibold text-green-400">{predictions?.performancePrediction.nextYear}</div></div>
-          <div><div className="text-xs text-gray-500">5 años</div><div className="text-sm font-semibold text-blue-400">{predictions?.performancePrediction.fiveYears}</div></div>
-          <div><div className="text-xs text-gray-500">10 años</div><div className="text-sm font-semibold text-green-400">{predictions?.performancePrediction.tenYears}</div></div>
+          <div><div className="text-xs text-white">1 año</div><div className="text-sm font-semibold text-green-400">{predictions?.performancePrediction.nextYear}</div></div>
+          <div><div className="text-xs text-white">5 años</div><div className="text-sm font-semibold text-blue-400">{predictions?.performancePrediction.fiveYears}</div></div>
+          <div><div className="text-xs text-white">10 años</div><div className="text-sm font-semibold text-green-400">{predictions?.performancePrediction.tenYears}</div></div>
         </div>
       </div>
-      
+
       <div className="bg-blue-500/10 rounded-lg p-3">
         <div className="flex items-center gap-2 mb-2"><Clock size={14} className="text-blue-400" /><span className="text-sm text-white">Mantenimiento preventivo</span></div>
         <div className="text-lg font-bold text-blue-400">Cada {predictions?.maintenanceInterval} años</div>
-        <div className="text-xs text-gray-400">Inspección recomendada</div>
+        <div className="text-xs text-white">Inspección recomendada</div>
       </div>
     </div>
   );
