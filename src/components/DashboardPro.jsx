@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import GroundingGridSVG from './GroundingGridSVG';
-import HeatmapCanvas from '../visual/heatmap/HeatmapCanvas';
+import { HeatmapCanvas } from '../visual';
 import DesignComparator from './DesignComparator';
 import IEEESection from './common/IEEESection';
 import { generatePDFWithHeatmap } from '../utils/export/pdfGenerator';

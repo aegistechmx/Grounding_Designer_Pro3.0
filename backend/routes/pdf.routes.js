@@ -1,103 +1,76 @@
 import express from 'express';
-import { generateFullReport } from '../../src/utils/pdfGenerator.js';
+import { pdfQueue } from '../jobs/queue.js';
 import calculationRateLimiter from '../middleware/security.js';
 
 const router = express.Router();
 
 /**
  * POST /api/pdf/generate
- * Generate professional engineering PDF report
+ * Generate professional engineering PDF report using job queue
  */
 router.post('/generate', calculationRateLimiter, async (req, res) => {
   try {
-    const { results, params, recommendations, heatmapImage, history, aiDecisions } = req.body;
+    const { calculations, params, heatmapImage, projectName, clientName, engineer } = req.body;
 
     // Validate required fields
-    if (!results || !params) {
+    if (!calculations || !params) {
       return res.status(400).json({
         success: false,
-        error: 'Missing required fields: results and params are required'
+        error: 'Missing required fields: calculations and params are required'
       });
     }
 
-    // Generate PDF
-    const pdfBuffer = await generateFullReport({
-      results,
+    // Add job to queue
+    const job = await pdfQueue.add('generate-pdf', {
+      calculations,
       params,
-      recommendations: recommendations || [],
-      heatmapImage: heatmapImage || null,
-      history: history || [],
-      aiDecisions: aiDecisions || []
+      heatmapImage,
+      projectName: projectName || 'Project',
+      clientName: clientName || 'Client',
+      engineer: engineer || 'Engineer'
     });
-
-    // Return PDF as base64 for client-side download
-    const pdfBase64 = pdfBuffer.toString('base64');
 
     res.json({
       success: true,
-      data: {
-        pdf: pdfBase64,
-        filename: `grounding_report_${params.projectName || 'project'}_${Date.now()}.pdf`
-      }
+      jobId: job.id
     });
   } catch (error) {
-    console.error('Error generating PDF:', error);
+    console.error('Error adding PDF job to queue:', error);
     res.status(500).json({
       success: false,
-      error: error.message || 'Failed to generate PDF'
+      error: error.message || 'Failed to queue PDF generation'
     });
   }
 });
 
 /**
- * POST /api/pdf/batch
- * Generate multiple PDFs and return as ZIP
+ * GET /api/pdf/status/:id
+ * Get status of PDF generation job
  */
-router.post('/batch', calculationRateLimiter, async (req, res) => {
+router.get('/status/:id', async (req, res) => {
   try {
-    const { projects } = req.body;
+    const job = await pdfQueue.getJob(req.params.id);
 
-    if (!projects || !Array.isArray(projects) || projects.length === 0) {
-      return res.status(400).json({
-        success: false,
-        error: 'Invalid projects array'
+    if (!job) {
+      return res.json({ status: 'not_found' });
+    }
+
+    const state = await job.getState();
+
+    if (state === 'completed') {
+      const result = await job.returnvalue;
+      return res.json({
+        status: 'completed',
+        downloadUrl: result.downloadUrl
       });
     }
 
-    const JSZip = (await import('jszip')).default;
-    const zip = new JSZip();
-
-    for (let i = 0; i < projects.length; i++) {
-      const project = projects[i];
-      const projectName = project.params?.projectName || `Project_${i + 1}`;
-      
-      const pdfBuffer = await generateFullReport({
-        results: project.results,
-        params: project.params,
-        recommendations: project.recommendations || [],
-        heatmapImage: project.heatmapImage || null,
-        history: project.history || [],
-        aiDecisions: project.aiDecisions || []
-      });
-
-      zip.file(`${projectName}.pdf`, pdfBuffer);
-    }
-
-    const zipBuffer = await zip.generateAsync({ type: 'nodebuffer' });
-    const zipBase64 = zipBuffer.toString('base64');
-
-    res.json({
-      success: true,
-      data: {
-        zip: zipBase64,
-        filename: `grounding_batch_pdfs_${Date.now()}.zip`
-      }
-    });
+    res.json({ status: state });
   } catch (error) {
-    console.error('Error generating batch PDF:', error);
+    console.error('Error getting job status:', error);
     res.status(500).json({
       success: false,
-      error: error.message || 'Failed to generate batch PDF'
+      error: error.message || 'Failed to get job status'
     });
   }
 });

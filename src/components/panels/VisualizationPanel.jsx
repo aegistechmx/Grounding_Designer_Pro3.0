@@ -6,7 +6,7 @@ import GroundingGrid3D from '../GroundingGrid3D';
 import SoilProfile from '../visualizations/SoilProfile';
 import FaultAnimation from '../visualizations/FaultAnimation';
 import HeatMap from '../visualizations/HeatMap';
-import HeatmapCanvas from '../../visual/heatmap/HeatmapCanvas';
+import { HeatmapCanvas } from '../../visual';
 import ETAPVisualizationControls from '../ETAPVisualizationControls';
 import ProfileChart from '../ProfileChart';
 import { importDXF, extractGridFromDXF } from '../../import/dxfImporter';

@@ -2,7 +2,7 @@ import React, { useState, useCallback } from 'react';
 import { generateGrid } from './core/gridEngine';
 import { solvePotentialField } from './core/solver';
 import { calculateIEEE80Complete } from './core/ieee80';
-import HeatmapCanvas from './visual/heatmap/HeatmapCanvas';
+import { HeatmapCanvas } from './visual';
 import GridRenderer from './visual/GridRenderer';
 import { exportDXF } from './export/dxfExporter';
 import { importDXF } from './import/dxfImporter';

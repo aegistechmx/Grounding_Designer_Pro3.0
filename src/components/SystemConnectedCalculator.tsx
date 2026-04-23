@@ -3,7 +3,7 @@ import { femSimulationService, FEMInput, FEMResult } from '../services/femSimula
 import { InputField } from './common/InputField';
 import { MetricCard } from './common/MetricCard';
 import { calculateFaultCurrent } from '../services/faultCurrentCalculator.service';
-import { exportToPDF } from '../services/pdfExport.service';
+import { generatePDF } from '../services/pdf/pdfEngine';
 import { selectConductor } from '../services/ampacity.service';
 import { calculateVoltageDrop } from '../services/voltageDrop.service';
 import { WebGLViewer } from './WebGLViewer';
@@ -300,7 +300,7 @@ export const SystemConnectedCalculator: React.FC = () => {
                 {isSimulating ? <><span className="animate-spin">⏳</span> Simulando...</> : <><span>⚡</span> Simular</>}
               </button>
               {results && (
-                <button onClick={() => exportToPDF(results, params)} className="px-6 bg-green-600 hover:bg-green-700 py-3 rounded-lg font-semibold flex items-center gap-2">
+                <button onClick={() => generatePDF({ calculations: results, params })} className="px-6 bg-green-600 hover:bg-green-700 py-3 rounded-lg font-semibold flex items-center gap-2">
                   📄 Exportar PDF
                 </button>
               )}

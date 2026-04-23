@@ -10,14 +10,15 @@ import { useDesignOptimizer } from '../../hooks/useDesignOptimizer';
 import { runCompletePipeline } from '../../core/groundingEngine';
 import { generateReport, downloadReportJSON } from '../../core/report';
 import { generateFullReport } from '../../utils/pdfGenerator';
-import { exportCanvasImage } from '../../visual/heatmap/HeatmapCanvas';
-import HeatmapCanvas from '../../visual/heatmap/HeatmapCanvas';
-import { generateCorporatePDF } from '../../services/pdfProService';
+import { HeatmapCanvas, exportCanvasImage } from '../../visual';
+import { generateCorporatePDF } from '../../services/pdf/pdfEngine';
 import { saveProject } from '../../services/projectService';
 import { auth } from '../../firebase';
 import { generateAISuggestions } from '../../services/aiSuggestionService';
 import useStore from '../../store/useStore';
 import { TEXT_COLORS, ACCENT_COLORS, BG_COLORS, BORDERS, SPACING, TYPOGRAPHY, SHADOWS } from '../../constants/designTokens';
+import { simulationApi } from '../../api/simulation.api';
+import { reportsApi } from '../../api/reports.api';
 
 
 export const DesignPanel = ({ params, calculations, updateParam, darkMode, recalculate }) => {
@@ -27,9 +28,41 @@ export const DesignPanel = ({ params, calculations, updateParam, darkMode, recal
   const [showSensitivity, setShowSensitivity] = useState(true);
   const [isRunningPipeline, setIsRunningPipeline] = useState(false);
   const [pipelineResults, setPipelineResults] = useState(null);
+  const [loadingSimulation, setLoadingSimulation] = useState(false);
   const timeoutRef = useRef(null);
   const heatmapCanvasRef = useRef(null);
   const heatmapRef = useRef(null);
+
+  const handleRunIEEE80Simulation = async () => {
+    try {
+      setLoadingSimulation(true);
+      const result = await simulationApi.runIEEE80(localParams);
+      
+      // Update calculations with API results
+      if (updateParam && result.results) {
+        Object.entries(result.results).forEach(([key, value]) => {
+          // Map API results to local calculation structure
+          if (key === 'Rg') updateParam('Rg', value);
+          if (key === 'GPR') updateParam('GPR', value);
+          if (key === 'Em') updateParam('Em', value);
+          if (key === 'Es') updateParam('Es', value);
+          if (key === 'Etouch70') updateParam('Etouch70', value);
+          if (key === 'Estep70') updateParam('Estep70', value);
+          if (key === 'touchSafe70') updateParam('touchSafe70', value);
+          if (key === 'stepSafe70') updateParam('stepSafe70', value);
+          if (key === 'complies') updateParam('complies', value);
+        });
+      }
+      
+      return result;
+    } catch (error) {
+      console.error('IEEE 80 simulation API error:', error);
+      // Fall back to local calculation
+      if (recalculate) recalculate();
+    } finally {
+      setLoadingSimulation(false);
+    }
+  };
 
   const handleExportPDF = async () => {
     const heatmapImage = heatmapRef.current?.exportImage();
@@ -39,11 +72,43 @@ export const DesignPanel = ({ params, calculations, updateParam, darkMode, recal
       return;
     }
 
-    await generateCorporatePDF({
-      calculations,
-      params,
-      heatmapImage
-    });
+    try {
+      // Use SaaS reports API
+      const result = await reportsApi.generatePDF({
+        calculations,
+        params: localParams,
+        heatmapImage,
+        projectName: localParams.projectName || 'Untitled Project',
+        clientName: localParams.clientName || 'N/A',
+        engineer: localParams.engineerName || 'Engineer',
+        date: new Date().toISOString()
+      });
+
+      // If job is queued, show status
+      if (result.jobId) {
+        alert('PDF generation queued. Job ID: ' + result.jobId);
+        // Poll for status (simplified - in production would use proper polling)
+        const checkStatus = setInterval(async () => {
+          const status = await reportsApi.getJobStatus(result.jobId);
+          if (status.status === 'completed') {
+            clearInterval(checkStatus);
+            alert('PDF generation completed!');
+            // Download would happen here
+          } else if (status.status === 'failed') {
+            clearInterval(checkStatus);
+            alert('PDF generation failed');
+          }
+        }, 2000);
+      }
+    } catch (error) {
+      console.error('SaaS PDF API error, falling back to local:', error);
+      // Fall back to local generation
+      await generateCorporatePDF({
+        calculations,
+        params,
+        heatmapImage
+      });
+    }
   };
 
   const sensitivityAnalysis = useSensitivityAnalysis(localParams);
@@ -121,99 +186,45 @@ export const DesignPanel = ({ params, calculations, updateParam, darkMode, recal
 
   const handleGenerateReport = async () => {
     try {
-      alert('Generando reporte de ingeniería...');
-      
-      // 🔥 1. Usar resultados reales del engine
-      const results = calculations || {};
-      
-      // 🔥 2. Generar recomendaciones reales con IA (decisiones calculadas)
-      const aiSuggestions = generateAISuggestions(localParams, results);
-      const recommendations = aiSuggestions.map(s => s.action);
-      
-      // 🔥 3. Exportar heatmap del canvas
       const heatmapImage = exportCanvasImage(heatmapCanvasRef);
-      
-      // 🔥 4. Obtener historial del store
-      const history = useStore.getState().history;
-      
-      // 🔥 5. Guardar proyecto en Firebase (si hay usuario autenticado)
-      const user = auth.currentUser;
-      if (user) {
-        try {
-          await saveProject(user.uid, {
-            params: localParams,
-            results,
-            recommendations,
-            aiDecisions: aiSuggestions,
-            projectName: localParams.projectName || 'Untitled Project',
-            clientName: localParams.clientName || 'N/A',
-            projectLocation: localParams.projectLocation || 'N/A'
-          });
-          console.log('Proyecto guardado en Firebase');
-        } catch (firebaseError) {
-          console.error('Error guardando proyecto en Firebase:', firebaseError);
-          // Continuar con la generación del PDF aunque falle el guardado
-        }
-      }
-      
-      // 🔥 6. Generar PDF usando backend API
-      try {
-        const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:3001';
-        const response = await fetch(`${apiUrl}/api/pdf/generate`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            results,
-            params: localParams,
-            recommendations,
-            heatmapImage,
-            history,
-            aiDecisions: aiSuggestions
-          })
-        });
 
-        if (!response.ok) {
-          throw new Error('Backend API error');
-        }
-
-        const data = await response.json();
-        
-        // Download PDF from base64
-        const pdfData = atob(data.data.pdf);
-        const pdfArray = new Uint8Array(pdfData.length);
-        for (let i = 0; i < pdfData.length; i++) {
-          pdfArray[i] = pdfData.charCodeAt(i);
-        }
-        
-        const blob = new Blob([pdfArray], { type: 'application/pdf' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = data.data.filename;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-        
-        alert('Reporte PDF generado exitosamente');
-      } catch (apiError) {
-        console.error('Error con backend API, usando fallback client-side:', apiError);
-        // Fallback to client-side generation
-        await generateFullReport({
-          results,
-          params: localParams,
-          recommendations,
-          heatmapImage,
-          history,
-          aiDecisions: aiSuggestions
-        });
-        alert('Reporte PDF generado (modo fallback)');
+      if (!heatmapImage) {
+        alert('Error: heatmap no disponible');
+        return;
       }
+
+      const result = await reportsApi.generatePDF({
+        calculations,
+        params: localParams,
+        heatmapImage,
+        projectName: localParams.projectName || 'Project',
+        clientName: localParams.clientName || 'Client',
+        engineer: localParams.engineerName || 'Engineer'
+      });
+
+      if (result.jobId) {
+        alert('📄 Generación iniciada...');
+
+        const interval = setInterval(async () => {
+          const status = await reportsApi.getJobStatus(result.jobId);
+
+          if (status.status === 'completed') {
+            clearInterval(interval);
+
+            // 🔥 DESCARGA REAL
+            window.open(status.downloadUrl, '_blank');
+          }
+
+          if (status.status === 'failed') {
+            clearInterval(interval);
+            alert('❌ Error generando PDF');
+          }
+        }, 2000);
+      }
+
     } catch (error) {
-      console.error('Error generando reporte:', error);
-      alert('Error generando reporte: ' + error.message);
+      console.error(error);
+      alert('Error en generación PDF');
     }
   };
 
@@ -304,10 +315,19 @@ export const DesignPanel = ({ params, calculations, updateParam, darkMode, recal
 
         {/* Botones de acción */}
         <button onClick={() => {
-          alert('Recalculando...');
-          if (recalculate) recalculate();
-        }} className="w-full mt-3 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg font-semibold flex items-center justify-center gap-2 text-white">
-          <RefreshCw size={16} /> Recalcular
+          if (loadingSimulation) return;
+          handleRunIEEE80Simulation();
+        }} disabled={loadingSimulation} className="w-full mt-3 py-2 border rounded-lg font-semibold flex items-center justify-center gap-2 text-white transition-all"
+          style={{
+            backgroundColor: darkMode ? 'bg-blue-900/30' : 'bg-blue-50',
+            borderColor: darkMode ? 'border-blue-700' : 'border-blue-200',
+            boxShadow: darkMode
+              ? '0 0 15px rgba(59, 130, 246, 0.3), inset 0 0 8px rgba(59, 130, 246, 0.15)'
+              : '0 0 15px rgba(59, 130, 246, 0.2), inset 0 0 8px rgba(59, 130, 246, 0.1)'
+          }}
+        >
+          <RefreshCw size={16} className={loadingSimulation ? 'animate-spin' : ''} />
+          {loadingSimulation ? 'Calculando...' : 'Recalcular (SaaS)'}
         </button>
 
         <button onClick={() => {
@@ -316,7 +336,15 @@ export const DesignPanel = ({ params, calculations, updateParam, darkMode, recal
             sensitivityAnalysis.analyzeAllParameters();
           }
           setShowSensitivity(!showSensitivity);
-        }} className="w-full mt-2 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg font-semibold flex items-center justify-center gap-2 text-white">
+        }} className="w-full mt-2 py-2 border rounded-lg font-semibold flex items-center justify-center gap-2 text-white transition-all"
+          style={{
+            backgroundColor: darkMode ? 'bg-blue-900/30' : 'bg-blue-50',
+            borderColor: darkMode ? 'border-blue-700' : 'border-blue-200',
+            boxShadow: darkMode
+              ? '0 0 15px rgba(59, 130, 246, 0.3), inset 0 0 8px rgba(59, 130, 246, 0.15)'
+              : '0 0 15px rgba(59, 130, 246, 0.2), inset 0 0 8px rgba(59, 130, 246, 0.1)'
+          }}
+        >
           <Zap size={16} /> {showSensitivity ? 'Ocultar Análisis de Sensibilidad' : 'Análisis de Sensibilidad'}
         </button>
 
@@ -337,15 +365,39 @@ export const DesignPanel = ({ params, calculations, updateParam, darkMode, recal
             if (optimized.grid.rodLength) handleParamChange('rodLength', optimized.grid.rodLength);
           }
           alert('Optimización completada');
-        }} disabled={optimizer.isOptimizing} className="w-full mt-2 py-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-600 rounded-lg font-semibold flex items-center justify-center gap-2 text-white">
+        }} disabled={optimizer.isOptimizing} className="w-full mt-2 py-2 border rounded-lg font-semibold flex items-center justify-center gap-2 text-white transition-all disabled:opacity-50"
+          style={{
+            backgroundColor: darkMode ? 'bg-green-900/30' : 'bg-green-50',
+            borderColor: darkMode ? 'border-green-700' : 'border-green-200',
+            boxShadow: darkMode
+              ? '0 0 15px rgba(34, 197, 94, 0.3), inset 0 0 8px rgba(34, 197, 94, 0.15)'
+              : '0 0 15px rgba(34, 197, 94, 0.2), inset 0 0 8px rgba(34, 197, 94, 0.1)'
+          }}
+        >
           <Settings size={16} /> {optimizer.isOptimizing ? 'Optimizando...' : '🎯 Optimizar Diseño'}
         </button>
 
-        <button onClick={handleRunPipeline} disabled={isRunningPipeline} className="w-full mt-2 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-600 rounded-lg font-semibold flex items-center justify-center gap-2 text-white">
+        <button onClick={handleRunPipeline} disabled={isRunningPipeline} className="w-full mt-2 py-2 border rounded-lg font-semibold flex items-center justify-center gap-2 text-white transition-all disabled:opacity-50"
+          style={{
+            backgroundColor: darkMode ? 'bg-indigo-900/30' : 'bg-indigo-50',
+            borderColor: darkMode ? 'border-indigo-700' : 'border-indigo-200',
+            boxShadow: darkMode
+              ? '0 0 15px rgba(99, 102, 241, 0.3), inset 0 0 8px rgba(99, 102, 241, 0.15)'
+              : '0 0 15px rgba(99, 102, 241, 0.2), inset 0 0 8px rgba(99, 102, 241, 0.1)'
+          }}
+        >
           <Brain size={16} /> {isRunningPipeline ? 'Ejecutando Pipeline...' : '🚀 Pipeline Completo (Avanzado)'}
         </button>
 
-        <button onClick={handleGenerateReport} className="w-full mt-2 py-2 bg-orange-600 hover:bg-orange-700 rounded-lg font-semibold flex items-center justify-center gap-2 text-white">
+        <button onClick={handleGenerateReport} className="w-full mt-2 py-2 border rounded-lg font-semibold flex items-center justify-center gap-2 text-white transition-all"
+          style={{
+            backgroundColor: darkMode ? 'bg-orange-900/30' : 'bg-orange-50',
+            borderColor: darkMode ? 'border-orange-700' : 'border-orange-200',
+            boxShadow: darkMode
+              ? '0 0 15px rgba(249, 115, 22, 0.3), inset 0 0 8px rgba(249, 115, 22, 0.15)'
+              : '0 0 15px rgba(249, 115, 22, 0.2), inset 0 0 8px rgba(249, 115, 22, 0.1)'
+          }}
+        >
           <FileText size={16} /> 📄 Generar Reporte Ingeniería
         </button>
 
@@ -399,14 +451,18 @@ export const DesignPanel = ({ params, calculations, updateParam, darkMode, recal
         )}
 
         {/* Heatmap Canvas para exportación en reportes */}
-        <div 
-          className="mt-4 p-4 rounded-lg"
+        <div
+          className="mt-4 p-4 rounded-lg border"
           style={{
-            backgroundColor: BG_COLORS.secondary,
-            borderRadius: BORDERS.radius.lg
+            backgroundColor: darkMode ? 'bg-blue-900/20' : 'bg-blue-50',
+            borderColor: darkMode ? 'border-blue-700' : 'border-blue-200',
+            borderRadius: BORDERS.radius.lg,
+            boxShadow: darkMode
+              ? '0 0 15px rgba(59, 130, 246, 0.3), inset 0 0 8px rgba(59, 130, 246, 0.15)'
+              : '0 0 15px rgba(59, 130, 246, 0.2), inset 0 0 8px rgba(59, 130, 246, 0.1)'
           }}
         >
-          <h3 className="text-lg font-semibold mb-4" style={{ color: TEXT_COLORS.primary }}>🌡️ Distribución de Potencial (Heatmap)</h3>
+          <h3 className="text-lg font-semibold mb-4" style={{ color: darkMode ? 'text-white' : 'text-blue-800' }}>🌡️ Distribución de Potencial (Heatmap)</h3>
           <div className="w-full">
             <HeatmapCanvas
               ref={heatmapRef}

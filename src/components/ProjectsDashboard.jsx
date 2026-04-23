@@ -3,9 +3,33 @@ import { FolderOpen, FileText, Copy, Download, AlertTriangle, CheckCircle, Alert
 import { getRiskLevel } from '../services/aiSuggestionService';
 import { exportToExcel } from '../services/excelExportService';
 import { generateFullReport } from '../utils/pdfGenerator';
+import { projectsApi } from '../api/projects.api';
 
 const ProjectsDashboard = ({ projects, darkMode, onOpenProject, onDuplicateProject }) => {
   const [sortedProjects, setSortedProjects] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [apiProjects, setApiProjects] = useState(null);
+
+  // Load projects from SaaS API
+  useEffect(() => {
+    const loadApiProjects = async () => {
+      try {
+        setLoading(true);
+        const data = await projectsApi.getAll();
+        setApiProjects(data);
+      } catch (error) {
+        console.error('Failed to load projects from API:', error);
+        // Fall back to local projects
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadApiProjects();
+  }, []);
+
+  // Use API projects if available, otherwise use local projects
+  const displayProjects = apiProjects || projects;
 
   // Risk color mapping
   const riskColor = {
@@ -27,21 +51,21 @@ const ProjectsDashboard = ({ projects, darkMode, onOpenProject, onDuplicateProje
   // Smart ordering by risk
   useEffect(() => {
     const priority = { CRITICAL: 4, HIGH: 3, MARGINAL: 2, SAFE: 1, UNKNOWN: 0 };
-    const sorted = [...projects].sort((a, b) => {
+    const sorted = [...displayProjects].sort((a, b) => {
       const riskA = getRiskLevel(a.results);
       const riskB = getRiskLevel(b.results);
       return priority[riskB] - priority[riskA];
     });
     setSortedProjects(sorted);
-  }, [projects]);
+  }, [displayProjects]);
 
   // Dashboard metrics
   const stats = {
-    total: projects.length,
-    unsafe: projects.filter(p => !p.results?.complies).length,
-    critical: projects.filter(p => getRiskLevel(p.results) === 'CRITICAL').length,
-    avgRg: projects.length > 0 
-      ? projects.reduce((a, p) => a + (p.results?.Rg || 0), 0) / projects.length 
+    total: displayProjects.length,
+    unsafe: displayProjects.filter(p => !p.results?.complies).length,
+    critical: displayProjects.filter(p => getRiskLevel(p.results) === 'CRITICAL').length,
+    avgRg: displayProjects.length > 0
+      ? displayProjects.reduce((a, p) => a + (p.results?.Rg || 0), 0) / displayProjects.length
       : 0
   };
 
@@ -70,6 +94,13 @@ const ProjectsDashboard = ({ projects, darkMode, onOpenProject, onDuplicateProje
 
   return (
     <div className={`p-6 ${darkMode ? 'bg-gray-900' : 'bg-gray-100'}`}>
+      {loading && (
+        <div className="text-center py-8">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <div className="text-sm text-gray-500 mt-2">Loading projects from SaaS API...</div>
+        </div>
+      )}
+
       {/* Dashboard Metrics */}
       <div className="grid grid-cols-4 gap-4 mb-6">
         <div className={`p-4 rounded-xl ${darkMode ? 'bg-gray-800' : 'bg-white'} shadow`}>
@@ -203,7 +234,7 @@ const ProjectsDashboard = ({ projects, darkMode, onOpenProject, onDuplicateProje
       </div>
 
       {/* Empty State */}
-      {projects.length === 0 && (
+      {displayProjects.length === 0 && (
         <div className={`text-center py-12 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
           <FolderOpen size={48} className="mx-auto mb-4 opacity-50" />
           <p className="text-lg">No projects found</p>
