@@ -14,6 +14,10 @@ try {
   createCanvas = null;
 }
 
+// Import ETAP-style contour services
+const contourSmoothingService = require('./contourSmoothing.service');
+const contourLabelsService = require('./contourLabels.service');
+
 // ================================
 // 🎨 CONFIG
 // ================================
@@ -366,11 +370,16 @@ function drawContours(ctx, data, mapper, min, max) {
     allContours.push(...lines);
   });
 
-  // Draw contours
-  ctx.strokeStyle = '#000';
-  ctx.lineWidth = 1;
+  // Apply ETAP-style smoothing to contours
+  const smoothedContours = allContours.map(line => 
+    contourSmoothingService.smoothContour(line, 0.5, 12)
+  );
 
-  allContours.forEach(line => {
+  // Draw contours with smoothing
+  ctx.strokeStyle = '#000';
+  ctx.lineWidth = 1.2;
+
+  smoothedContours.forEach(line => {
     ctx.beginPath();
     line.forEach((point, i) => {
       const px = mapper.mapX(point.x);
@@ -380,6 +389,9 @@ function drawContours(ctx, data, mapper, min, max) {
     });
     ctx.stroke();
   });
+
+  // Draw ETAP-style rotated labels on contours
+  contourLabelsService.drawContourLabels(ctx, smoothedContours, levels, mapper);
 }
 
 // ================================
