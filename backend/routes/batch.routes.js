@@ -5,7 +5,7 @@
 
 const express = require('express');
 const router = express.Router();
-const authMiddleware = require('../middleware/auth.js');
+const { authenticate } = require('../middleware/auth.js');
 const requireFeature = require('../middleware/requireFeature.js');
 const batchService = require('../services/batch.service.js');
 const storageService = require('../services/storage.service.js');
@@ -16,7 +16,7 @@ const pool = getPool();
 /**
  * Generate batch reports for a project
  */
-router.post('/project/:projectId/reports', authMiddleware, requireFeature('batch_reports'), async (req, res) => {
+router.post('/project/:projectId/reports', authenticate, requireFeature('batch_reports'), async (req, res) => {
   try {
     const userId = req.user.userId;
     const projectId = req.params.projectId;
@@ -62,7 +62,7 @@ router.post('/project/:projectId/reports', authMiddleware, requireFeature('batch
 /**
  * Generate comparison report between versions
  */
-router.post('/project/:projectId/compare', authMiddleware, async (req, res) => {
+router.post('/project/:projectId/compare', authenticate, async (req, res) => {
   try {
     const userId = req.user.userId;
     const projectId = req.params.projectId;
@@ -94,7 +94,7 @@ router.post('/project/:projectId/compare', authMiddleware, async (req, res) => {
 /**
  * Export all project data
  */
-router.post('/project/:projectId/export', authMiddleware, async (req, res) => {
+router.post('/project/:projectId/export', authenticate, async (req, res) => {
   try {
     const userId = req.user.userId;
     const projectId = req.params.projectId;
@@ -125,7 +125,7 @@ router.post('/project/:projectId/export', authMiddleware, async (req, res) => {
 /**
  * Download batch export
  */
-router.get('/download/:key', authMiddleware, async (req, res) => {
+router.get('/download/:key', authenticate, async (req, res) => {
   try {
     const key = req.params.key;
 

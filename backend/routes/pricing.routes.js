@@ -5,7 +5,7 @@
 
 const express = require('express');
 const router = express.Router();
-const authMiddleware = require('../middleware/auth.js');
+const { authenticate } = require('../middleware/auth.js');
 const pricingService = require('../services/pricing.service.js');
 const { getPool } = require('../database/pool.js');
 const { errorLogger } = require('../middleware/logging.js');
@@ -65,7 +65,7 @@ router.get('/plans', async (req, res) => {
 /**
  * Get current user's plan details
  */
-router.get('/current', authMiddleware, async (req, res) => {
+router.get('/current', authenticate, async (req, res) => {
   try {
     const userId = req.user.userId;
     const userPlan = req.user.plan || 'free';
@@ -103,7 +103,7 @@ router.get('/current', authMiddleware, async (req, res) => {
 /**
  * Check if action is allowed based on plan limits
  */
-router.post('/check-limit', authMiddleware, async (req, res) => {
+router.post('/check-limit', authenticate, async (req, res) => {
   try {
     const userId = req.user.userId;
     const userPlan = req.user.plan || 'free';
@@ -152,7 +152,7 @@ router.post('/check-limit', authMiddleware, async (req, res) => {
 /**
  * Get upgrade recommendation
  */
-router.get('/upgrade-recommendation', authMiddleware, async (req, res) => {
+router.get('/upgrade-recommendation', authenticate, async (req, res) => {
   try {
     const userId = req.user.userId;
     const userPlan = req.user.plan || 'free';
@@ -187,7 +187,7 @@ router.get('/upgrade-recommendation', authMiddleware, async (req, res) => {
 /**
  * Calculate prorated amount for plan change
  */
-router.post('/calculate-prorated', authMiddleware, async (req, res) => {
+router.post('/calculate-prorated', authenticate, async (req, res) => {
   try {
     const { newPlan, daysRemaining } = req.body;
     const currentPlan = req.user.plan || 'free';
@@ -226,7 +226,7 @@ router.post('/calculate-prorated', authMiddleware, async (req, res) => {
 /**
  * Validate plan transition
  */
-router.post('/validate-transition', authMiddleware, async (req, res) => {
+router.post('/validate-transition', authenticate, async (req, res) => {
   try {
     const { newPlan } = req.body;
     const currentPlan = req.user.plan || 'free';
@@ -255,7 +255,7 @@ router.post('/validate-transition', authMiddleware, async (req, res) => {
 /**
  * Update user plan (would integrate with payment processor in production)
  */
-router.put('/plan', authMiddleware, async (req, res) => {
+router.put('/plan', authenticate, async (req, res) => {
   const client = await pool.connect();
 
   try {

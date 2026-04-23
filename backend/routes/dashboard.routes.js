@@ -5,13 +5,13 @@
 
 const express = require('express');
 const router = express.Router();
-const authMiddleware = require('../middleware/auth.js');
+const { authenticate } = require('../middleware/auth.js');
 const dashboardService = require('../services/dashboard.service.js');
 
 /**
  * Get dashboard overview
  */
-router.get('/overview', authMiddleware, async (req, res) => {
+router.get('/overview', authenticate, async (req, res) => {
   try {
     const userId = req.user.userId;
     const overview = await dashboardService.getDashboardOverview(userId);
@@ -29,7 +29,7 @@ router.get('/overview', authMiddleware, async (req, res) => {
 /**
  * Get recent projects
  */
-router.get('/recent-projects', authMiddleware, async (req, res) => {
+router.get('/recent-projects', authenticate, async (req, res) => {
   try {
     const userId = req.user.userId;
     const limit = parseInt(req.query.limit) || 5;
@@ -48,7 +48,7 @@ router.get('/recent-projects', authMiddleware, async (req, res) => {
 /**
  * Get usage statistics
  */
-router.get('/usage', authMiddleware, async (req, res) => {
+router.get('/usage', authenticate, async (req, res) => {
   try {
     const userId = req.user.userId;
     const statistics = await dashboardService.getUsageStatistics(userId);
@@ -66,7 +66,7 @@ router.get('/usage', authMiddleware, async (req, res) => {
 /**
  * Get current month usage
  */
-router.get('/current-usage', authMiddleware, async (req, res) => {
+router.get('/current-usage', authenticate, async (req, res) => {
   try {
     const userId = req.user.userId;
     const usage = await dashboardService.getCurrentUsage(userId);
@@ -84,7 +84,7 @@ router.get('/current-usage', authMiddleware, async (req, res) => {
 /**
  * Get activity timeline
  */
-router.get('/activity', authMiddleware, async (req, res) => {
+router.get('/activity', authenticate, async (req, res) => {
   try {
     const userId = req.user.userId;
     const limit = parseInt(req.query.limit) || 10;
@@ -103,7 +103,7 @@ router.get('/activity', authMiddleware, async (req, res) => {
 /**
  * Get compliance trends
  */
-router.get('/compliance-trends', authMiddleware, async (req, res) => {
+router.get('/compliance-trends', authenticate, async (req, res) => {
   try {
     const userId = req.user.userId;
     const months = parseInt(req.query.months) || 6;
@@ -122,7 +122,7 @@ router.get('/compliance-trends', authMiddleware, async (req, res) => {
 /**
  * Get top projects
  */
-router.get('/top-projects', authMiddleware, async (req, res) => {
+router.get('/top-projects', authenticate, async (req, res) => {
   try {
     const userId = req.user.userId;
     const metric = req.query.metric || 'compliance';

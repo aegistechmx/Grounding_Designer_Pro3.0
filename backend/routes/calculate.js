@@ -1,5 +1,5 @@
 const express = require('express');
-const GroundingCalculator = require('../../src/application/GroundingCalculator.js');
+const ieee80Service = require('../services/ieee80.service.js');
 const { validateCalculationInput, handleValidationErrors } = require('../middleware/validation.js');
 const { calculationRateLimiter } = require('../middleware/security.js');
 
@@ -14,11 +14,25 @@ router.post('/',
   try {
     // Input is already validated by middleware
 
-    // Initialize calculator with input parameters
-    const calculator = new GroundingCalculator(req.body);
-    
-    // Perform calculation
-    const results = calculator.calculate();
+    // Map input to IEEE 80 service parameters
+    const params = {
+      gridLength: req.body.grid.gridLength,
+      gridWidth: req.body.grid.gridWidth,
+      numParallel: req.body.grid.numParallel,
+      numParallelY: req.body.grid.numParallelY,
+      burialDepth: req.body.grid.gridDepth || 0.5,
+      conductorDiameter: req.body.grid.conductorDiameter || 0.01,
+      rodLength: req.body.grid.rodLength || 3,
+      numRods: req.body.grid.numRods || 0,
+      soilResistivity: req.body.soil.soilResistivity,
+      surfaceLayerResistivity: req.body.soil.surfaceLayerResistivity || 0,
+      surfaceLayerThickness: req.body.soil.surfaceDepth || 0.1,
+      faultCurrent: req.body.fault.current,
+      faultDuration: req.body.fault.faultDuration || 0.5
+    };
+
+    // Perform calculation using IEEE 80 service
+    const results = ieee80Service.calculate(params);
     
     // Return successful response
     res.json({

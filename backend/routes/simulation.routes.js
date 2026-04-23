@@ -5,7 +5,7 @@
 
 const express = require('express');
 const router = express.Router();
-const authMiddleware = require('../middleware/auth.js');
+const { authenticate } = require('../middleware/auth.js');
 const requireFeature = require('../middleware/requireFeature.js');
 const ieee80Service = require('../services/ieee80.service.js');
 const femService = require('../services/fem.service.js');
@@ -26,7 +26,7 @@ const pool = new Pool({
 /**
  * Run IEEE 80 simulation (synchronous, fast)
  */
-router.post('/ieee80', authMiddleware, async (req, res) => {
+router.post('/ieee80', authenticate, async (req, res) => {
   try {
     const userId = req.user.userId;
     const params = req.body;
@@ -52,7 +52,7 @@ router.post('/ieee80', authMiddleware, async (req, res) => {
 /**
  * Run FEM simulation (asynchronous, heavy)
  */
-router.post('/fem', authMiddleware, requireFeature('fem_simulation'), async (req, res) => {
+router.post('/fem', authenticate, requireFeature('fem_simulation'), async (req, res) => {
   try {
     const userId = req.user.userId;
     const params = req.body;
@@ -94,7 +94,7 @@ router.post('/fem', authMiddleware, requireFeature('fem_simulation'), async (req
 /**
  * Get simulation job status
  */
-router.get('/jobs/:jobId', authMiddleware, async (req, res) => {
+router.get('/jobs/:jobId', authenticate, async (req, res) => {
   try {
     const jobId = req.params.jobId;
     
@@ -113,7 +113,7 @@ router.get('/jobs/:jobId', authMiddleware, async (req, res) => {
 /**
  * Get simulation result by ID
  */
-router.get('/results/:resultId', authMiddleware, async (req, res) => {
+router.get('/results/:resultId', authenticate, async (req, res) => {
   try {
     const resultId = req.params.resultId;
     
@@ -142,7 +142,7 @@ router.get('/results/:resultId', authMiddleware, async (req, res) => {
 /**
  * Run sensitivity analysis
  */
-router.post('/sensitivity', authMiddleware, async (req, res) => {
+router.post('/sensitivity', authenticate, async (req, res) => {
   try {
     const params = req.body;
     
@@ -188,7 +188,7 @@ router.post('/sensitivity', authMiddleware, async (req, res) => {
 /**
  * Run optimization
  */
-router.post('/optimize', authMiddleware, async (req, res) => {
+router.post('/optimize', authenticate, async (req, res) => {
   try {
     const params = req.body.params;
     const results = req.body.results;
@@ -209,7 +209,7 @@ router.post('/optimize', authMiddleware, async (req, res) => {
 /**
  * Get heatmap data
  */
-router.get('/heatmap/:resultId', authMiddleware, async (req, res) => {
+router.get('/heatmap/:resultId', authenticate, async (req, res) => {
   try {
     const resultId = req.params.resultId;
     
@@ -247,7 +247,7 @@ router.get('/heatmap/:resultId', authMiddleware, async (req, res) => {
 /**
  * Batch run multiple simulations
  */
-router.post('/batch', authMiddleware, async (req, res) => {
+router.post('/batch', authenticate, async (req, res) => {
   try {
     const userId = req.user.userId;
     const { simulations } = req.body;

@@ -5,7 +5,7 @@
 
 const express = require('express');
 const router = express.Router();
-const authMiddleware = require('../middleware/auth.js');
+const { authenticate } = require('../middleware/auth.js');
 const { getPool } = require('../database/pool.js');
 
 const pool = getPool();
@@ -13,7 +13,7 @@ const pool = getPool();
 /**
  * Get all projects for current user
  */
-router.get('/', authMiddleware, async (req, res) => {
+router.get('/', authenticate, async (req, res) => {
   try {
     const userId = req.user.userId;
     
@@ -38,7 +38,7 @@ router.get('/', authMiddleware, async (req, res) => {
 /**
  * Get single project by ID
  */
-router.get('/:id', authMiddleware, async (req, res) => {
+router.get('/:id', authenticate, async (req, res) => {
   try {
     const userId = req.user.userId;
     const projectId = req.params.id;
@@ -65,7 +65,7 @@ router.get('/:id', authMiddleware, async (req, res) => {
 /**
  * Create new project
  */
-router.post('/', authMiddleware, async (req, res) => {
+router.post('/', authenticate, async (req, res) => {
   try {
     const userId = req.user.userId;
     const { name, description, location, clientName } = req.body;
@@ -90,7 +90,7 @@ router.post('/', authMiddleware, async (req, res) => {
 /**
  * Update project
  */
-router.put('/:id', authMiddleware, async (req, res) => {
+router.put('/:id', authenticate, async (req, res) => {
   try {
     const userId = req.user.userId;
     const projectId = req.params.id;
@@ -125,7 +125,7 @@ router.put('/:id', authMiddleware, async (req, res) => {
 /**
  * Delete project (soft delete)
  */
-router.delete('/:id', authMiddleware, async (req, res) => {
+router.delete('/:id', authenticate, async (req, res) => {
   try {
     const userId = req.user.userId;
     const projectId = req.params.id;
@@ -155,7 +155,7 @@ router.delete('/:id', authMiddleware, async (req, res) => {
 /**
  * Get project versions
  */
-router.get('/:id/versions', authMiddleware, async (req, res) => {
+router.get('/:id/versions', authenticate, async (req, res) => {
   try {
     const userId = req.user.userId;
     const projectId = req.params.id;
@@ -186,7 +186,7 @@ router.get('/:id/versions', authMiddleware, async (req, res) => {
 /**
  * Create new version
  */
-router.post('/:id/versions', authMiddleware, async (req, res) => {
+router.post('/:id/versions', authenticate, async (req, res) => {
   try {
     const userId = req.user.userId;
     const projectId = req.params.id;
@@ -221,7 +221,7 @@ router.post('/:id/versions', authMiddleware, async (req, res) => {
 /**
  * Compare versions
  */
-router.get('/:id/compare', authMiddleware, async (req, res) => {
+router.get('/:id/compare', authenticate, async (req, res) => {
   try {
     const userId = req.user.userId;
     const projectId = req.params.id;

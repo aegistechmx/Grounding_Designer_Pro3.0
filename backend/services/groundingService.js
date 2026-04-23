@@ -1,4 +1,4 @@
-const GroundingCalculator = require('../src/application/GroundingCalculator.js');
+const ieee80Service = require('./ieee80.service.js');
 
 class GroundingService {
   static async calculateGrounding(input) {
@@ -9,14 +9,28 @@ class GroundingService {
         throw new Error(validation.error);
       }
 
-      // Initialize calculator
-      const calculator = new GroundingCalculator(input);
-      
-      // Perform calculation
-      const results = calculator.calculate();
+      // Use backend IEEE 80 service for calculations
+      const params = {
+        gridLength: input.grid.gridLength,
+        gridWidth: input.grid.gridWidth,
+        numParallel: input.grid.numParallel,
+        numParallelY: input.grid.numParallelY,
+        burialDepth: input.grid.gridDepth || 0.5,
+        conductorDiameter: input.grid.conductorDiameter || 0.01,
+        rodLength: input.grid.rodLength || 3,
+        numRods: input.grid.numRods || 0,
+        soilResistivity: input.soil.soilResistivity,
+        surfaceLayerResistivity: input.soil.surfaceLayerResistivity || 0,
+        surfaceLayerThickness: input.soil.surfaceDepth || 0.1,
+        faultCurrent: input.fault.current,
+        faultDuration: input.fault.faultDuration || 0.5
+      };
+
+      // Perform calculation using IEEE 80 service
+      const results = ieee80Service.calculate(params);
       
       // Format results for API response
-      return this.formatResults(results);
+      return this.formatResults(results, input);
       
     } catch (error) {
       throw new Error(`Grounding calculation failed: ${error.message}`);
@@ -64,57 +78,45 @@ class GroundingService {
     return { isValid: true };
   }
 
-  static formatResults(results) {
+  static formatResults(results, input) {
     return {
       timestamp: new Date().toISOString(),
       input: {
-        soil: results.soilModel ? {
-          soilResistivity: results.soilModel.soilResistivity,
-          effectiveResistivity: results.soilModel.effectiveResistivity
-        } : null,
-        grid: results.gridModel ? {
-          gridLength: results.gridModel.gridLength,
-          gridWidth: results.gridModel.gridWidth,
-          totalLength: results.gridModel.totalLength
-        } : null,
-        fault: results.faultModel ? {
-          current: results.faultModel.current,
-          duration: results.faultModel.faultDuration
-        } : null
+        soil: {
+          soilResistivity: input.soil.soilResistivity,
+          effectiveResistivity: results.Rg // Using grid resistance as proxy
+        },
+        grid: {
+          gridLength: input.grid.gridLength,
+          gridWidth: input.grid.gridWidth,
+          totalLength: (input.grid.gridLength * (input.grid.numParallelY - 1)) + (input.grid.gridWidth * (input.grid.numParallel - 1))
+        },
+        fault: {
+          current: input.fault.current,
+          duration: input.fault.faultDuration || 0.5
+        }
       },
       results: {
-        gridResistance: results.gridResistance,
-        gpr: results.gpr,
-        stepVoltage: results.stepVoltage,
-        touchVoltage: results.touchVoltage
+        gridResistance: results.Rg,
+        gpr: results.GPR,
+        stepVoltage: results.Es,
+        touchVoltage: results.Em
       },
       methods: {
-        analytical: results.analytical ? {
-          resistance: results.analytical.gridResistance,
-          gpr: results.analytical.gpr,
-          step: results.analytical.stepVoltage,
-          touch: results.analytical.touchVoltage
-        } : null,
-        discrete: results.discrete ? {
-          resistance: results.discrete.gridResistance,
-          gpr: results.discrete.gpr,
-          step: results.discrete.stepVoltage,
-          touch: results.discrete.touchVoltage,
-          // Spatial voltage data for heatmap
-          nodes: results.discrete.spatialData?.nodes || [],
-          voltages: results.discrete.spatialData?.voltages || []
-        } : null
+        analytical: {
+          resistance: results.Rg,
+          gpr: results.GPR,
+          step: results.Es,
+          touch: results.Em
+        },
+        discrete: null // Backend doesn't have discrete method
       },
-      calibration: results.calibration ? {
-        applied: results.calibration.applied,
-        factors: results.calibration.factors,
-        alignment: results.calibration.alignment
-      } : null,
+      calibration: null,
       safety: {
-        stepVoltageLimit: 1000, // IEEE 80 typical limit
-        touchVoltageLimit: 1000, // IEEE 80 typical limit
-        stepVoltageSafe: (results.stepVoltage || 0) <= 1000,
-        touchVoltageSafe: (results.touchVoltage || 0) <= 1000
+        stepVoltageLimit: results.Estep70,
+        touchVoltageLimit: results.Etouch70,
+        stepVoltageSafe: results.stepSafe70,
+        touchVoltageSafe: results.touchSafe70
       }
     };
   }
@@ -125,8 +127,6 @@ class GroundingService {
       status: 'OK',
       capabilities: [
         'IEEE 80 analytical method',
-        'Discrete nodal analysis',
-        'Method calibration',
         'Safety assessment'
       ],
       timestamp: new Date().toISOString()
@@ -134,4 +134,4 @@ class GroundingService {
   }
 }
 
-module.exports = GroundingService;
+module.exports = new GroundingService();

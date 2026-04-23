@@ -5,7 +5,7 @@
 
 const express = require('express');
 const router = express.Router();
-const authMiddleware = require('../middleware/auth.js');
+const { authenticate } = require('../middleware/auth.js');
 const requireFeature = require('../middleware/requireFeature.js');
 const reportService = require('../services/report.service.js');
 const { addJob, getJobStatus } = require('../jobs/queue.js');
@@ -25,7 +25,7 @@ const pool = new Pool({
 /**
  * Generate PDF report (asynchronous)
  */
-router.post('/pdf', authMiddleware, requireFeature('pdf_pro'), async (req, res) => {
+router.post('/pdf', authenticate, requireFeature('pdf_pro'), async (req, res) => {
   try {
     const userId = req.user.userId;
     const reportData = req.body;
@@ -79,7 +79,7 @@ router.post('/pdf', authMiddleware, requireFeature('pdf_pro'), async (req, res) 
 /**
  * Generate Excel report (asynchronous)
  */
-router.post('/excel', authMiddleware, async (req, res) => {
+router.post('/excel', authenticate, async (req, res) => {
   try {
     const userId = req.user.userId;
     const reportData = req.body;
@@ -133,7 +133,7 @@ router.post('/excel', authMiddleware, async (req, res) => {
 /**
  * Generate DXF export
  */
-router.post('/dxf', authMiddleware, async (req, res) => {
+router.post('/dxf', authenticate, async (req, res) => {
   try {
     const userId = req.user.userId;
     const reportData = req.body;
@@ -160,7 +160,7 @@ router.post('/dxf', authMiddleware, async (req, res) => {
 /**
  * Batch generate multiple reports (ZIP)
  */
-router.post('/batch', authMiddleware, async (req, res) => {
+router.post('/batch', authenticate, async (req, res) => {
   try {
     const userId = req.user.userId;
     const { reports } = req.body;
@@ -187,7 +187,7 @@ router.post('/batch', authMiddleware, async (req, res) => {
 /**
  * Get report job status
  */
-router.get('/jobs/:jobId', authMiddleware, async (req, res) => {
+router.get('/jobs/:jobId', authenticate, async (req, res) => {
   try {
     const jobId = req.params.jobId;
     
@@ -206,7 +206,7 @@ router.get('/jobs/:jobId', authMiddleware, async (req, res) => {
 /**
  * Download generated report
  */
-router.get('/:reportId/download', authMiddleware, async (req, res) => {
+router.get('/:reportId/download', authenticate, async (req, res) => {
   try {
     const reportId = req.params.reportId;
     
@@ -245,7 +245,7 @@ router.get('/:reportId/download', authMiddleware, async (req, res) => {
 /**
  * Get report metadata
  */
-router.get('/:reportId', authMiddleware, async (req, res) => {
+router.get('/:reportId', authenticate, async (req, res) => {
   try {
     const reportId = req.params.reportId;
     
@@ -273,7 +273,7 @@ router.get('/:reportId', authMiddleware, async (req, res) => {
 /**
  * List all reports for a project
  */
-router.get('/project/:projectId', authMiddleware, async (req, res) => {
+router.get('/project/:projectId', authenticate, async (req, res) => {
   try {
     const userId = req.user.userId;
     const projectId = req.params.projectId;

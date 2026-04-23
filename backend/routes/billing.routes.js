@@ -5,7 +5,7 @@
 
 const express = require('express');
 const router = express.Router();
-const authMiddleware = require('../middleware/auth.js');
+const { authenticate } = require('../middleware/auth.js');
 const stripeService = require('../services/billing/stripe.service.js');
 const { getPool } = require('../database/pool.js');
 
@@ -14,7 +14,7 @@ const pool = getPool();
 /**
  * Create checkout session for subscription
  */
-router.post('/checkout', authMiddleware, async (req, res) => {
+router.post('/checkout', authenticate, async (req, res) => {
   try {
     const userId = req.user.userId;
     const { plan } = req.body;
@@ -48,7 +48,7 @@ router.post('/checkout', authMiddleware, async (req, res) => {
 /**
  * Create checkout session for one-time payment
  */
-router.post('/payment', authMiddleware, async (req, res) => {
+router.post('/payment', authenticate, async (req, res) => {
   try {
     const userId = req.user.userId;
     const { plan } = req.body;
@@ -82,7 +82,7 @@ router.post('/payment', authMiddleware, async (req, res) => {
 /**
  * Get checkout session status
  */
-router.get('/session/:sessionId', authMiddleware, async (req, res) => {
+router.get('/session/:sessionId', authenticate, async (req, res) => {
   try {
     const { sessionId } = req.params;
 
@@ -101,7 +101,7 @@ router.get('/session/:sessionId', authMiddleware, async (req, res) => {
 /**
  * Create customer portal session
  */
-router.post('/portal', authMiddleware, async (req, res) => {
+router.post('/portal', authenticate, async (req, res) => {
   try {
     const userId = req.user.userId;
 
@@ -133,7 +133,7 @@ router.post('/portal', authMiddleware, async (req, res) => {
 /**
  * Cancel subscription
  */
-router.post('/cancel', authMiddleware, async (req, res) => {
+router.post('/cancel', authenticate, async (req, res) => {
   try {
     const userId = req.user.userId;
 
@@ -165,7 +165,7 @@ router.post('/cancel', authMiddleware, async (req, res) => {
 /**
  * Get subscription details
  */
-router.get('/subscription', authMiddleware, async (req, res) => {
+router.get('/subscription', authenticate, async (req, res) => {
   try {
     const userId = req.user.userId;
 
