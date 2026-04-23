@@ -57,13 +57,32 @@ class GroundingService {
       };
     }
 
-    // Validate grid parameters
-    if (!input.grid.gridLength || !input.grid.gridWidth || 
-        typeof input.grid.numParallel !== 'number' || 
-        typeof input.grid.numParallelY !== 'number') {
+    // Validate grid parameters with range checks
+    if (typeof input.grid.gridLength !== 'number' || input.grid.gridLength <= 0) {
       return { 
         isValid: false, 
-        error: 'Grid must have valid length, width, and conductor counts' 
+        error: 'Grid length must be a positive number' 
+      };
+    }
+
+    if (typeof input.grid.gridWidth !== 'number' || input.grid.gridWidth <= 0) {
+      return { 
+        isValid: false, 
+        error: 'Grid width must be a positive number' 
+      };
+    }
+
+    if (typeof input.grid.numParallel !== 'number' || input.grid.numParallel < 1) {
+      return { 
+        isValid: false, 
+        error: 'Number of parallel conductors (X) must be at least 1' 
+      };
+    }
+
+    if (typeof input.grid.numParallelY !== 'number' || input.grid.numParallelY < 1) {
+      return { 
+        isValid: false, 
+        error: 'Number of parallel conductors (Y) must be at least 1' 
       };
     }
 
@@ -84,12 +103,12 @@ class GroundingService {
       input: {
         soil: {
           soilResistivity: input.soil.soilResistivity,
-          effectiveResistivity: results.Rg // Using grid resistance as proxy
+          effectiveResistivity: input.soil.soilResistivity // Use input resistivity (Rg is in ohms, not ohm-meters)
         },
         grid: {
           gridLength: input.grid.gridLength,
           gridWidth: input.grid.gridWidth,
-          totalLength: (input.grid.gridLength * (input.grid.numParallelY - 1)) + (input.grid.gridWidth * (input.grid.numParallel - 1))
+          totalLength: Math.max(0, (input.grid.gridLength * (input.grid.numParallelY - 1)) + (input.grid.gridWidth * (input.grid.numParallel - 1)))
         },
         fault: {
           current: input.fault.current,

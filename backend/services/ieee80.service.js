@@ -90,7 +90,8 @@ class IEEE80Service {
    * Calculate permissible touch voltage (70kg person)
    */
   calculatePermissibleTouch(faultDuration, surfaceLayerResistivity = 0, surfaceLayerThickness = 0) {
-    const Cs = 1 - 0.08 * (surfaceLayerResistivity / 100) * (surfaceLayerThickness / 0.1);
+    // Clamp Cs to valid range [0, 1] to prevent invalid values
+    const Cs = Math.max(0, Math.min(1, 1 - 0.08 * (surfaceLayerResistivity / 100) * (surfaceLayerThickness / 0.1)));
     const Etouch70 = (1000 + 1.5 * Cs * surfaceLayerResistivity) / Math.sqrt(faultDuration);
     return Etouch70;
   }
