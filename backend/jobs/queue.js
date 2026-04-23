@@ -6,35 +6,70 @@
 const { Queue, Worker, Job } = require('bullmq');
 const Redis = require('ioredis');
 
-// Redis connection
-const connection = new Redis({
-  host: process.env.REDIS_HOST || 'localhost',
-  port: process.env.REDIS_PORT || 6379,
-  password: process.env.REDIS_PASSWORD || undefined,
-  maxRetriesPerRequest: null
-});
+let connection = null;
+let queues = {};
 
-// Create queues
-const queues = {
-  simulation: new Queue('simulation', { connection }),
-  reports: new Queue('reports', { connection }),
-  pdf: new Queue('pdf', { connection }),
-  heatmap: new Queue('heatmap', { connection }),
-  fem: new Queue('fem', { connection }),
-  ai: new Queue('ai', { connection })
-};
+// Only initialize Redis if not in debug mode without Redis
+const skipRedis = process.env.SKIP_REDIS === 'true';
+
+if (!skipRedis) {
+  try {
+    // Redis connection
+    connection = new Redis({
+      host: process.env.REDIS_HOST || 'localhost',
+      port: process.env.REDIS_PORT || 6379,
+      password: process.env.REDIS_PASSWORD || undefined,
+      maxRetriesPerRequest: null,
+      retryStrategy: (times) => {
+        const delay = Math.min(times * 50, 2000);
+        return delay;
+      }
+    });
+
+    connection.on('error', (err) => {
+      console.error('Redis connection error:', err.message);
+      if (err.code === 'ECONNREFUSED') {
+        console.warn('Redis not available - job queues will be disabled');
+        console.warn('Set SKIP_REDIS=true to disable Redis completely');
+      }
+    });
+
+    // Create queues
+    queues = {
+      simulation: new Queue('simulation', { connection }),
+      reports: new Queue('reports', { connection }),
+      pdf: new Queue('pdf', { connection }),
+      heatmap: new Queue('heatmap', { connection }),
+      fem: new Queue('fem', { connection }),
+      ai: new Queue('ai', { connection })
+    };
+  } catch (error) {
+    console.error('Failed to initialize Redis queues:', error.message);
+    console.warn('Job queues will be disabled');
+  }
+} else {
+  console.log('Redis skipped - job queues disabled (SKIP_REDIS=true)');
+}
 
 // Export pdfQueue for direct use
-module.exports.pdfQueue = queues.pdf;
+module.exports.pdfQueue = skipRedis ? null : queues.pdf;
+
+/**
+ * Check if queues are available
+ */
+module.exports.isAvailable = function() {
+  return !skipRedis && connection !== null;
+};
 
 /**
  * Add job to queue
  */
 module.exports.addJob = async function(queueName, jobData, options = {}) {
-  const queue = queues[queueName];
-  if (!queue) {
-    throw new Error(`Queue ${queueName} not found`);
+  if (skipRedis || !queues[queueName]) {
+    throw new Error(`Queue ${queueName} not available - Redis is disabled or not connected`);
   }
+
+  const queue = queues[queueName];
 
   const job = await queue.add(queueName, jobData, {
     attempts: 3,
@@ -58,10 +93,11 @@ module.exports.addJob = async function(queueName, jobData, options = {}) {
  * Get job status
  */
 module.exports.getJobStatus = async function(queueName, jobId) {
-  const queue = queues[queueName];
-  if (!queue) {
-    throw new Error(`Queue ${queueName} not found`);
+  if (skipRedis || !queues[queueName]) {
+    return { status: 'not_available', error: 'Redis is disabled' };
   }
+
+  const queue = queues[queueName];
 
   const job = await queue.getJob(jobId);
 
@@ -85,10 +121,11 @@ module.exports.getJobStatus = async function(queueName, jobId) {
  * Cancel job
  */
 module.exports.cancelJob = async function(queueName, jobId) {
-  const queue = queues[queueName];
-  if (!queue) {
-    throw new Error(`Queue ${queueName} not found`);
+  if (skipRedis || !queues[queueName]) {
+    return { success: false, jobId, error: 'Redis is disabled' };
   }
+
+  const queue = queues[queueName];
 
   const job = await queue.getJob(jobId);
   if (job) {
@@ -103,10 +140,11 @@ module.exports.cancelJob = async function(queueName, jobId) {
  * Get queue statistics
  */
 module.exports.getQueueStats = async function(queueName) {
-  const queue = queues[queueName];
-  if (!queue) {
-    throw new Error(`Queue ${queueName} not found`);
+  if (skipRedis || !queues[queueName]) {
+    return { queue: queueName, status: 'not_available', error: 'Redis is disabled' };
   }
+
+  const queue = queues[queueName];
 
   const waiting = await queue.getWaitingCount();
   const active = await queue.getActiveCount();
@@ -129,6 +167,9 @@ module.exports.getQueueStats = async function(queueName) {
  * Close all queues
  */
 module.exports.closeQueues = async function() {
+  if (skipRedis || !connection) {
+    return;
+  }
   await Promise.all(Object.values(queues).map(queue => queue.close()));
   await connection.quit();
 };
