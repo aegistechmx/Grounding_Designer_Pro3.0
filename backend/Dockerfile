@@ -1,9 +1,13 @@
 # Backend Dockerfile for Grounding Designer Pro SaaS
-FROM node:18-alpine
+FROM node:20-alpine
 
-# Install Python and dependencies
-RUN apk add --no-cache python3 py3-pip \
-    && pip3 install --no-cache-dir reportlab openpyxl
+# Install Python and dependencies for report generation using virtual environment
+RUN apk add --no-cache python3 py3-pip gcc musl-dev libffi-dev \
+    && python3 -m venv /opt/venv \
+    && /opt/venv/bin/pip install --no-cache-dir reportlab openpyxl
+
+# Add venv to PATH
+ENV PATH="/opt/venv/bin:$PATH"
 
 WORKDIR /app
 

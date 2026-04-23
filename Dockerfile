@@ -1,13 +1,19 @@
-# Dockerfile
-FROM node:18-alpine AS builder
+# Frontend Dockerfile for Grounding Designer Pro
+FROM node:20-alpine AS builder
 
 WORKDIR /app
-COPY package*.json ./
-RUN npm ci --only=production
 
+# Install Node dependencies (including devDependencies for build)
+COPY package*.json ./
+RUN npm ci
+
+# Copy frontend code
 COPY . .
+
+# Build React app
 RUN npm run build
 
+# Production stage
 FROM node:18-alpine
 WORKDIR /app
 
