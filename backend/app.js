@@ -8,6 +8,8 @@ import simulationRoutes from './routes/simulation.routes.js';
 import reportsRoutes from './routes/reports.routes.js';
 import authRoutes from './routes/auth.routes.js';
 import dashboardRoutes from './routes/dashboard.routes.js';
+import pricingRoutes from './routes/pricing.routes.js';
+import batchRoutes from './routes/batch.routes.js';
 import { securityHeaders, createRateLimiter, calculationRateLimiter, corsOptions } from './middleware/security.js';
 import { sanitizeInput } from './middleware/validation.js';
 import { requestLogger, errorLogger, performanceMonitor, requestIdMiddleware } from './middleware/logging.js';
@@ -37,6 +39,8 @@ app.use('/api/projects', projectsRoutes);
 app.use('/api/simulation', simulationRoutes);
 app.use('/api/reports', reportsRoutes);
 app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/pricing', pricingRoutes);
+app.use('/api/batch', batchRoutes);
 
 // Legacy Routes (maintain backward compatibility)
 app.use('/api/calculate', calculateRoute);
@@ -61,5 +65,7 @@ app.listen(PORT, () => {
   console.log(`  - /api/simulation (IEEE 80 & FEM simulations)`);
   console.log(`  - /api/reports (PDF/Excel/DXF generation)`);
   console.log(`  - /api/dashboard (SaaS dashboard)`);
+  console.log(`  - /api/pricing (pricing & billing)`);
+  console.log(`  - /api/batch (multi-export & ZIP generation)`);
   console.log(`  - /files (serving generated PDFs)`);
 });
