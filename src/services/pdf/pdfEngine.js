@@ -1,6 +1,7 @@
-import PDFDocument from 'pdfkit';
-import fs from 'fs';
-import path from 'path';
+// Server-side libraries - cannot be used in frontend
+// import PDFDocument from 'pdfkit';
+// import fs from 'fs';
+// import path from 'path';
 import { drawCover, drawHeader, drawFooter } from './pdfLayout';
 import { addProjectInfo, addResultsTable, addConclusion, drawResults, drawInputData, drawCompliance, drawRecommendations } from './pdfSections';
 import { generateHeatmapWithContours, addHeatmap } from './pdfCharts';
@@ -13,6 +14,7 @@ import { generateHeatmapWithContours, addHeatmap } from './pdfCharts';
 
 /**
  * Generate corporate PDF with ETAP-style heatmap and contours
+ * Server-side only - uses Node.js PDFKit library
  * @param {Object} data - Data for PDF generation
  * @param {Object} data.results - Calculation results
  * @param {Object} data.params - Project parameters
@@ -21,6 +23,11 @@ import { generateHeatmapWithContours, addHeatmap } from './pdfCharts';
  * @returns {Promise<string>} - File path of generated PDF
  */
 export async function generateCorporatePDF({ results, params, data, recommendations = [] }) {
+  // Server-side only - moved to backend
+  console.warn('generateCorporatePDF is server-side only - use backend API');
+  return null;
+
+  /*
   const doc = new PDFDocument({ size: 'A4' });
 
   const outputsDir = path.join(process.cwd(), 'outputs');
@@ -64,12 +71,19 @@ export async function generateCorporatePDF({ results, params, data, recommendati
   doc.end();
 
   return filePath;
+  */
 }
 
 /**
  * Legacy jsPDF-based generation (for backward compatibility)
+ * Server-side only
  */
 export const generateCorporatePDFLegacy = ({ calculations, params, heatmapImage }) => {
+  // Server-side only - use backend API
+  console.warn('generateCorporatePDFLegacy is server-side only - use backend API');
+  return null;
+
+  /*
   const jsPDF = require('jspdf');
   const doc = new jsPDF('p', 'mm', 'a4');
 
@@ -93,6 +107,7 @@ export const generateCorporatePDFLegacy = ({ calculations, params, heatmapImage 
 
   // ===== GUARDAR =====
   doc.save(`Grounding_Report_${Date.now()}.pdf`);
+  */
 };
 
 /**

@@ -3,14 +3,16 @@
  * Grounding Designer Pro - Professional Engineering Visualization
  */
 
-import { createCanvas } from 'canvas';
-import { contours } from 'd3-contour';
-import { generateContourLines, createInterpolatedField, generateContourLevels as genLevels } from '../../utils/contourLines';
+// Server-side libraries - cannot be used in frontend
+// import { createCanvas } from 'canvas';
+// import { contours } from 'd3-contour';
+// import { generateContourLines, createInterpolatedField, generateContourLevels as genLevels } from '../../utils/contourLines';
 import { drawLegend, drawScaleBar } from './pdfLegend';
 import { mapX, mapY, normalize, generateContourLevels } from './pdfUtils';
 
 /**
  * Generate heatmap with equipotential contour lines (ETAP-style)
+ * Server-side only - uses Node.js canvas and d3-contour libraries
  * @param {Array} data - Grid data with potential values
  * @param {number} width - Canvas width
  * @param {number} height - Canvas height
@@ -18,6 +20,12 @@ import { mapX, mapY, normalize, generateContourLevels } from './pdfUtils';
  * @returns {Buffer} PNG image buffer
  */
 export function generateHeatmapWithContours(data, width = 800, height = 500, params = {}) {
+  // Server-side only - moved to backend
+  // Frontend should use backend-generated heatmaps
+  console.warn('generateHeatmapWithContours is server-side only - use backend API');
+  return null;
+
+  /*
   const canvas = createCanvas(width, height);
   const ctx = canvas.getContext('2d');
 
@@ -94,6 +102,7 @@ export function generateHeatmapWithContours(data, width = 800, height = 500, par
   drawScaleBar(ctx, 50, height - 30, scaleLength, 10);
 
   return canvas.toBuffer('image/png');
+  */
 }
 
 /**
@@ -126,54 +135,19 @@ function drawGridOverlay(ctx, width, height) {
 }
 
 /**
- * Draw professional legend (ETAP-style)
- * @param {CanvasRenderingContext2D} ctx - Canvas context
- * @param {number} min - Minimum potential value
- * @param {number} max - Maximum potential value
- * @param {number} x - Legend x position
- * @param {number} y - Legend y position
- */
-export function drawLegend(ctx, min, max, x, y) {
-  const width = 20;
-  const height = 200;
-
-  // Gradient legend
-  for (let i = 0; i < height; i++) {
-    const t = i / height;
-    const r = 255;
-    const g = Math.floor(255 * (1 - t));
-    const b = 0;
-
-    ctx.fillStyle = `rgb(${r},${g},${b})`;
-    ctx.fillRect(x, y + i, width, 1);
-  }
-
-  // Legend border
-  ctx.strokeStyle = '#ffffff';
-  ctx.lineWidth = 1;
-  ctx.strokeRect(x, y, width, height);
-
-  // Legend labels
-  ctx.fillStyle = '#ffffff';
-  ctx.font = '10px Arial';
-
-  ctx.fillText(`${max.toFixed(0)} V`, x + 25, y + 10);
-  ctx.fillText(`${((max + min) / 2).toFixed(0)} V`, x + 25, y + height / 2);
-  ctx.fillText(`${min.toFixed(0)} V`, x + 25, y + height);
-
-  // Legend title
-  ctx.font = 'bold 11px Arial';
-  ctx.fillText('Potencial (V)', x, y - 5);
-}
-
-/**
  * Generate heatmap with legend
+ * Server-side only - uses Node.js canvas library
  * @param {Array} data - Grid data
  * @param {number} width - Canvas width
  * @param {number} height - Canvas height
  * @returns {Buffer} PNG image buffer with legend
  */
 export function generateHeatmapWithLegend(data, width = 800, height = 500) {
+  // Server-side only - moved to backend
+  console.warn('generateHeatmapWithLegend is server-side only - use backend API');
+  return null;
+
+  /*
   const canvas = createCanvas(width, height);
   const ctx = canvas.getContext('2d');
 
@@ -193,6 +167,7 @@ export function generateHeatmapWithLegend(data, width = 800, height = 500) {
   drawLegend(ctx, min, max, width - 40, 50);
 
   return canvas.toBuffer('image/png');
+  */
 }
 
 /**
