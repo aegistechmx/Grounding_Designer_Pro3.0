@@ -1,7 +1,7 @@
 // backend/services/logger.service.js
 // Sistema de logging industrial
 
-import winston from 'winston';
+const winston = require('winston');
 
 const logger = winston.createLogger({
   level: process.env.LOG_LEVEL || 'info',
@@ -22,4 +22,4 @@ if (process.env.NODE_ENV !== 'production') {
   }));
 }
 
-export default logger;
+module.exports = logger;

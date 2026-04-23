@@ -1,4 +1,4 @@
-import GroundingCalculator from '../src/application/GroundingCalculator.js';
+const GroundingCalculator = require('../src/application/GroundingCalculator.js');
 
 class GroundingService {
   static async calculateGrounding(input) {
@@ -134,4 +134,4 @@ class GroundingService {
   }
 }
 
-export default GroundingService;
+module.exports = GroundingService;

@@ -1,6 +1,6 @@
-import express from 'express';
-import { pdfQueue } from '../jobs/queue.js';
-import { calculationRateLimiter } from '../middleware/security.js';
+const express = require('express');
+const { pdfQueue } = require('../jobs/queue.js');
+const { calculationRateLimiter } = require('../middleware/security.js');
 
 const router = express.Router();
 
@@ -75,4 +75,4 @@ router.get('/status/:id', async (req, res) => {
   }
 });
 
-export default router;
+module.exports = router;

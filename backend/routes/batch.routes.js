@@ -3,13 +3,13 @@
  * API endpoints for multi-export functionality (ZIP generation)
  */
 
-import express from 'express';
+const express = require('express');
 const router = express.Router();
-import authMiddleware from '../middleware/auth.js';
-import requireFeature from '../middleware/requireFeature.js';
-import batchService from '../services/batch.service.js';
-import storageService from '../services/storage.service.js';
-import { getPool } from '../database/pool.js';
+const authMiddleware = require('../middleware/auth.js');
+const requireFeature = require('../middleware/requireFeature.js');
+const batchService = require('../services/batch.service.js');
+const storageService = require('../services/storage.service.js');
+const { getPool } = require('../database/pool.js');
 
 const pool = getPool();
 
@@ -143,4 +143,4 @@ router.get('/download/:key', authMiddleware, async (req, res) => {
   }
 });
 
-export default router;
+module.exports = router;

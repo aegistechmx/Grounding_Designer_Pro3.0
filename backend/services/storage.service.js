@@ -4,8 +4,8 @@
  * Supports AWS S3, MinIO, and other S3-compatible services
  */
 
-import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand, ListObjectsV2Command } from '@aws-sdk/client-s3';
-import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+const { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand, ListObjectsV2Command } = require('@aws-sdk/client-s3');
+const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
 
 class StorageService {
   constructor() {
@@ -307,4 +307,4 @@ class StorageService {
   }
 }
 
-export default new StorageService();
+module.exports = new StorageService();

@@ -3,16 +3,16 @@
  * API endpoints for IEEE 80 and FEM simulations
  */
 
-import express from 'express';
+const express = require('express');
 const router = express.Router();
-import authMiddleware from '../middleware/auth.js';
-import requireFeature from '../middleware/requireFeature.js';
-import ieee80Service from '../services/ieee80.service.js';
-import femService from '../services/fem.service.js';
-import heatmapService from '../services/heatmap.service.js';
-import aiService from '../services/ai.service.js';
-import { addJob, getJobStatus } from '../jobs/queue.js';
-import { Pool } from 'pg';
+const authMiddleware = require('../middleware/auth.js');
+const requireFeature = require('../middleware/requireFeature.js');
+const ieee80Service = require('../services/ieee80.service.js');
+const femService = require('../services/fem.service.js');
+const heatmapService = require('../services/heatmap.service.js');
+const aiService = require('../services/ai.service.js');
+const { addJob, getJobStatus } = require('../jobs/queue.js');
+const { Pool } = require('pg');
 
 // Database connection
 const pool = new Pool({
@@ -286,4 +286,4 @@ router.post('/batch', authMiddleware, async (req, res) => {
   }
 });
 
-export default router;
+module.exports = router;

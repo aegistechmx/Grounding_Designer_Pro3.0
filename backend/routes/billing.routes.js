@@ -3,11 +3,11 @@
  * API endpoints for Stripe billing integration
  */
 
-import express from 'express';
+const express = require('express');
 const router = express.Router();
-import authMiddleware from '../middleware/auth.js';
-import stripeService from '../services/billing/stripe.service.js';
-import { getPool } from '../database/pool.js';
+const authMiddleware = require('../middleware/auth.js');
+const stripeService = require('../services/billing/stripe.service.js');
+const { getPool } = require('../database/pool.js');
 
 const pool = getPool();
 
@@ -225,4 +225,4 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
   res.json({ received: true });
 });
 
-export default router;
+module.exports = router;

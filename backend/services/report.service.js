@@ -5,10 +5,10 @@
  * Uses unified PDF service architecture
  */
 
-import { exec } from 'child_process';
-import path from 'path';
-import fs from 'fs/promises';
-import storageService from './storage.service.js';
+const { exec } = require('child_process');
+const path = require('path');
+const fs = require('fs/promises');
+const storageService = require('./storage.service.js');
 
 class ReportService {
   /**
@@ -217,4 +217,4 @@ class ReportService {
   }
 }
 
-export default new ReportService();
+module.exports = new ReportService();

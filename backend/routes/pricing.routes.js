@@ -3,12 +3,12 @@
  * API endpoints for SaaS pricing plans and billing
  */
 
-import express from 'express';
+const express = require('express');
 const router = express.Router();
-import authMiddleware from '../middleware/auth.js';
-import pricingService from '../services/pricing.service.js';
-import { getPool } from '../database/pool.js';
-import { errorLogger } from '../middleware/logging.js';
+const authMiddleware = require('../middleware/auth.js');
+const pricingService = require('../services/pricing.service.js');
+const { getPool } = require('../database/pool.js');
+const { errorLogger } = require('../middleware/logging.js');
 
 // Get database pool singleton
 const pool = getPool();
@@ -324,4 +324,4 @@ router.put('/plan', authMiddleware, async (req, res) => {
   }
 });
 
-export default router;
+module.exports = router;

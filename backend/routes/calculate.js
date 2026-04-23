@@ -1,7 +1,7 @@
-import express from 'express';
-import GroundingCalculator from '../../src/application/GroundingCalculator.js';
-import { validateCalculationInput, handleValidationErrors } from '../middleware/validation.js';
-import { calculationRateLimiter } from '../middleware/security.js';
+const express = require('express');
+const GroundingCalculator = require('../../src/application/GroundingCalculator.js');
+const { validateCalculationInput, handleValidationErrors } = require('../middleware/validation.js');
+const { calculationRateLimiter } = require('../middleware/security.js');
 
 const router = express.Router();
 
@@ -46,4 +46,4 @@ router.get('/health', (req, res) => {
   });
 });
 
-export default router;
+module.exports = router;

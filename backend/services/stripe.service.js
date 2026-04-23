@@ -1,7 +1,7 @@
 // backend/services/stripe.service.js
 // Gestión de suscripciones y pagos
 
-import Stripe from 'stripe';
+const Stripe = require('stripe');
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 const plans = {
@@ -134,4 +134,4 @@ class BillingService {
   }
 }
 
-export default new BillingService();
+module.exports = new BillingService();

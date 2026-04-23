@@ -4,9 +4,9 @@
  * Heavy computation - should run in worker/job queue
  */
 
-import { exec } from 'child_process';
-import path from 'path';
-import fs from 'fs/promises';
+const { exec } = require('child_process');
+const path = require('path');
+const fs = require('fs/promises');
 
 class FEMService {
   /**
@@ -106,4 +106,4 @@ class FEMService {
   }
 }
 
-export default new FEMService();
+module.exports = new FEMService();

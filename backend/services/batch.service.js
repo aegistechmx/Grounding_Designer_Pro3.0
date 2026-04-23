@@ -3,10 +3,10 @@
  * Handles multi-export functionality (ZIP generation)
  */
 
-import archiver from 'archiver';
-import fs from 'fs/promises';
-import path from 'path';
-import storageService from './storage.service.js';
+const archiver = require('archiver');
+const fs = require('fs/promises');
+const path = require('path');
+const storageService = require('./storage.service.js');
 
 class BatchService {
   /**
@@ -262,4 +262,4 @@ class BatchService {
   }
 }
 
-export default new BatchService();
+module.exports = new BatchService();

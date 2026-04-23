@@ -3,9 +3,9 @@
  * JWT-based authentication with role-based access control
  */
 
-import jwt from 'jsonwebtoken';
-import bcrypt from 'bcryptjs';
-import { Pool } from 'pg';
+const jwt = require('jsonwebtoken');
+const bcrypt = require('bcryptjs');
+const { Pool } = require('pg');
 
 // Database connection
 const pool = new Pool({
@@ -280,4 +280,4 @@ class AuthService {
   }
 }
 
-export default new AuthService();
+module.exports = new AuthService();
