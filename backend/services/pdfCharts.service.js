@@ -87,6 +87,11 @@ function createMapper(data) {
 // 🌡️ HEATMAP
 // ================================
 function drawHeatmap(ctx, data, mapper, min, max) {
+  if (!data || data.length === 0) {
+    console.warn('No data provided for heatmap generation');
+    return;
+  }
+
   const resolution = 80;
 
   const cellW = (WIDTH - 2 * MARGIN) / resolution;
@@ -299,9 +304,12 @@ function connectLines(segments) {
     used.add(i);
 
     let extended = true;
+    let iterations = 0;
+    const MAX_ITERATIONS = segments.length * 2; // Prevent infinite loops
 
-    while (extended) {
+    while (extended && iterations < MAX_ITERATIONS) {
       extended = false;
+      iterations++;
 
       for (let j = 0; j < segments.length; j++) {
         if (used.has(j)) continue;
@@ -318,6 +326,10 @@ function connectLines(segments) {
           extended = true;
         }
       }
+    }
+
+    if (iterations >= MAX_ITERATIONS) {
+      console.warn('connectLines reached iteration limit - possible cycle in segments');
     }
 
     lines.push(line);

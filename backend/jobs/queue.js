@@ -34,15 +34,25 @@ if (!skipRedis) {
       }
     });
 
-    // Create queues
-    queues = {
-      simulation: new Queue('simulation', { connection }),
-      reports: new Queue('reports', { connection }),
-      pdf: new Queue('pdf', { connection }),
-      heatmap: new Queue('heatmap', { connection }),
-      fem: new Queue('fem', { connection }),
-      ai: new Queue('ai', { connection })
-    };
+    // Wait for connection to be established before creating queues
+    connection.on('connect', () => {
+      console.log('Redis connected - creating job queues');
+      
+      // Create queues
+      queues = {
+        simulation: new Queue('simulation', { connection }),
+        reports: new Queue('reports', { connection }),
+        pdf: new Queue('pdf', { connection }),
+        heatmap: new Queue('heatmap', { connection }),
+        fem: new Queue('fem', { connection }),
+        ai: new Queue('ai', { connection })
+      };
+    });
+
+    connection.on('close', () => {
+      console.warn('Redis connection closed - job queues may be unavailable');
+    });
+
   } catch (error) {
     console.error('Failed to initialize Redis queues:', error.message);
     console.warn('Job queues will be disabled');

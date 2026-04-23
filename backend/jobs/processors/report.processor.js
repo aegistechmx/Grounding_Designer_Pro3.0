@@ -14,12 +14,36 @@ const storageService = require('../../services/storage.service');
 const emailService = require('../../services/notification/email.service');
 const pdfChartsService = require('../../services/pdfCharts.service');
 
-// Redis connection
-const connection = new Redis({
-  host: process.env.REDIS_HOST || 'localhost',
-  port: process.env.REDIS_PORT || 6379,
-  password: process.env.REDIS_PASSWORD || undefined
-});
+// Redis connection - only initialize if not skipped
+const skipRedis = process.env.SKIP_REDIS === 'true';
+let connection = null;
+
+if (!skipRedis) {
+  try {
+    connection = new Redis({
+      host: process.env.REDIS_HOST || 'localhost',
+      port: process.env.REDIS_PORT || 6379,
+      password: process.env.REDIS_PASSWORD || undefined,
+      maxRetriesPerRequest: null,
+      retryStrategy: (times) => {
+        const delay = Math.min(times * 50, 2000);
+        return delay;
+      }
+    });
+
+    connection.on('error', (err) => {
+      console.error('Redis connection error in report processor:', err.message);
+      if (err.code === 'ECONNREFUSED') {
+        console.warn('Redis not available - report workers will be disabled');
+      }
+    });
+  } catch (error) {
+    console.error('Failed to initialize Redis connection in report processor:', error.message);
+    connection = null;
+  }
+} else {
+  console.log('Redis skipped in report processor (SKIP_REDIS=true)');
+}
 
 // Ensure outputs directory exists
 const outputsDir = path.join(__dirname, '../../outputs');
@@ -115,13 +139,28 @@ async function processPDFJob(job) {
     await job.updateProgress(100);
 
     // Upload to storage
-    const pdfBuffer = fs.readFileSync(filePath);
+    let pdfBuffer;
+    try {
+      if (!fs.existsSync(filePath)) {
+        throw new Error('PDF file not found after generation');
+      }
+      pdfBuffer = fs.readFileSync(filePath);
+    } catch (readError) {
+      console.error('Failed to read PDF file:', readError);
+      throw new Error('PDF generation failed - could not read output file');
+    }
+
     const uploadResult = await storageService.uploadPDF(job.id, pdfBuffer, {
       projectName,
       clientName,
       engineer,
       jobId: job.id
     });
+
+    // Check if upload succeeded
+    if (!uploadResult || !uploadResult.success) {
+      throw new Error('PDF upload failed: ' + (uploadResult?.error || 'Unknown error'));
+    }
 
     // Send email notification
     if (job.data.userEmail) {
@@ -207,6 +246,11 @@ async function processBatchJob(job) {
  * Create PDF worker
  */
 function createPDFWorker() {
+  if (skipRedis || !connection) {
+    console.warn('PDF worker not created - Redis is disabled or not connected');
+    return null;
+  }
+
   const worker = new Worker('pdf', async (job) => {
     if (job.name === 'generate-pdf') {
       return await processPDFJob(job);
@@ -232,6 +276,11 @@ function createPDFWorker() {
  * Create report worker (legacy)
  */
 function createReportWorker() {
+  if (skipRedis || !connection) {
+    console.warn('Report worker not created - Redis is disabled or not connected');
+    return null;
+  }
+
   const worker = new Worker('reports', async (job) => {
     if (job.name === 'pdf') {
       return await processPDFJob(job);
