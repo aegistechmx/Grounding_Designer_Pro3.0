@@ -3,171 +3,275 @@
  * Grounding Designer Pro - Professional Engineering Visualization
  */
 
-// Server-side libraries - cannot be used in frontend
-// import { createCanvas } from 'canvas';
-// import { contours } from 'd3-contour';
-// import { generateContourLines, createInterpolatedField, generateContourLevels as genLevels } from '../../utils/contourLines';
-import { drawLegend, drawScaleBar } from './pdfLegend';
-import { mapX, mapY, normalize, generateContourLevels } from './pdfUtils';
+import { createCanvas } from 'canvas';
+import { generateContourLines } from '../../utils/contourLines';
 
-/**
- * Generate heatmap with equipotential contour lines (ETAP-style)
- * Server-side only - uses Node.js canvas and d3-contour libraries
- * @param {Array} data - Grid data with potential values
- * @param {number} width - Canvas width
- * @param {number} height - Canvas height
- * @param {Object} params - Grid parameters (gridLength, gridWidth)
- * @returns {Buffer} PNG image buffer
- */
-export function generateHeatmapWithContours(data, width = 800, height = 500, params = {}) {
-  // Server-side only - moved to backend
-  // Frontend should use backend-generated heatmaps
-  console.warn('generateHeatmapWithContours is server-side only - use backend API');
-  return null;
+// ================================
+// 🎨 CONFIG
+// ================================
+const WIDTH = 800;
+const HEIGHT = 500;
+const MARGIN = 60;
 
-  /*
-  const canvas = createCanvas(width, height);
-  const ctx = canvas.getContext('2d');
+// ================================
+// 🌈 COLOR SCALE (ETAP STYLE)
+// ================================
+function getHeatColor(t) {
+  // Clamp
+  t = Math.max(0, Math.min(1, t));
 
-  // Background
-  ctx.fillStyle = '#0f172a';
-  ctx.fillRect(0, 0, width, height);
+  let r, g, b;
 
-  // Create grid (50x50 for smooth contours)
-  const size = 50;
-  const values = new Array(size * size).fill(0);
+  if (t < 0.33) {
+    const k = t / 0.33;
+    r = 255 * k;
+    g = 255;
+    b = 0;
+  } else if (t < 0.66) {
+    const k = (t - 0.33) / 0.33;
+    r = 255;
+    g = 255 * (1 - k);
+    b = 0;
+  } else {
+    const k = (t - 0.66) / 0.34;
+    r = 255;
+    g = 255 * (1 - k);
+    b = 0;
+  }
 
-  data.forEach((d, i) => {
-    values[i] = d.potential || 0;
-  });
+  return `rgb(${r|0},${g|0},${b|0})`;
+}
 
-  // Normalize values
-  const min = Math.min(...values);
-  const max = Math.max(...values);
+// ================================
+// 📏 NORMALIZACIÓN
+// ================================
+function normalize(value, min, max) {
+  if (max - min === 0) return 0.5;
+  return (value - min) / (max - min);
+}
 
-  const scale = v => (v - min) / (max - min + 1e-6);
+// ================================
+// 🗺️ MAPEO COORDENADAS
+// ================================
+function createMapper(data) {
+  const xs = data.map(d => d.x);
+  const ys = data.map(d => d.y);
 
-  // Smooth heatmap
-  for (let x = 0; x < size; x++) {
-    for (let y = 0; y < size; y++) {
-      const v = scale(values[y * size + x]);
+  const minX = Math.min(...xs);
+  const maxX = Math.max(...xs);
+  const minY = Math.min(...ys);
+  const maxY = Math.max(...ys);
 
-      // Red-yellow gradient (ETAP style)
-      const r = 255;
-      const g = Math.floor(255 * (1 - v));
-      const b = 0;
+  const scaleX = (WIDTH - 2 * MARGIN) / (maxX - minX || 1);
+  const scaleY = (HEIGHT - 2 * MARGIN) / (maxY - minY || 1);
 
-      ctx.fillStyle = `rgb(${r},${g},${b})`;
+  return {
+    mapX: x => MARGIN + (x - minX) * scaleX,
+    mapY: y => HEIGHT - MARGIN - (y - minY) * scaleY,
+    minX,
+    maxX,
+    minY,
+    maxY
+  };
+}
+
+// ================================
+// 🌡️ HEATMAP
+// ================================
+function drawHeatmap(ctx, data, mapper, min, max) {
+  const resolution = 80;
+
+  const cellW = (WIDTH - 2 * MARGIN) / resolution;
+  const cellH = (HEIGHT - 2 * MARGIN) / resolution;
+
+  for (let i = 0; i < resolution; i++) {
+    for (let j = 0; j < resolution; j++) {
+      const x = mapper.minX + (i / resolution) * (mapper.maxX - mapper.minX);
+      const y = mapper.minY + (j / resolution) * (mapper.maxY - mapper.minY);
+
+      // nearest point interpolation (rápido y suficiente)
+      let closest = data[0];
+      let minDist = Infinity;
+
+      for (const p of data) {
+        const d = (p.x - x) ** 2 + (p.y - y) ** 2;
+        if (d < minDist) {
+          minDist = d;
+          closest = p;
+        }
+      }
+
+      const t = normalize(closest.potential, min, max);
+
+      ctx.fillStyle = getHeatColor(t);
       ctx.fillRect(
-        (x / size) * width,
-        (y / size) * height,
-        width / size,
-        height / size
+        MARGIN + i * cellW,
+        HEIGHT - MARGIN - j * cellH,
+        cellW,
+        cellH
       );
     }
   }
+}
 
-  // AutoCAD-style grid overlay
-  drawGridOverlay(ctx, width, height);
+// ================================
+// 🧠 CURVAS EQUIPOTENCIALES
+// ================================
+function drawContours(ctx, data, mapper, min, max) {
+  const levels = [];
+  const steps = 10;
 
-  // Equipotential contour lines using d3-contour
-  const contourGen = contours()
-    .size([size, size])
-    .thresholds(10); // Number of contour lines
+  for (let i = 0; i <= steps; i++) {
+    levels.push(min + (i / steps) * (max - min));
+  }
 
-  const contourData = contourGen(values);
+  // Create interpolated field for contour generation
+  const resolution = 50;
+  const field = [];
+  for (let i = 0; i < resolution; i++) {
+    field[i] = [];
+    for (let j = 0; j < resolution; j++) {
+      const x = mapper.minX + (i / resolution) * (mapper.maxX - mapper.minX);
+      const y = mapper.minY + (j / resolution) * (mapper.maxY - mapper.minY);
+      
+      // Find nearest point
+      let closest = data[0];
+      let minDist = Infinity;
+      for (const p of data) {
+        const d = (p.x - x) ** 2 + (p.y - y) ** 2;
+        if (d < minDist) {
+          minDist = d;
+          closest = p;
+        }
+      }
+      field[i][j] = closest.potential;
+    }
+  }
 
-  ctx.strokeStyle = '#ffffff';
+  const contours = generateContourLines(field, levels, resolution);
+
+  ctx.strokeStyle = '#000';
   ctx.lineWidth = 1;
 
-  contourData.forEach(contour => {
-    contour.coordinates.forEach(polygon => {
-      polygon.forEach(ring => {
-        ctx.beginPath();
-        ring.forEach(([x, y], i) => {
-          const px = (x / size) * width;
-          const py = (y / size) * height;
-
-          if (i === 0) ctx.moveTo(px, py);
-          else ctx.lineTo(px, py);
-        });
-        ctx.stroke();
+  contours.forEach(contour => {
+    contour.lines.forEach(line => {
+      ctx.beginPath();
+      line.forEach((point, i) => {
+        const x = mapper.mapX(point[0]);
+        const y = mapper.mapY(point[1]);
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
       });
+      ctx.stroke();
     });
   });
-
-  // Draw spatial scale
-  const gridLength = params.gridLength || 30;
-  const scaleLength = (10 / gridLength) * (width - 100); // 10m scale
-  drawScaleBar(ctx, 50, height - 30, scaleLength, 10);
-
-  return canvas.toBuffer('image/png');
-  */
 }
 
-/**
- * Draw AutoCAD-style grid overlay
- * @param {CanvasRenderingContext2D} ctx - Canvas context
- * @param {number} width - Canvas width
- * @param {number} height - Canvas height
- */
-function drawGridOverlay(ctx, width, height) {
-  const gridSize = 50;
-  
-  ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
-  ctx.lineWidth = 0.5;
+// ================================
+// 📏 GRID
+// ================================
+function drawGrid(ctx) {
+  ctx.strokeStyle = 'rgba(0,0,0,0.1)';
+  ctx.lineWidth = 1;
 
-  // Vertical lines
-  for (let x = 0; x < width; x += gridSize) {
+  for (let x = MARGIN; x < WIDTH - MARGIN; x += 50) {
     ctx.beginPath();
-    ctx.moveTo(x, 0);
-    ctx.lineTo(x, height);
+    ctx.moveTo(x, MARGIN);
+    ctx.lineTo(x, HEIGHT - MARGIN);
     ctx.stroke();
   }
 
-  // Horizontal lines
-  for (let y = 0; y < height; y += gridSize) {
+  for (let y = MARGIN; y < HEIGHT - MARGIN; y += 50) {
     ctx.beginPath();
-    ctx.moveTo(0, y);
-    ctx.lineTo(width, y);
+    ctx.moveTo(MARGIN, y);
+    ctx.lineTo(WIDTH - MARGIN, y);
     ctx.stroke();
   }
 }
 
-/**
- * Generate heatmap with legend
- * Server-side only - uses Node.js canvas library
- * @param {Array} data - Grid data
- * @param {number} width - Canvas width
- * @param {number} height - Canvas height
- * @returns {Buffer} PNG image buffer with legend
- */
-export function generateHeatmapWithLegend(data, width = 800, height = 500) {
-  // Server-side only - moved to backend
-  console.warn('generateHeatmapWithLegend is server-side only - use backend API');
-  return null;
+// ================================
+// 📊 LEYENDA
+// ================================
+function drawLegend(ctx, min, max) {
+  const x = WIDTH - 40;
+  const y = MARGIN;
+  const height = 300;
 
-  /*
-  const canvas = createCanvas(width, height);
+  const steps = 10;
+
+  for (let i = 0; i < steps; i++) {
+    const t = i / steps;
+    const color = getHeatColor(t);
+
+    ctx.fillStyle = color;
+    ctx.fillRect(x, y + i * (height / steps), 20, height / steps);
+
+    const value = (max - t * (max - min)).toFixed(0);
+
+    ctx.fillStyle = '#000';
+    ctx.font = '10px Arial';
+    ctx.fillText(
+      `${value} V`,
+      x - 50,
+      y + i * (height / steps) + 10
+    );
+  }
+}
+
+// ================================
+// 📏 ESCALA
+// ================================
+function drawScale(ctx, mapper) {
+  ctx.strokeStyle = '#000';
+  ctx.lineWidth = 2;
+
+  const lengthPx = 100;
+  const realLength = ((mapper.maxX - mapper.minX) / (WIDTH - 2 * MARGIN)) * lengthPx;
+
+  ctx.beginPath();
+  ctx.moveTo(MARGIN, HEIGHT - 20);
+  ctx.lineTo(MARGIN + lengthPx, HEIGHT - 20);
+  ctx.stroke();
+
+  ctx.font = '12px Arial';
+  ctx.fillText(`${realLength.toFixed(1)} m`, MARGIN + 20, HEIGHT - 5);
+}
+
+// ================================
+// 🏁 EXPORT PRINCIPAL
+// ================================
+export function generateHeatmapChart(data = []) {
+  const canvas = createCanvas(WIDTH, HEIGHT);
   const ctx = canvas.getContext('2d');
 
-  // Generate heatmap
-  const heatmapBuffer = generateHeatmapWithContours(data, width - 50, height);
-  
-  // Load heatmap onto canvas
-  const img = new Image();
-  img.src = heatmapBuffer;
-  ctx.drawImage(img, 0, 0, width - 50, height);
+  // fondo blanco
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, WIDTH, HEIGHT);
 
-  // Draw legend
-  const values = data.map(d => d.potential || 0);
-  const min = Math.min(...values);
-  const max = Math.max(...values);
-  
-  drawLegend(ctx, min, max, width - 40, 50);
+  if (!data.length) {
+    ctx.fillStyle = '#000';
+    ctx.fillText('No data available', 100, 100);
+    return canvas.toBuffer('image/png');
+  }
+
+  const potentials = data.map(d => d.potential || 0);
+  const min = Math.min(...potentials);
+  const max = Math.max(...potentials);
+
+  const mapper = createMapper(data);
+
+  // 🔥 render pipeline
+  drawHeatmap(ctx, data, mapper, min, max);
+  drawGrid(ctx);
+  drawContours(ctx, data, mapper, min, max);
+  drawLegend(ctx, min, max);
+  drawScale(ctx, mapper);
+
+  // border
+  ctx.strokeStyle = '#000';
+  ctx.strokeRect(MARGIN, MARGIN, WIDTH - 2*MARGIN, HEIGHT - 2*MARGIN);
 
   return canvas.toBuffer('image/png');
-  */
 }
 
 /**
