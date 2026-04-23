@@ -94,6 +94,35 @@ class GroundingService {
       };
     }
 
+    // Validate optional parameters if provided
+    if (input.grid.gridDepth !== undefined && (typeof input.grid.gridDepth !== 'number' || input.grid.gridDepth < 0)) {
+      return {
+        isValid: false,
+        error: 'Grid burial depth must be a non-negative number'
+      };
+    }
+
+    if (input.grid.conductorDiameter !== undefined && (typeof input.grid.conductorDiameter !== 'number' || input.grid.conductorDiameter <= 0)) {
+      return {
+        isValid: false,
+        error: 'Conductor diameter must be a positive number'
+      };
+    }
+
+    if (input.grid.rodLength !== undefined && (typeof input.grid.rodLength !== 'number' || input.grid.rodLength <= 0)) {
+      return {
+        isValid: false,
+        error: 'Rod length must be a positive number'
+      };
+    }
+
+    if (input.grid.numRods !== undefined && (typeof input.grid.numRods !== 'number' || input.grid.numRods < 0)) {
+      return {
+        isValid: false,
+        error: 'Number of rods must be a non-negative number'
+      };
+    }
+
     return { isValid: true };
   }
 
@@ -103,12 +132,12 @@ class GroundingService {
       input: {
         soil: {
           soilResistivity: input.soil.soilResistivity,
-          effectiveResistivity: input.soil.soilResistivity // Use input resistivity (Rg is in ohms, not ohm-meters)
+          effectiveResistivity: null // Backend IEEE 80 service doesn't calculate effective resistivity for multi-layer soil
         },
         grid: {
           gridLength: input.grid.gridLength,
           gridWidth: input.grid.gridWidth,
-          totalLength: Math.max(0, (input.grid.gridLength * (input.grid.numParallelY - 1)) + (input.grid.gridWidth * (input.grid.numParallel - 1)))
+          totalLength: (input.grid.gridLength * input.grid.numParallelY) + (input.grid.gridWidth * input.grid.numParallel)
         },
         fault: {
           current: input.fault.current,
