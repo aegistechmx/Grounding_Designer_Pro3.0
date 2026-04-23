@@ -13,7 +13,8 @@ import { runCompletePipeline } from '../../core/groundingEngine';
 import { generateReport, downloadReportJSON } from '../../core/report';
 import { generateFullReport } from '../../utils/pdfGenerator';
 import { HeatmapCanvas, exportCanvasImage } from '../../visual';
-import { generateCorporatePDF } from '../../services/pdf/pdfEngine';
+// PDF generation moved to backend - use backend API instead
+// import { generateCorporatePDF } from '../../services/pdf/pdfEngine';
 import { saveProject } from '../../services/projectService';
 import { auth } from '../../firebase';
 import { generateAISuggestions } from '../../services/aiSuggestionService';
@@ -103,13 +104,8 @@ export const DesignPanel = ({ params, calculations, updateParam, darkMode, recal
         }, 2000);
       }
     } catch (error) {
-      console.error('SaaS PDF API error, falling back to local:', error);
-      // Fall back to local generation
-      await generateCorporatePDF({
-        calculations,
-        params,
-        heatmapImage
-      });
+      console.error('SaaS PDF API error:', error);
+      alert('PDF generation failed: ' + error.message);
     }
   };
 
