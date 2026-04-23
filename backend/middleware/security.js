@@ -1,8 +1,8 @@
-import rateLimit from 'express-rate-limit';
-import helmet from 'helmet';
+const rateLimit = require('express-rate-limit');
+const helmet = require('helmet');
 
 // Rate limiting configuration
-export const createRateLimiter = (windowMs = 15 * 60 * 1000, max = 100) => {
+module.exports.createRateLimiter = (windowMs = 15 * 60 * 1000, max = 100) => {
   return rateLimit({
     windowMs, // 15 minutes
     max, // limit each IP to 100 requests per windowMs
@@ -16,7 +16,7 @@ export const createRateLimiter = (windowMs = 15 * 60 * 1000, max = 100) => {
 };
 
 // Stricter rate limiting for calculation endpoint
-export const calculationRateLimiter = rateLimit({
+module.exports.calculationRateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 30, // limit each IP to 30 calculations per 15 minutes
   message: {
@@ -28,7 +28,7 @@ export const calculationRateLimiter = rateLimit({
 });
 
 // Rate limiting for pricing endpoints
-export const pricingRateLimiter = rateLimit({
+module.exports.pricingRateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 50, // limit each IP to 50 pricing requests per 15 minutes
   message: {
@@ -40,7 +40,7 @@ export const pricingRateLimiter = rateLimit({
 });
 
 // Security headers configuration
-export const securityHeaders = helmet({
+module.exports.securityHeaders = helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
@@ -64,7 +64,7 @@ export const securityHeaders = helmet({
 });
 
 // CORS configuration for production
-export const corsOptions = {
+module.exports.corsOptions = {
   origin: function (origin, callback) {
     // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);

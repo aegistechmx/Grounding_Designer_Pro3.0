@@ -1,12 +1,8 @@
 // Enhanced error logging and monitoring middleware
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+const path = require('path');
 
 // Request logging middleware
-export const requestLogger = (req, res, next) => {
+module.exports.requestLogger = (req, res, next) => {
   const start = Date.now();
   const timestamp = new Date().toISOString();
   
@@ -41,7 +37,7 @@ export const requestLogger = (req, res, next) => {
 };
 
 // Error logging middleware
-export const errorLogger = (err, req, res, next) => {
+module.exports.errorLogger = (err, req, res, next) => {
   const timestamp = new Date().toISOString();
   
   console.error(`[${timestamp}] Unhandled Error:`, {
@@ -69,7 +65,7 @@ function generateRequestId() {
 }
 
 // Performance monitoring middleware
-export const performanceMonitor = (req, res, next) => {
+module.exports.performanceMonitor = (req, res, next) => {
   const start = Date.now();
   
   res.on('finish', () => {
@@ -103,7 +99,7 @@ export const performanceMonitor = (req, res, next) => {
 };
 
 // Request ID middleware for tracking
-export const requestIdMiddleware = (req, res, next) => {
+module.exports.requestIdMiddleware = (req, res, next) => {
   req.requestId = generateRequestId();
   res.set('X-Request-ID', req.requestId);
   next();

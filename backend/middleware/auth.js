@@ -1,7 +1,7 @@
 // backend/middleware/auth.js
 // Autenticación JWT y control de roles
 
-import jwt from 'jsonwebtoken';
+const jwt = require('jsonwebtoken');
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
@@ -71,5 +71,5 @@ function generateToken(user) {
   );
 }
 
-export { authenticate, authorize, roles, generateToken };
-export default authenticate;
+module.exports = { authenticate, authorize, roles, generateToken };
+module.exports.default = authenticate;

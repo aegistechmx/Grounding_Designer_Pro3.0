@@ -3,7 +3,7 @@
  * Prevents connection leaks by using a single pool instance
  */
 
-import { Pool } from 'pg';
+const { Pool } = require('pg');
 
 let pool = null;
 
@@ -42,7 +42,7 @@ async function closePool() {
   }
 }
 
-export {
+module.exports = {
   getPool,
   closePool
 };

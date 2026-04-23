@@ -3,8 +3,8 @@
  * Feature gating based on user plan (Free, Pro, Enterprise)
  */
 
-import pricingService from '../services/pricing.service';
-import { getPool } from '../database/pool';
+const pricingService = require('../services/pricing.service');
+const { getPool } = require('../database/pool');
 
 /**
  * Require Pro plan
@@ -175,7 +175,7 @@ const canUseAI = async (req, res, next) => {
   }
 };
 
-export {
+module.exports = {
   requirePro,
   requireEnterprise,
   checkPlanLimit,

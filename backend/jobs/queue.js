@@ -3,8 +3,8 @@
  * BullMQ + Redis for handling heavy tasks (FEM, PDF generation, etc.)
  */
 
-import { Queue, Worker, Job } from 'bullmq';
-import Redis from 'ioredis';
+const { Queue, Worker, Job } = require('bullmq');
+const Redis = require('ioredis');
 
 // Redis connection
 const connection = new Redis({
@@ -25,12 +25,12 @@ const queues = {
 };
 
 // Export pdfQueue for direct use
-export const pdfQueue = queues.pdf;
+module.exports.pdfQueue = queues.pdf;
 
 /**
  * Add job to queue
  */
-export async function addJob(queueName, jobData, options = {}) {
+module.exports.addJob = async function(queueName, jobData, options = {}) {
   const queue = queues[queueName];
   if (!queue) {
     throw new Error(`Queue ${queueName} not found`);
@@ -52,12 +52,12 @@ export async function addJob(queueName, jobData, options = {}) {
     status: 'pending',
     queue: queueName
   };
-}
+};
 
 /**
  * Get job status
  */
-export async function getJobStatus(queueName, jobId) {
+module.exports.getJobStatus = async function(queueName, jobId) {
   const queue = queues[queueName];
   if (!queue) {
     throw new Error(`Queue ${queueName} not found`);
@@ -79,12 +79,12 @@ export async function getJobStatus(queueName, jobId) {
     result: state === 'completed' ? job.returnvalue : null,
     failedReason: state === 'failed' ? job.failedReason : null
   };
-}
+};
 
 /**
  * Cancel job
  */
-export async function cancelJob(queueName, jobId) {
+module.exports.cancelJob = async function(queueName, jobId) {
   const queue = queues[queueName];
   if (!queue) {
     throw new Error(`Queue ${queueName} not found`);
@@ -97,12 +97,12 @@ export async function cancelJob(queueName, jobId) {
   }
 
   return { success: false, jobId };
-}
+};
 
 /**
  * Get queue statistics
  */
-export async function getQueueStats(queueName) {
+module.exports.getQueueStats = async function(queueName) {
   const queue = queues[queueName];
   if (!queue) {
     throw new Error(`Queue ${queueName} not found`);
@@ -123,14 +123,14 @@ export async function getQueueStats(queueName) {
     delayed,
     total: waiting + active + completed + failed + delayed
   };
-}
+};
 
 /**
  * Close all queues
  */
-export async function closeQueues() {
+module.exports.closeQueues = async function() {
   await Promise.all(Object.values(queues).map(queue => queue.close()));
   await connection.quit();
-}
+};
 
-export { queues };
+module.exports.queues = queues;

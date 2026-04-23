@@ -25,7 +25,7 @@ const PLAN_FEATURES = {
  * Middleware to require specific feature access
  * @param {string} feature - Feature key to check
  */
-export default function requireFeature(feature) {
+module.exports = function requireFeature(feature) {
   return (req, res, next) => {
     try {
       const user = req.user; // Comes from auth middleware
@@ -63,12 +63,12 @@ export default function requireFeature(feature) {
       });
     }
   };
-}
+};
 
 /**
  * Middleware to require Pro plan or higher
  */
-export function requirePro(req, res, next) {
+module.exports.requirePro = function(req, res, next) {
   try {
     const user = req.user;
 
@@ -103,7 +103,7 @@ export function requirePro(req, res, next) {
 /**
  * Middleware to require Enterprise plan
  */
-export function requireEnterprise(req, res, next) {
+module.exports.requireEnterprise = function(req, res, next) {
   try {
     const user = req.user;
 

@@ -1,7 +1,7 @@
-import { body, validationResult } from 'express-validator';
+const { body, validationResult } = require('express-validator');
 
 // Input validation schemas
-export const validateCalculationInput = [
+module.exports.validateCalculationInput = [
   // Soil parameters
   body('soil.soilResistivity')
     .isFloat({ min: 1, max: 10000 })
@@ -90,7 +90,7 @@ export const validateCalculationInput = [
 ];
 
 // Validation error handler middleware
-export const handleValidationErrors = (req, res, next) => {
+module.exports.handleValidationErrors = (req, res, next) => {
   const errors = validationResult(req);
   
   if (!errors.isEmpty()) {
@@ -113,7 +113,7 @@ export const handleValidationErrors = (req, res, next) => {
 };
 
 // Sanitize input data
-export const sanitizeInput = (req, res, next) => {
+module.exports.sanitizeInput = (req, res, next) => {
   try {
     // Remove any potentially harmful characters
     if (req.body) {
