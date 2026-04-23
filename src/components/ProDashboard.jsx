@@ -5,6 +5,7 @@ import {
   Gauge, Zap, Shield, Battery, TrendingDown, Award, Brain, 
   Calendar, Clock, ChevronUp, ChevronDown, Wrench, Ruler, Sparkles, Heart, Grid
 } from 'lucide-react';
+import IEEESection from './common/IEEESection';
 import { formatResistance, formatVoltage, formatCurrent, formatPercentage, formatNumber, formatCurrency } from '../utils/formatters';
 
 // ============================================
@@ -208,50 +209,29 @@ export const ProDashboard = ({ calculations, params, darkMode }) => {
       </div>
       
       {/* Indicadores de Eficiencia */}
-      <div className={`p-4 rounded-lg border ${darkMode ? 'bg-blue-900/20 border-blue-700' : 'bg-blue-50 border-blue-200'}`} style={{ boxShadow: darkMode ? '0 0 15px rgba(59, 130, 246, 0.3), inset 0 0 8px rgba(59, 130, 246, 0.15)' : '0 0 15px rgba(59, 130, 246, 0.2), inset 0 0 8px rgba(59, 130, 246, 0.1)' }}>
-        <h4 className={`font-semibold mb-3 flex items-center gap-2 ${darkMode ? 'text-blue-300' : 'text-blue-800'}`}>
-          <TrendingDown size={16} /> � Indicadores de Eficiencia
-        </h4>
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-xs">
-          <div className={`p-2 rounded ${darkMode ? 'bg-blue-900/30' : 'bg-blue-100'}`}>
-            <div className={`font-semibold mb-1 ${darkMode ? 'text-blue-300' : 'text-blue-700'}`}>Área de malla</div>
-            <div className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-blue-900'}`}>{area} m²</div>
-          </div>
-          <div className={`p-2 rounded ${darkMode ? 'bg-blue-900/30' : 'bg-blue-100'}`}>
-            <div className={`font-semibold mb-1 ${darkMode ? 'text-blue-300' : 'text-blue-700'}`}>Conductor total</div>
-            <div className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-blue-900'}`}>{totalConductor} m</div>
-          </div>
-          <div className={`p-2 rounded ${darkMode ? 'bg-blue-900/30' : 'bg-blue-100'}`}>
-            <div className={`font-semibold mb-1 ${darkMode ? 'text-blue-300' : 'text-blue-700'}`}>Varillas</div>
-            <div className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-blue-900'}`}>{params?.numRods || 6}</div>
-          </div>
-          <div className={`p-2 rounded ${darkMode ? 'bg-blue-900/30' : 'bg-blue-100'}`}>
-            <div className={`font-semibold mb-1 ${darkMode ? 'text-blue-300' : 'text-blue-700'}`}>Configuración</div>
-            <div className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-blue-900'}`}>{config}</div>
-          </div>
-          <div className={`p-2 rounded ${darkMode ? 'bg-blue-900/30' : 'bg-blue-100'}`}>
-            <div className={`font-semibold mb-1 ${darkMode ? 'text-blue-300' : 'text-blue-700'}`}>Eficiencia</div>
-            <div className={`text-lg font-bold ${darkMode ? 'text-green-400' : 'text-green-700'}`}>{efficiency}%</div>
-          </div>
-          <div className={`p-2 rounded ${darkMode ? 'bg-blue-900/30' : 'bg-blue-100'}`}>
-            <div className={`font-semibold mb-1 ${darkMode ? 'text-blue-300' : 'text-blue-700'}`}>Score diseño</div>
-            <div className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-blue-900'}`}>{designScore}</div>
-          </div>
-        </div>
-        <div className={`mt-3 p-2 rounded ${darkMode ? 'bg-blue-900/40' : 'bg-blue-200'}`}>
-          <p className={`text-xs flex items-start gap-2 ${darkMode ? 'text-blue-200' : 'text-blue-800'}`}>
-            <TrendingDown size={12} className="flex-shrink-0 mt-0.5" />
-            <span>
-              <strong>💡 Análisis de eficiencia:</strong> El diseño optimiza el uso de materiales manteniendo los estándares de seguridad IEEE 80.
-            </span>
-          </p>
-        </div>
-        <div className={`mt-2 p-2 rounded ${darkMode ? 'bg-blue-900/40' : 'bg-blue-200'}`}>
-          <p className={`text-xs ${darkMode ? 'text-blue-200' : 'text-blue-800'}`}>
+      <IEEESection
+        title="📋 Indicadores de Eficiencia"
+        darkMode={darkMode}
+        icon={TrendingDown}
+        metrics={[
+          { label: "Área de malla", value: `${area} m²` },
+          { label: "Conductor total", value: `${totalConductor} m` },
+          { label: "Varillas", value: `${params?.numRods || 6}` },
+          { label: "Configuración", value: config },
+          { label: "Eficiencia", value: `${efficiency}%`, highlight: 'text-green-400' },
+          { label: "Score diseño", value: designScore }
+        ]}
+        info={
+          <>
+            <strong>💡 Análisis de eficiencia:</strong> El diseño optimiza el uso de materiales manteniendo los estándares de seguridad IEEE 80.
+          </>
+        }
+        info2={
+          <>
             <strong>📐 Balance:</strong> Relación óptima entre área de malla, conductor total y número de varillas para máxima eficiencia.
-          </p>
-        </div>
-      </div>
+          </>
+        }
+      />
       
       {/* IA Predictiva */}
       <div className={`p-4 rounded-lg border ${darkMode ? 'bg-blue-900/20 border-blue-700' : 'bg-blue-50 border-blue-200'}`} style={{ boxShadow: darkMode ? '0 0 15px rgba(59, 130, 246, 0.3), inset 0 0 8px rgba(59, 130, 246, 0.15)' : '0 0 15px rgba(59, 130, 246, 0.2), inset 0 0 8px rgba(59, 130, 246, 0.1)' }}>

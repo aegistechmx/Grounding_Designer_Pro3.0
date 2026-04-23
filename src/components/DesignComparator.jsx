@@ -1,5 +1,6 @@
 import React from 'react';
 import { TrendingUp, TrendingDown, CheckCircle, XCircle, Zap } from 'lucide-react';
+import IEEESection from './common/IEEESection';
 
 const MetricCard = ({ label, value, unit = '', color = 'blue' }) => {
   const colorClasses = {
@@ -61,97 +62,56 @@ const DesignComparator = ({ base, optimized, darkMode }) => {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       {/* Diseño Base */}
-      <div className={`p-4 rounded-lg border ${darkMode ? 'bg-blue-900/20 border-blue-700' : 'bg-blue-50 border-blue-200'}`} style={{ boxShadow: darkMode ? '0 0 15px rgba(59, 130, 246, 0.3), inset 0 0 8px rgba(59, 130, 246, 0.15)' : '0 0 15px rgba(59, 130, 246, 0.2), inset 0 0 8px rgba(59, 130, 246, 0.1)' }}>
-        <h4 className={`font-semibold mb-3 flex items-center gap-2 ${darkMode ? 'text-blue-300' : 'text-blue-800'}`}>
-          <div className="w-2 h-2 rounded-full bg-blue-500" /> 📋 Diseño Original
-        </h4>
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-xs">
-          <div className={`p-2 rounded ${darkMode ? 'bg-blue-900/30' : 'bg-blue-100'}`}>
-            <div className={`font-semibold mb-1 ${darkMode ? 'text-blue-300' : 'text-blue-700'}`}>Resistencia (Rg)</div>
-            <div className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-blue-900'}`}>{isFinite(base.resistance || 0) ? (base.resistance || 0).toFixed(2) : 'N/A'} Ω</div>
-          </div>
-          <div className={`p-2 rounded ${darkMode ? 'bg-blue-900/30' : 'bg-blue-100'}`}>
-            <div className={`font-semibold mb-1 ${darkMode ? 'text-blue-300' : 'text-blue-700'}`}>Tensión Contacto</div>
-            <div className={`text-lg font-bold ${base.touchOk ? 'text-green-400' : 'text-red-400'}`}>{isFinite(base.touch || 0) ? (base.touch || 0).toFixed(0) : 'N/A'} V</div>
-          </div>
-          <div className={`p-2 rounded ${darkMode ? 'bg-blue-900/30' : 'bg-blue-100'}`}>
-            <div className={`font-semibold mb-1 ${darkMode ? 'text-blue-300' : 'text-blue-700'}`}>Tensión Paso</div>
-            <div className={`text-lg font-bold ${base.stepOk ? 'text-green-400' : 'text-red-400'}`}>{isFinite(base.step || 0) ? (base.step || 0).toFixed(0) : 'N/A'} V</div>
-          </div>
-          <div className={`p-2 rounded ${darkMode ? 'bg-blue-900/30' : 'bg-blue-100'}`}>
-            <div className={`font-semibold mb-1 ${darkMode ? 'text-blue-300' : 'text-blue-700'}`}>Costo Estimado</div>
-            <div className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-blue-900'}`}>{isFinite(base.cost || 0) ? (base.cost || 0).toLocaleString() : 'N/A'} MXN</div>
-          </div>
-          <div className={`p-2 rounded ${darkMode ? 'bg-blue-900/30' : 'bg-blue-100'}`}>
-            <div className={`font-semibold mb-1 ${darkMode ? 'text-blue-300' : 'text-blue-700'}`}>Estado</div>
-            <div className={`text-lg font-bold ${base.complies ? 'text-green-400' : 'text-red-400'}`}>{base.complies ? 'Cumple' : 'No cumple'}</div>
-          </div>
-          <div className={`p-2 rounded ${darkMode ? 'bg-blue-900/30' : 'bg-blue-100'}`}>
-            <div className={`font-semibold mb-1 ${darkMode ? 'text-blue-300' : 'text-blue-700'}`}>Seguridad</div>
-            <div className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-blue-900'}`}>{base.touchOk && base.stepOk ? 'OK' : 'Revisar'}</div>
-          </div>
-        </div>
-        <div className={`mt-3 p-2 rounded ${darkMode ? 'bg-blue-900/40' : 'bg-blue-200'}`}>
-          <p className={`text-xs flex items-start gap-2 ${darkMode ? 'text-blue-200' : 'text-blue-800'}`}>
+      <IEEESection
+        title="📋 Diseño Original"
+        darkMode={darkMode}
+        metrics={[
+          { label: "Resistencia (Rg)", value: `${isFinite(base.resistance || 0) ? (base.resistance || 0).toFixed(2) : 'N/A'} Ω` },
+          { label: "Tensión Contacto", value: `${isFinite(base.touch || 0) ? (base.touch || 0).toFixed(0) : 'N/A'} V`, highlight: base.touchOk ? 'text-green-400' : 'text-red-400' },
+          { label: "Tensión Paso", value: `${isFinite(base.step || 0) ? (base.step || 0).toFixed(0) : 'N/A'} V`, highlight: base.stepOk ? 'text-green-400' : 'text-red-400' },
+          { label: "Costo Estimado", value: `${isFinite(base.cost || 0) ? (base.cost || 0).toLocaleString() : 'N/A'} MXN` },
+          { label: "Estado", value: base.complies ? 'Cumple' : 'No cumple', highlight: base.complies ? 'text-green-400' : 'text-red-400' },
+          { label: "Seguridad", value: base.touchOk && base.stepOk ? 'OK' : 'Revisar' }
+        ]}
+        info={
+          <>
             {base.complies ? <CheckCircle size={12} className="flex-shrink-0 mt-0.5 text-green-400" /> : <XCircle size={12} className="flex-shrink-0 mt-0.5 text-red-400" />}
-            <span>
-              <strong>Estado:</strong> {base.complies ? '✓ Cumple con IEEE 80' : '✗ No cumple con IEEE 80'}
-            </span>
-          </p>
-        </div>
-        <div className={`mt-2 p-2 rounded ${darkMode ? 'bg-blue-900/40' : 'bg-blue-200'}`}>
-          <p className={`text-xs ${darkMode ? 'text-blue-200' : 'text-blue-800'}`}>
+            <strong>Estado:</strong> {base.complies ? '✓ Cumple con IEEE 80' : '✗ No cumple con IEEE 80'}
+          </>
+        }
+        info2={
+          <>
             <strong>📐 Verificación:</strong> Diseño base con parámetros iniciales del proyecto.
-          </p>
-        </div>
-      </div>
+          </>
+        }
+      />
       
       {/* Diseño Optimizado */}
-      <div className={`p-4 rounded-lg border ${darkMode ? 'bg-green-900/20 border-green-700' : 'bg-green-50 border-green-200'}`} style={{ boxShadow: darkMode ? '0 0 15px rgba(34, 197, 94, 0.3), inset 0 0 8px rgba(34, 197, 94, 0.15)' : '0 0 15px rgba(34, 197, 94, 0.2), inset 0 0 8px rgba(34, 197, 94, 0.1)' }}>
-        <h4 className={`font-semibold mb-3 flex items-center gap-2 ${darkMode ? 'text-green-300' : 'text-green-800'}`}>
-          <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" /> ⚡ Diseño Optimizado
-          <span className={`text-xs ${darkMode ? 'bg-green-500/20 text-green-300' : 'bg-green-100 text-green-700'} px-2 py-0.5 rounded-full border border-green-500`}>Recomendado</span>
-        </h4>
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-xs">
-          <div className={`p-2 rounded ${darkMode ? 'bg-green-900/30' : 'bg-green-100'}`}>
-            <div className={`font-semibold mb-1 ${darkMode ? 'text-green-300' : 'text-green-700'}`}>Resistencia</div>
-            <div className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-green-900'}`}>{isFinite(optimized.resistance || 0) ? (optimized.resistance || 0).toFixed(2) : 'N/A'} Ω</div>
-          </div>
-          <div className={`p-2 rounded ${darkMode ? 'bg-green-900/30' : 'bg-green-100'}`}>
-            <div className={`font-semibold mb-1 ${darkMode ? 'text-green-300' : 'text-green-700'}`}>Tensión Contacto</div>
-            <div className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-green-900'}`}>{isFinite(optimized.touch || 0) ? (optimized.touch || 0).toFixed(0) : 'N/A'} V</div>
-          </div>
-          <div className={`p-2 rounded ${darkMode ? 'bg-green-900/30' : 'bg-green-100'}`}>
-            <div className={`font-semibold mb-1 ${darkMode ? 'text-green-300' : 'text-green-700'}`}>Tensión Paso</div>
-            <div className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-green-900'}`}>{isFinite(optimized.step || 0) ? (optimized.step || 0).toFixed(0) : 'N/A'} V</div>
-          </div>
-          <div className={`p-2 rounded ${darkMode ? 'bg-green-900/30' : 'bg-green-100'}`}>
-            <div className={`font-semibold mb-1 ${darkMode ? 'text-green-300' : 'text-green-700'}`}>Costo</div>
-            <div className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-green-900'}`}>{isFinite(optimized.cost || 0) ? (optimized.cost || 0).toLocaleString() : 'N/A'} MXN</div>
-          </div>
-          <div className={`p-2 rounded ${darkMode ? 'bg-green-900/30' : 'bg-green-100'}`}>
-            <div className={`font-semibold mb-1 ${darkMode ? 'text-green-300' : 'text-green-700'}`}>Mejora R</div>
-            <div className={`text-lg font-bold ${darkMode ? 'text-green-400' : 'text-green-700'}`}>{improvements.resistance}%</div>
-          </div>
-          <div className={`p-2 rounded ${darkMode ? 'bg-green-900/30' : 'bg-green-100'}`}>
-            <div className={`font-semibold mb-1 ${darkMode ? 'text-green-300' : 'text-green-700'}`}>Mejora Total</div>
-            <div className={`text-lg font-bold ${darkMode ? 'text-green-400' : 'text-green-700'}`}>{((parseFloat(improvements.resistance) + parseFloat(improvements.touch) + parseFloat(improvements.step) + parseFloat(improvements.cost)) / 4).toFixed(0)}%</div>
-          </div>
-        </div>
-        <div className={`mt-3 p-2 rounded ${darkMode ? 'bg-green-900/40' : 'bg-green-200'}`}>
-          <p className={`text-xs flex items-start gap-2 ${darkMode ? 'text-green-200' : 'text-green-800'}`}>
+      <IEEESection
+        title="⚡ Diseño Optimizado"
+        darkMode={darkMode}
+        variant="green"
+        icon={Zap}
+        metrics={[
+          { label: "Resistencia", value: `${isFinite(optimized.resistance || 0) ? (optimized.resistance || 0).toFixed(2) : 'N/A'} Ω` },
+          { label: "Tensión Contacto", value: `${isFinite(optimized.touch || 0) ? (optimized.touch || 0).toFixed(0) : 'N/A'} V` },
+          { label: "Tensión Paso", value: `${isFinite(optimized.step || 0) ? (optimized.step || 0).toFixed(0) : 'N/A'} V` },
+          { label: "Costo", value: `${isFinite(optimized.cost || 0) ? (optimized.cost || 0).toLocaleString() : 'N/A'} MXN` },
+          { label: "Mejora R", value: `${improvements.resistance}%`, highlight: 'text-green-400' },
+          { label: "Mejora Total", value: `${((parseFloat(improvements.resistance) + parseFloat(improvements.touch) + parseFloat(improvements.step) + parseFloat(improvements.cost)) / 4).toFixed(0)}%`, highlight: 'text-green-400' }
+        ]}
+        info={
+          <>
             <CheckCircle size={12} className="flex-shrink-0 mt-0.5 text-green-400" />
-            <span>
-              <strong>Mejora total:</strong> {((parseFloat(improvements.resistance) + parseFloat(improvements.touch) + parseFloat(improvements.step) + parseFloat(improvements.cost)) / 4).toFixed(0)}% promedio en todas las métricas
-            </span>
-          </p>
-        </div>
-        <div className={`mt-2 p-2 rounded ${darkMode ? 'bg-green-900/40' : 'bg-green-200'}`}>
-          <p className={`text-xs ${darkMode ? 'text-green-200' : 'text-green-800'}`}>
+            <strong>Mejora total:</strong> {((parseFloat(improvements.resistance) + parseFloat(improvements.touch) + parseFloat(improvements.step) + parseFloat(improvements.cost)) / 4).toFixed(0)}% promedio en todas las métricas
+          </>
+        }
+        info2={
+          <>
             <strong>📐 Optimización:</strong> Diseño mejorado con algoritmo de optimización IEEE 80.
-          </p>
-        </div>
-      </div>
+          </>
+        }
+      />
       
       {/* Resumen de mejoras */}
       <div className="lg:col-span-2 mt-2">

@@ -10,13 +10,15 @@ import { useDesignOptimizer } from '../../hooks/useDesignOptimizer';
 import { runCompletePipeline } from '../../core/groundingEngine';
 import { generateReport, downloadReportJSON } from '../../core/report';
 import { generateFullReport } from '../../utils/pdfGenerator';
-import { exportCanvasImage } from '../../visual/HeatmapCanvas';
-import HeatmapCanvas from '../../visual/HeatmapCanvas';
+import { exportCanvasImage } from '../../visual/heatmap/HeatmapCanvas';
+import HeatmapCanvas from '../../visual/heatmap/HeatmapCanvas';
+import { generateCorporatePDF } from '../../services/pdfProService';
 import { saveProject } from '../../services/projectService';
 import { auth } from '../../firebase';
 import { generateAISuggestions } from '../../services/aiSuggestionService';
 import useStore from '../../store/useStore';
 import { TEXT_COLORS, ACCENT_COLORS, BG_COLORS, BORDERS, SPACING, TYPOGRAPHY, SHADOWS } from '../../constants/designTokens';
+
 
 export const DesignPanel = ({ params, calculations, updateParam, darkMode, recalculate }) => {
   const [localParams, setLocalParams] = useState(params);

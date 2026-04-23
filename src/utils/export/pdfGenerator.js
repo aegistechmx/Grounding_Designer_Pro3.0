@@ -35,19 +35,15 @@ export const generatePDFWithHeatmap = async (params, calculations, recommendatio
   
   // Capturar heatmap
   try {
-    const heatmapElement = document.getElementById(heatmapElementId);
-    if (heatmapElement) {
+    const canvas = document.querySelector('canvas');
+    if (canvas) {
       doc.setFontSize(14);
       doc.setTextColor(37, 99, 235);
       doc.text('Mapa de Distribución de Potencial', 20, yPos);
       yPos += 10;
-      
-      const canvas = await html2canvas(heatmapElement, {
-        scale: 2,
-        backgroundColor: '#ffffff'
-      });
-      const imgData = canvas.toDataURL('image/png');
-      doc.addImage(imgData, 'PNG', 20, yPos, 170, 100);
+
+      const image = canvas.toDataURL('image/png');
+      doc.addImage(image, 'PNG', 40, yPos, 500, 300);
       yPos += 110;
     }
   } catch (error) {

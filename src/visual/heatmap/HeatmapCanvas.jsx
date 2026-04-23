@@ -1,11 +1,14 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { interpolateIDW, isWithinGridBounds } from '../utils/interpolation';
-import { generateContourLines, generateContourLevels, createInterpolatedField } from '../utils/contourLines';
+import React, { useEffect, useRef, useState, forwardRef, useImperativeHandle } from 'react';
+import { interpolateIDW, isWithinGridBounds } from '../../utils/interpolation';
+import { generateContourLines, generateContourLevels, createInterpolatedField } from '../../utils/contourLines';
+import { drawHeatmap } from '../../heatmap/render/drawHeatmap';
+import { generateField } from '../../heatmap/core/generateField';
 
-const HeatmapCanvas = ({ 
-  data, 
-  width = 500, 
-  height = 400, 
+// 🔥 REFACTORED VERSION
+const HeatmapCanvas = forwardRef(({
+  data,
+  width = 500,
+  height = 400,
   onPointClick,
   onSliceChange,
   interpolationPower = 2,
@@ -13,8 +16,15 @@ const HeatmapCanvas = ({
   showContours = true,
   numContours = 10,
   contourThickness = 2
-}) => {
+}, ref) => {
   const canvasRef = useRef(null);
+
+  useImperativeHandle(ref, () => ({
+    exportImage: () => {
+      if (!canvasRef.current) return null;
+      return canvasRef.current.toDataURL('image/png', 1.0);
+    }
+  }));
   
   // Zoom + Pan state
   const viewRef = useRef({ scale: 1, offsetX: 0, offsetY: 0 });
@@ -163,73 +173,47 @@ const HeatmapCanvas = ({
   };
 
   useEffect(() => {
-    if (!canvasRef.current || !data || data.length === 0) return;
-    
+    if (!canvasRef.current || !data?.length) return;
+
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
     const w = canvas.width;
     const h = canvas.height;
-    
-    // Limpiar canvas
+
     ctx.fillStyle = '#1f2937';
     ctx.fillRect(0, 0, w, h);
-    
-    // Apply zoom/pan transform
-    ctx.setTransform(viewRef.current.scale, 0, 0, viewRef.current.scale, viewRef.current.offsetX, viewRef.current.offsetY);
-    
+
+    ctx.setTransform(
+      viewRef.current.scale,
+      0,
+      0,
+      viewRef.current.scale,
+      viewRef.current.offsetX,
+      viewRef.current.offsetY
+    );
+
+    const resolution = Math.floor(50 + smoothingLevel * 100);
+
     // Encontrar valores mínimos y máximos
     const potentials = data.map(d => isFinite(d.potential) ? d.potential : 0);
     const minPotential = potentials.length > 0 ? Math.min(...potentials) : 0;
     const maxPotential = potentials.length > 0 ? Math.max(...potentials) : 1000;
-    const range = Math.max(0.1, maxPotential - minPotential);
-    
-    // Calculate resolution based on smoothing level
-    const resolution = Math.floor(50 + smoothingLevel * 100); // 50-150 resolution
-    const cellW = w / resolution;
-    const cellH = h / resolution;
-    
-    // Create smooth interpolated field using IDW
+
     const nodes = data.map(d => ({ x: d.x, y: d.y }));
     const values = data.map(d => d.potential);
-    
-    for (let i = 0; i < resolution; i++) {
-      for (let j = 0; j < resolution; j++) {
-        const worldX = (i / resolution) * 30 - 15; // -15 to 15 range
-        const worldY = (j / resolution) * 30 - 15;
-        
-        // Only interpolate within data bounds
-        if (isWithinGridBounds(worldX, worldY, nodes)) {
-          const interpolatedValue = interpolateIDW(worldX, worldY, nodes, values, interpolationPower);
-          
-          // Normalize to 0-1 range
-          let intensity = range > 0 ? (interpolatedValue - minPotential) / range : 0.5;
-          intensity = Math.min(0.95, Math.max(0.05, intensity));
-          
-          // Mapa de colores: verde -> amarillo -> rojo (ETAP style)
-          let r, g, b;
-          if (intensity < 0.33) {
-            const t = intensity / 0.33;
-            r = 255 * t;
-            g = 255;
-            b = 0;
-          } else if (intensity < 0.66) {
-            const t = (intensity - 0.33) / 0.33;
-            r = 255;
-            g = 255 * (1 - t);
-            b = 0;
-          } else {
-            const t = (intensity - 0.66) / 0.34;
-            r = 255;
-            g = 255 * (1 - t);
-            b = 0;
-          }
-          
-          ctx.fillStyle = `rgb(${Math.floor(r)}, ${Math.floor(g)}, ${Math.floor(b)})`;
-          ctx.fillRect(i * cellW, j * cellH, cellW, cellH);
-        }
-      }
-    }
-    
+
+    const field = generateField({
+      resolution,
+      size: 30,
+      nodes,
+      values,
+      interpolationPower,
+      min: minPotential,
+      max: maxPotential
+    });
+
+    drawHeatmap(ctx, field, w, h);
+
     // Apply smoothing effect
     if (smoothingLevel > 0.3) {
       ctx.globalAlpha = 0.1 * smoothingLevel;
@@ -373,7 +357,7 @@ const HeatmapCanvas = ({
       </div>
     </div>
   );
-};
+});
 
 // Export function for PDF generation
 export const exportCanvasImage = (canvasRef) => {
@@ -386,4 +370,5 @@ export const exportCanvasImage = (canvasRef) => {
   }
 };
 
+HeatmapCanvas.displayName = 'HeatmapCanvas';
 export default HeatmapCanvas;
