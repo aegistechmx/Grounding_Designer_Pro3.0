@@ -39,6 +39,19 @@ module.exports.pricingRateLimiter = rateLimit({
   legacyHeaders: false,
 });
 
+// Rate limiting for authentication endpoints (stricter)
+module.exports.authRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // limit each IP to 5 auth requests per 15 minutes
+  message: {
+    error: 'Too many authentication attempts, please try again later.',
+    retryAfter: 900 // 15 minutes in seconds
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+  skipSuccessfulRequests: true // Don't count successful requests
+});
+
 // Security headers configuration
 module.exports.securityHeaders = helmet({
   contentSecurityPolicy: {
@@ -69,19 +82,17 @@ module.exports.corsOptions = {
     // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
     
-    // In production, replace with your actual frontend domain
-    const allowedOrigins = [
-      'http://localhost:3000',
-      'http://localhost:3001',
-      'https://your-frontend-domain.vercel.app',
-      'https://your-frontend-domain.com'
-    ];
+    // Get allowed origins from environment variable or use defaults
+    const allowedOrigins = process.env.ALLOWED_ORIGINS 
+      ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim())
+      : [
+          'http://localhost:3000',
+          'http://localhost:3001',
+          'https://your-frontend-domain.vercel.app',
+          'https://your-frontend-domain.com'
+        ];
     
-    if (process.env.NODE_ENV === 'development') {
-      // In development, allow all origins
-      return callback(null, true);
-    }
-    
+    // Check if origin is in allowed list
     if (allowedOrigins.indexOf(origin) !== -1) {
       callback(null, true);
     } else {

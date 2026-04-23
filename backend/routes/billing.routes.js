@@ -8,6 +8,8 @@ const router = express.Router();
 const { authenticate } = require('../middleware/auth.js');
 const stripeService = require('../services/billing/stripe.service.js');
 const { getPool } = require('../database/pool.js');
+const Stripe = require('stripe');
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 const pool = getPool();
 

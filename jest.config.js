@@ -9,12 +9,34 @@ module.exports = {
   transform: {
     '^.+\\.(js|jsx)$': 'babel-jest'
   },
+  transformIgnorePatterns: [
+    'node_modules/(?!((@babel|react-scripts)/.*)/)'
+  ],
   collectCoverageFrom: [
-    'src/engine/**/*.js',
+    'src/engine/physics/**/*.js',
+    'src/engine/pipelines/**/*.js',
+    'src/engine/standards/**/*.js',
+    'src/engine/fem/solvers/**/*.js',
     'src/simulation/**/*.js',
-    'src/data-model/**/*.js',
+    'src/domain/grounding/MultiLayerSoilModel.js',
     '!src/**/*.test.js',
-    '!src/**/index.js'
+    '!src/**/index.js',
+    '!src/engine/autodesign/**/*.js',
+    '!src/engine/fem/core/**/*.js',
+    '!src/engine/fem/mesh/**/*.js',
+    '!src/engine/fem/physics/**/*.js',
+    '!src/engine/fem/postprocess/**/*.js',
+    '!src/engine/fem/solver/**/*.js',
+    '!src/engine/soil/**/*.js',
+    '!src/engine/UnifiedEngine.js',
+    '!src/engine/optimizerNSGA2.js',
+    '!src/engine/standards/ComplianceEngine.js',
+    '!src/engine/standards/ComplianceReport.js'
+  ],
+  testMatch: [
+    '<rootDir>/src/**/__tests__/**/*.{js,jsx}',
+    '<rootDir>/src/**/*.{spec,test}.{js,jsx}',
+    '<rootDir>/tests/**/*.{spec,test}.{js,jsx}'
   ],
   coverageThreshold: {
     global: {

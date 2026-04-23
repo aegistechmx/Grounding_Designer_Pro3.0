@@ -1,0 +1,5 @@
+# Instrucciones de Refactorización
+- **Principio DRY**: Si ves código repetido en 2 o más lugares, abstráelo.
+- **Nomenclatura**: Las variables deben ser descriptivas (evita `data`, `temp`, `res`).
+- **Seguridad**: Nunca dejes Hardcoded Secrets (API Keys, etc.).
+- **Validación**: Cada función nueva debe incluir manejo de errores (try/catch o checks de nulidad).

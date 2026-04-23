@@ -6,6 +6,7 @@
 const Stripe = require('stripe');
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 const emailService = require('../notification/email.service.js');
+const { getPool } = require('../../database/pool.js');
 
 class StripeService {
   constructor() {
@@ -26,6 +27,13 @@ class StripeService {
         amount: 19900 // $199.00 in cents
       }
     };
+  }
+
+  /**
+   * Get database pool instance
+   */
+  getPool() {
+    return getPool();
   }
 
   /**
@@ -145,16 +153,7 @@ class StripeService {
    */
   async handleCheckoutCompleted(session) {
     const { userId, plan } = session.metadata;
-    
-    // Update user plan in database
-    const { Pool } = require('pg');
-    const pool = new Pool({
-      host: process.env.DB_HOST || 'localhost',
-      port: process.env.DB_PORT || 5432,
-      database: process.env.DB_NAME || 'grounding_saas',
-      user: process.env.DB_USER || 'postgres',
-      password: process.env.DB_PASSWORD
-    });
+    const pool = this.getPool();
 
     await pool.query(
       'UPDATE users SET plan = $1, stripe_customer_id = $2 WHERE id = $3',
@@ -170,16 +169,7 @@ class StripeService {
   async handleSubscriptionCreated(subscription) {
     const customerId = subscription.customer;
     const plan = this.getPlanFromPriceId(subscription.items.data[0].price.id);
-
-    // Update user plan
-    const { Pool } = require('pg');
-    const pool = new Pool({
-      host: process.env.DB_HOST || 'localhost',
-      port: process.env.DB_PORT || 5432,
-      database: process.env.DB_NAME || 'grounding_saas',
-      user: process.env.DB_USER || 'postgres',
-      password: process.env.DB_PASSWORD
-    });
+    const pool = this.getPool();
 
     await pool.query(
       'UPDATE users SET plan = $1, stripe_subscription_id = $2 WHERE stripe_customer_id = $3',
@@ -193,15 +183,7 @@ class StripeService {
   async handleSubscriptionUpdated(subscription) {
     const customerId = subscription.customer;
     const plan = this.getPlanFromPriceId(subscription.items.data[0].price.id);
-
-    const { Pool } = require('pg');
-    const pool = new Pool({
-      host: process.env.DB_HOST || 'localhost',
-      port: process.env.DB_PORT || 5432,
-      database: process.env.DB_NAME || 'grounding_saas',
-      user: process.env.DB_USER || 'postgres',
-      password: process.env.DB_PASSWORD
-    });
+    const pool = this.getPool();
 
     await pool.query(
       'UPDATE users SET plan = $1 WHERE stripe_customer_id = $2',
@@ -214,15 +196,7 @@ class StripeService {
    */
   async handleSubscriptionDeleted(subscription) {
     const customerId = subscription.customer;
-
-    const { Pool } = require('pg');
-    const pool = new Pool({
-      host: process.env.DB_HOST || 'localhost',
-      port: process.env.DB_PORT || 5432,
-      database: process.env.DB_NAME || 'grounding_saas',
-      user: process.env.DB_USER || 'postgres',
-      password: process.env.DB_PASSWORD
-    });
+    const pool = this.getPool();
 
     // Downgrade to free plan
     await pool.query(
@@ -236,16 +210,7 @@ class StripeService {
    */
   async handleInvoicePaymentSucceeded(invoice) {
     const customerId = invoice.customer;
-    
-    // Update usage tracking
-    const { Pool } = require('pg');
-    const pool = new Pool({
-      host: process.env.DB_HOST || 'localhost',
-      port: process.env.DB_PORT || 5432,
-      database: process.env.DB_NAME || 'grounding_saas',
-      user: process.env.DB_USER || 'postgres',
-      password: process.env.DB_PASSWORD
-    });
+    const pool = this.getPool();
 
     // Reset monthly counters
     await pool.query(
@@ -281,16 +246,7 @@ class StripeService {
    */
   async handleInvoicePaymentFailed(invoice) {
     const customerId = invoice.customer;
-    
-    // Get user email and send payment failed notification
-    const { Pool } = require('pg');
-    const pool = new Pool({
-      host: process.env.DB_HOST || 'localhost',
-      port: process.env.DB_PORT || 5432,
-      database: process.env.DB_NAME || 'grounding_saas',
-      user: process.env.DB_USER || 'postgres',
-      password: process.env.DB_PASSWORD
-    });
+    const pool = this.getPool();
 
     const userResult = await pool.query(
       'SELECT email FROM users WHERE stripe_customer_id = $1',

@@ -5,14 +5,28 @@
 
 import IEEE80Formulas from './IEEE80Formulas.js';
 
+const MAX_TRACEABILITY_ENTRIES = 100;
+const DEFAULT_MODEL = 'uniform';
+const DEFAULT_TEMPERATURE = 20;
+const DEFAULT_HUMIDITY = 50;
+const DEFAULT_SEASON = 'normal';
+const MIN_RESISTIVITY = 0.1;
+const MAX_RESISTIVITY = 10000;
+const MAX_LAYER_THICKNESS = 100;
+const WEIGHTING_FACTOR = 0.7;
+const MIN_RESISTIVITY_DIFFERENCE = 0.01;
+
 class MultiLayerSoilModel {
-  constructor(input) {
-    this.input = this.validateInput(input);
+  constructor(input, options = {}) {
     this.traceability = [];
+    this.maxTraceabilityEntries = options.maxTraceabilityEntries ?? MAX_TRACEABILITY_ENTRIES;
+    this.input = this.validateInput(input);
   }
 
   /**
-   * Validate and normalize input for multi-layer soil
+   * Validates and normalizes input for multi-layer soil model
+   * @param {Object} input - Soil model input parameters
+   * @returns {Object} Validated and normalized input
    */
   validateInput(input) {
     if (!input || typeof input !== 'object') {
@@ -20,12 +34,12 @@ class MultiLayerSoilModel {
     }
 
     const validated = {
-      model: input.model || 'uniform', // 'uniform' | 'two-layer'
+      model: input.model ?? DEFAULT_MODEL,
       layers: this.validateLayers(input),
-      surfaceLayer: input.surfaceLayer || null,
-      temperature: input.temperature || 20,
-      humidity: input.humidity || 50,
-      season: input.season || 'normal'
+      surfaceLayer: input.surfaceLayer ?? null,
+      temperature: input.temperature ?? DEFAULT_TEMPERATURE,
+      humidity: input.humidity ?? DEFAULT_HUMIDITY,
+      season: input.season ?? DEFAULT_SEASON
     };
 
     this.addTrace('soil_input_validation', validated);
@@ -33,10 +47,12 @@ class MultiLayerSoilModel {
   }
 
   /**
-   * Validate soil layers based on model type
+   * Validates soil layers based on model type
+   * @param {Object} input - Input parameters
+   * @returns {Array} Validated layer configuration
    */
   validateLayers(input) {
-    const model = input.model || 'uniform';
+    const model = input.model ?? DEFAULT_MODEL;
     
     if (model === 'uniform') {
       return this.validateUniformLayer(input);
@@ -48,171 +64,227 @@ class MultiLayerSoilModel {
   }
 
   /**
-   * Validate uniform soil layer
+   * Validates uniform soil layer configuration
+   * @param {Object} input - Input parameters
+   * @returns {Array} Single uniform layer configuration
    */
   validateUniformLayer(input) {
-    const resistivity = input.soilResistivity || input.resistivity;
+    const resistivity = input.soilResistivity ?? input.resistivity;
     
     if (!resistivity || typeof resistivity !== 'number' || resistivity <= 0) {
       throw new Error('Uniform soil requires valid resistivity > 0');
     }
 
-    if (resistivity < 0.1 || resistivity > 10000) {
-      throw new Error('Soil resistivity out of realistic range (0.1 - 10000 ohm-m)');
+    if (resistivity < MIN_RESISTIVITY || resistivity > MAX_RESISTIVITY) {
+      throw new Error(`Soil resistivity out of realistic range (${MIN_RESISTIVITY} - ${MAX_RESISTIVITY} ohm-m)`);
     }
 
     return [{
       type: 'uniform',
       resistivity,
-      thickness: Infinity, // Infinite depth
-      depth: 0 // Starts at surface
+      thickness: Infinity,
+      depth: 0
     }];
   }
 
   /**
-   * Validate two-layer soil model
+   * Validates two-layer soil model configuration
+   * @param {Object} input - Input parameters
+   * @returns {Array} Two-layer configuration
    */
   validateTwoLayers(input) {
-    const layer1 = input.layer1 || {};
-    const layer2 = input.layer2 || {};
+    const topLayer = input.layer1 ?? {};
+    const bottomLayer = input.layer2 ?? {};
 
-    // Layer 1 (top layer)
-    if (!layer1.resistivity || typeof layer1.resistivity !== 'number' || layer1.resistivity <= 0) {
-      throw new Error('Layer 1 requires valid resistivity > 0');
-    }
-
-    if (!layer1.thickness || typeof layer1.thickness !== 'number' || layer1.thickness <= 0) {
-      throw new Error('Layer 1 requires valid thickness > 0');
-    }
-
-    if (layer1.thickness > 100) {
-      throw new Error('Layer 1 thickness exceeds practical limit (100m)');
-    }
-
-    // Layer 2 (bottom layer)
-    if (!layer2.resistivity || typeof layer2.resistivity !== 'number' || layer2.resistivity <= 0) {
-      throw new Error('Layer 2 requires valid resistivity > 0');
-    }
-
-    // Physical consistency check
-    if (Math.abs(layer1.resistivity - layer2.resistivity) < 0.01) {
-      throw new Error('Layers have essentially same resistivity - use uniform model instead');
-    }
+    this.validateLayerResistivity(topLayer.resistivity, 'Layer 1');
+    this.validateLayerThickness(topLayer.thickness, 'Layer 1');
+    this.validateLayerResistivity(bottomLayer.resistivity, 'Layer 2');
+    this.validateLayerConsistency(topLayer.resistivity, bottomLayer.resistivity);
 
     return [
       {
         type: 'layer1',
-        resistivity: layer1.resistivity,
-        thickness: layer1.thickness,
+        resistivity: topLayer.resistivity,
+        thickness: topLayer.thickness,
         depth: 0
       },
       {
         type: 'layer2',
-        resistivity: layer2.resistivity,
-        thickness: Infinity, // Infinite depth
-        depth: layer1.thickness
+        resistivity: bottomLayer.resistivity,
+        thickness: Infinity,
+        depth: topLayer.thickness
       }
     ];
   }
 
   /**
-   * Calculate effective resistivity based on soil model
+   * Validates layer resistivity
+   */
+  validateLayerResistivity(resistivity, layerName) {
+    if (!resistivity || typeof resistivity !== 'number' || resistivity <= 0) {
+      throw new Error(`${layerName} requires valid resistivity > 0`);
+    }
+  }
+
+  /**
+   * Validates layer thickness
+   */
+  validateLayerThickness(thickness, layerName) {
+    if (!thickness || typeof thickness !== 'number' || thickness <= 0) {
+      throw new Error(`${layerName} requires valid thickness > 0`);
+    }
+    if (thickness > MAX_LAYER_THICKNESS) {
+      throw new Error(`${layerName} thickness exceeds practical limit (${MAX_LAYER_THICKNESS}m)`);
+    }
+  }
+
+  /**
+   * Validates physical consistency between layers
+   */
+  validateLayerConsistency(resistivity1, resistivity2) {
+    if (Math.abs(resistivity1 - resistivity2) < MIN_RESISTIVITY_DIFFERENCE) {
+      throw new Error('Layers have essentially same resistivity - use uniform model instead');
+    }
+  }
+
+  /**
+   * Calculates effective resistivity based on soil model
+   * @returns {number} Effective resistivity in ohm-m
    */
   calculateEffectiveResistivity() {
     const { model, layers } = this.input;
     
     let effectiveResistivity;
-    let method;
+    let calculationMethod;
 
     if (model === 'uniform') {
       effectiveResistivity = layers[0].resistivity;
-      method = 'uniform_direct';
+      calculationMethod = 'uniform_direct';
     } else if (model === 'two-layer') {
       effectiveResistivity = this.calculateTwoLayerEffectiveResistivity();
-      method = 'two_layer_weighted';
+      calculationMethod = 'two_layer_weighted';
     }
 
     this.addTrace('effective_resistivity_calculation', {
       model,
       effectiveResistivity,
-      method,
-      layers: layers.map(l => ({
-        type: l.type,
-        resistivity: l.resistivity,
-        thickness: l.thickness
-      }))
+      method: calculationMethod,
+      layers: this.extractLayerSummary(layers)
     });
 
     return effectiveResistivity;
   }
 
   /**
-   * Calculate effective resistivity for two-layer soil
-   * Uses IEEE 80 recommended method
+   * Extracts layer summary for traceability
+   */
+  extractLayerSummary(layers) {
+    return layers.map(layer => ({
+      type: layer.type,
+      resistivity: layer.resistivity,
+      thickness: layer.thickness
+    }));
+  }
+
+  /**
+   * Calculates effective resistivity for two-layer soil using IEEE 80 method
+   * @returns {number} Effective resistivity with surface layer correction
    */
   calculateTwoLayerEffectiveResistivity() {
-    const [layer1, layer2] = this.input.layers;
+    const [topLayer, bottomLayer] = this.input.layers;
     const { surfaceLayer } = this.input;
 
-    // For grounding calculations, use weighted average based on current penetration
-    // This is a simplified approach - more complex methods exist
-    const weightingFactor = 0.7; // IEEE 80 typical value
-    const effectiveResistivity = 
-      weightingFactor * layer1.resistivity + 
-      (1 - weightingFactor) * layer2.resistivity;
+    const effectiveResistivity = this.calculateWeightedResistivity(topLayer, bottomLayer);
 
-    // Apply surface layer correction if present
-    if (surfaceLayer && surfaceLayer.resistivity && surfaceLayer.thickness) {
-      const surfaceCorrection = IEEE80Formulas.calculateSurfaceLayerFactor(
-        effectiveResistivity,
-        surfaceLayer.resistivity,
-        surfaceLayer.thickness
-      );
-      
-      this.addTrace('surface_layer_correction', {
-        baseResistivity: effectiveResistivity,
-        surfaceResistivity: surfaceLayer.resistivity,
-        surfaceThickness: surfaceLayer.thickness,
-        correctionFactor: surfaceCorrection,
-        finalResistivity: effectiveResistivity * surfaceCorrection
-      });
-
-      return effectiveResistivity * surfaceCorrection;
+    if (this.hasValidSurfaceLayer(surfaceLayer)) {
+      return this.applySurfaceLayerCorrection(effectiveResistivity, surfaceLayer);
     }
 
     return effectiveResistivity;
   }
 
   /**
-   * Calculate reflection coefficient for two-layer soil
+   * Calculates weighted resistivity for two-layer model
+   */
+  calculateWeightedResistivity(topLayer, bottomLayer) {
+    return WEIGHTING_FACTOR * topLayer.resistivity + 
+           (1 - WEIGHTING_FACTOR) * bottomLayer.resistivity;
+  }
+
+  /**
+   * Checks if surface layer is valid for correction
+   */
+  hasValidSurfaceLayer(surfaceLayer) {
+    return surfaceLayer && surfaceLayer.resistivity && surfaceLayer.thickness;
+  }
+
+  /**
+   * Applies surface layer correction to effective resistivity
+   */
+  applySurfaceLayerCorrection(effectiveResistivity, surfaceLayer) {
+    const surfaceCorrection = IEEE80Formulas.calculateSurfaceLayerFactor(
+      effectiveResistivity,
+      surfaceLayer.resistivity,
+      surfaceLayer.thickness
+    );
+    
+    this.addTrace('surface_layer_correction', {
+      baseResistivity: effectiveResistivity,
+      surfaceResistivity: surfaceLayer.resistivity,
+      surfaceThickness: surfaceLayer.thickness,
+      correctionFactor: surfaceCorrection,
+      finalResistivity: effectiveResistivity * surfaceCorrection
+    });
+
+    return effectiveResistivity * surfaceCorrection;
+  }
+
+  /**
+   * Calculates reflection coefficient for two-layer soil
+   * @returns {number} Reflection coefficient K
    */
   calculateReflectionCoefficient() {
     if (this.input.model !== 'two-layer') {
-      return 0; // No reflection for uniform soil
+      return 0;
     }
 
-    const [layer1, layer2] = this.input.layers;
-    const K = (layer2.resistivity - layer1.resistivity) / 
-              (layer2.resistivity + layer1.resistivity);
+    const [topLayer, bottomLayer] = this.input.layers;
+    const reflectionCoefficient = this.computeReflectionCoefficient(topLayer, bottomLayer);
 
     this.addTrace('reflection_coefficient', {
-      K,
-      layer1Resistivity: layer1.resistivity,
-      layer2Resistivity: layer2.resistivity,
-      interpretation: K > 0 ? 'High resistivity bottom layer' : 'Low resistivity bottom layer'
+      K: reflectionCoefficient,
+      layer1Resistivity: topLayer.resistivity,
+      layer2Resistivity: bottomLayer.resistivity,
+      interpretation: this.interpretReflectionCoefficient(reflectionCoefficient)
     });
 
-    return K;
+    return reflectionCoefficient;
   }
 
   /**
-   * Calculate surface layer factor with multi-layer consideration
+   * Computes reflection coefficient
+   */
+  computeReflectionCoefficient(topLayer, bottomLayer) {
+    return (bottomLayer.resistivity - topLayer.resistivity) / 
+           (bottomLayer.resistivity + topLayer.resistivity);
+  }
+
+  /**
+   * Interprets reflection coefficient value
+   */
+  interpretReflectionCoefficient(K) {
+    return K > 0 ? 'High resistivity bottom layer' : 'Low resistivity bottom layer';
+  }
+
+  /**
+   * Calculates surface layer factor with multi-layer consideration
+   * @returns {number} Surface layer factor
    */
   calculateSurfaceLayerFactor() {
     const { surfaceLayer } = this.input;
     
-    if (!surfaceLayer || !surfaceLayer.resistivity || !surfaceLayer.thickness) {
-      return 1.0; // No surface layer
+    if (!this.hasValidSurfaceLayer(surfaceLayer)) {
+      return 1.0;
     }
 
     const effectiveResistivity = this.calculateEffectiveResistivity();
@@ -234,62 +306,25 @@ class MultiLayerSoilModel {
   }
 
   /**
-   * Assess soil quality with multi-layer consideration
+   * Assesses soil quality with multi-layer consideration
+   * @returns {Object} Soil quality assessment
    */
   assessSoilQuality() {
     const effectiveResistivity = this.calculateEffectiveResistivity();
-    const { model, layers } = this.input;
+    const { model } = this.input;
 
-    let quality;
-    let color;
-    let assessment;
-
-    if (effectiveResistivity <= 50) {
-      quality = 'excellent';
-      color = 'green';
-      assessment = 'Very good grounding conditions';
-    } else if (effectiveResistivity <= 100) {
-      quality = 'good';
-      color = 'light-green';
-      assessment = 'Good grounding conditions';
-    } else if (effectiveResistivity <= 300) {
-      quality = 'fair';
-      color = 'yellow';
-      assessment = 'Moderate grounding conditions';
-    } else if (effectiveResistivity <= 1000) {
-      quality = 'poor';
-      color = 'orange';
-      assessment = 'Difficult grounding conditions';
-    } else {
-      quality = 'very_poor';
-      color = 'red';
-      assessment = 'Very difficult grounding conditions';
-    }
-
-    // Multi-layer specific assessment
-    let layerAssessment = null;
-    if (model === 'two-layer') {
-      const K = this.calculateReflectionCoefficient();
-      layerAssessment = {
-        reflectionCoefficient: K,
-        interpretation: K > 0.5 ? 'Strong contrast between layers' : 'Moderate contrast',
-        recommendation: K > 0.7 ? 'Consider deep-driven rods' : 'Standard design acceptable'
-      };
-    }
+    const qualityAssessment = this.determineQualityLevel(effectiveResistivity);
+    const layerAssessment = model === 'two-layer' ? this.assessLayerContrast() : null;
 
     this.addTrace('soil_quality_assessment', {
-      quality,
-      color,
-      assessment,
+      ...qualityAssessment,
       effectiveResistivity,
       model,
       layerAssessment
     });
 
     return {
-      quality,
-      color,
-      assessment,
+      ...qualityAssessment,
       resistivity: effectiveResistivity,
       model,
       layerAssessment
@@ -297,19 +332,44 @@ class MultiLayerSoilModel {
   }
 
   /**
-   * Complete soil analysis
+   * Determines quality level based on resistivity
+   */
+  determineQualityLevel(resistivity) {
+    if (resistivity <= 50) {
+      return { quality: 'excellent', color: 'green', assessment: 'Very good grounding conditions' };
+    } else if (resistivity <= 100) {
+      return { quality: 'good', color: 'light-green', assessment: 'Good grounding conditions' };
+    } else if (resistivity <= 300) {
+      return { quality: 'fair', color: 'yellow', assessment: 'Moderate grounding conditions' };
+    } else if (resistivity <= 1000) {
+      return { quality: 'poor', color: 'orange', assessment: 'Difficult grounding conditions' };
+    } else {
+      return { quality: 'very_poor', color: 'red', assessment: 'Very difficult grounding conditions' };
+    }
+  }
+
+  /**
+   * Assesses layer contrast for two-layer models
+   */
+  assessLayerContrast() {
+    const reflectionCoefficient = this.calculateReflectionCoefficient();
+    return {
+      reflectionCoefficient,
+      interpretation: reflectionCoefficient > 0.5 ? 'Strong contrast between layers' : 'Moderate contrast',
+      recommendation: reflectionCoefficient > 0.7 ? 'Consider deep-driven rods' : 'Standard design acceptable'
+    };
+  }
+
+  /**
+   * Performs complete soil analysis
+   * @returns {Object} Complete analysis results
    */
   analyze() {
-    const effectiveResistivity = this.calculateEffectiveResistivity();
-    const surfaceLayerFactor = this.calculateSurfaceLayerFactor();
-    const soilQuality = this.assessSoilQuality();
-    const reflectionCoefficient = this.calculateReflectionCoefficient();
-
     return {
-      effectiveResistivity,
-      surfaceLayerFactor,
-      soilQuality,
-      reflectionCoefficient,
+      effectiveResistivity: this.calculateEffectiveResistivity(),
+      surfaceLayerFactor: this.calculateSurfaceLayerFactor(),
+      soilQuality: this.assessSoilQuality(),
+      reflectionCoefficient: this.calculateReflectionCoefficient(),
       model: this.input.model,
       layers: this.input.layers,
       temperature: this.input.temperature,
@@ -320,23 +380,52 @@ class MultiLayerSoilModel {
   }
 
   /**
-   * Add traceability entry
+   * Adds traceability entry with automatic size management
+   * @param {string} calculation - Calculation type
+   * @param {Object} data - Calculation data
    */
   addTrace(calculation, data) {
-    this.traceability.push({
+    const traceEntry = {
       timestamp: new Date().toISOString(),
       calculation,
       model: 'MultiLayerSoilModel',
       standard: 'IEEE 80-2013',
       ...data
-    });
+    };
+
+    this.traceability.push(traceEntry);
+    
+    // Prevent unbounded growth
+    if (this.traceability.length > this.maxTraceabilityEntries) {
+      this.traceability.shift(); // Remove oldest entry
+    }
   }
 
   /**
-   * Get traceability
+   * Returns traceability log
+   * @returns {Array} Traceability entries
    */
   getTraceability() {
-    return this.traceability;
+    return [...this.traceability]; // Return copy to prevent external modification
+  }
+
+  /**
+   * Clears traceability log
+   */
+  clearTraceability() {
+    this.traceability = [];
+  }
+
+  /**
+   * Sets maximum traceability entries
+   * @param {number} maxEntries - Maximum number of entries
+   */
+  setMaxTraceabilityEntries(maxEntries) {
+    this.maxTraceabilityEntries = maxEntries;
+    // Trim existing traceability if needed
+    while (this.traceability.length > this.maxTraceabilityEntries) {
+      this.traceability.shift();
+    }
   }
 }
 

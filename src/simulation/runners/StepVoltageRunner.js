@@ -1,7 +1,16 @@
 // src/simulation/runners/StepVoltageRunner.js
-// CÁLCULO ESPECÍFICO DE TENSIÓN DE PASO
+// Specific step voltage calculation
 
 import { calcGridResistance, calcTouchVoltage } from '../../core/ieee80.js';
+
+const DEFAULT_RESOLUTION = 30;
+const HIGH_RESOLUTION = 50;
+const DECAY_FACTOR = 3;
+const DEFAULT_BODY_WEIGHT = 70;
+const SURFACE_FACTOR_COEFFICIENT = 0.09;
+const TOLERABLE_VOLTAGE_COEFFICIENT = 1000;
+const TOLERABLE_VOLTAGE_MULTIPLIER = 6;
+const TOLERABLE_VOLTAGE_DIVISOR = 0.157;
 
 export class StepVoltageRunner {
   constructor(project) {
@@ -9,23 +18,46 @@ export class StepVoltageRunner {
   }
 
   /**
-   * Calcula perfil de tensión de paso en toda la malla
+   * Calculates step voltage profile across entire grid
+   * @param {number} resolution - Grid resolution
+   * @returns {Array} Array of voltage points
    */
-  calculateProfile(resolution = 30) {
+  calculateProfile(resolution = DEFAULT_RESOLUTION) {
     const { grid, soil } = this.project;
     const scenario = this.project.scenarios[0];
     
     if (!scenario) return [];
     
-    const Rg = calcGridResistance({
+    const gridResistance = this.calculateGridResistance(grid, soil);
+    const gridCurrent = this.calculateGridCurrent(scenario);
+    const { GPR: groundPotentialRise } = calcTouchVoltage({ faultCurrent: gridCurrent, Rg: gridResistance });
+    
+    return this.generateVoltageProfile(grid, groundPotentialRise, resolution);
+  }
+
+  /**
+   * Calculates grid resistance
+   */
+  calculateGridResistance(grid, soil) {
+    return calcGridResistance({
       soilResistivity: soil.resistivity,
       gridArea: grid.area,
       totalConductorLength: grid.totalConductorLength,
       burialDepth: grid.depth
     });
-    const Ig = scenario.Ig || scenario.current * scenario.divisionFactor;
-    const { GPR: gpr } = calcTouchVoltage({ faultCurrent: Ig, Rg });
-    
+  }
+
+  /**
+   * Calculates grid current
+   */
+  calculateGridCurrent(scenario) {
+    return scenario.Ig ?? scenario.current * scenario.divisionFactor;
+  }
+
+  /**
+   * Generates voltage profile grid
+   */
+  generateVoltageProfile(grid, groundPotentialRise, resolution) {
     const profile = [];
     const stepX = grid.length / resolution;
     const stepY = grid.width / resolution;
@@ -34,17 +66,7 @@ export class StepVoltageRunner {
       for (let j = 0; j <= resolution; j++) {
         const x = i * stepX;
         const y = j * stepY;
-        
-        // Distancia al centro
-        const centerX = grid.length / 2;
-        const centerY = grid.width / 2;
-        const distance = Math.sqrt(Math.pow(x - centerX, 2) + Math.pow(y - centerY, 2));
-        const maxDistance = Math.max(grid.length, grid.width) / 2;
-        
-        // Decaimiento exponencial
-        let voltage = gpr * Math.exp(-3 * distance / maxDistance);
-        voltage = Math.max(0, Math.min(voltage, gpr));
-        
+        const voltage = this.calculateVoltageAtPoint(x, y, grid, groundPotentialRise);
         profile.push({ x, y, voltage });
       }
     }
@@ -53,10 +75,38 @@ export class StepVoltageRunner {
   }
 
   /**
-   * Encuentra el punto de máxima tensión de paso
+   * Calculates voltage at a specific point with exponential decay
+   */
+  calculateVoltageAtPoint(x, y, grid, groundPotentialRise) {
+    const distance = this.calculateDistanceFromCenter(x, y, grid);
+    const maxDistance = Math.max(grid.length, grid.width) / 2;
+    
+    let voltage = groundPotentialRise * Math.exp(-DECAY_FACTOR * distance / maxDistance);
+    return Math.max(0, Math.min(voltage, groundPotentialRise));
+  }
+
+  /**
+   * Calculates distance from grid center
+   */
+  calculateDistanceFromCenter(x, y, grid) {
+    const centerX = grid.length / 2;
+    const centerY = grid.width / 2;
+    return Math.sqrt(Math.pow(x - centerX, 2) + Math.pow(y - centerY, 2));
+  }
+
+  /**
+   * Finds point of maximum step voltage
+   * @returns {Object} Maximum voltage and location
    */
   findMaxStepVoltage() {
-    const profile = this.calculateProfile(50);
+    const profile = this.calculateProfile(HIGH_RESOLUTION);
+    return this.findMaximumVoltagePoint(profile);
+  }
+
+  /**
+   * Finds maximum voltage point in profile
+   */
+  findMaximumVoltagePoint(profile) {
     let maxVoltage = 0;
     let maxPoint = null;
     
@@ -71,23 +121,47 @@ export class StepVoltageRunner {
   }
 
   /**
-   * Verifica si la tensión de paso es segura
+   * Verifies if step voltage is safe
+   * @returns {Object} Safety assessment
    */
   isStepVoltageSafe() {
     const { maxVoltage } = this.findMaxStepVoltage();
     const { soil } = this.project;
     const scenario = this.project.scenarios[0];
     
-    const Cs = 1 - (0.09 * (1 - soil.resistivity / soil.surfaceResistivity)) / 
-               (2 * soil.surfaceDepth + 0.09);
-    const tolerable = (1000 + 6 * Cs * soil.surfaceResistivity) * (0.157 / Math.sqrt(scenario.duration));
+    const surfaceLayerFactor = this.calculateSurfaceLayerFactor(soil);
+    const tolerableVoltage = this.calculateTolerableVoltage(surfaceLayerFactor, soil, scenario);
+    const safetyMargin = this.calculateSafetyMargin(tolerableVoltage, maxVoltage);
     
     return {
-      safe: maxVoltage <= tolerable,
+      safe: maxVoltage <= tolerableVoltage,
       maxVoltage,
-      tolerable,
-      margin: ((tolerable - maxVoltage) / tolerable) * 100
+      tolerable: tolerableVoltage,
+      margin: safetyMargin
     };
+  }
+
+  /**
+   * Calculates surface layer factor
+   */
+  calculateSurfaceLayerFactor(soil) {
+    return 1 - (SURFACE_FACTOR_COEFFICIENT * (1 - soil.resistivity / soil.surfaceResistivity)) / 
+               (2 * soil.surfaceDepth + SURFACE_FACTOR_COEFFICIENT);
+  }
+
+  /**
+   * Calculates tolerable voltage per IEEE 80
+   */
+  calculateTolerableVoltage(surfaceLayerFactor, soil, scenario) {
+    return (TOLERABLE_VOLTAGE_COEFFICIENT + TOLERABLE_VOLTAGE_MULTIPLIER * surfaceLayerFactor * soil.surfaceResistivity) * 
+           (TOLERABLE_VOLTAGE_DIVISOR / Math.sqrt(scenario.duration));
+  }
+
+  /**
+   * Calculates safety margin percentage
+   */
+  calculateSafetyMargin(tolerableVoltage, actualVoltage) {
+    return ((tolerableVoltage - actualVoltage) / tolerableVoltage) * 100;
   }
 }
 

@@ -1,6 +1,19 @@
 require('dotenv/config');
+const { validateEnv } = require('./config/envValidation.js');
+
+// Validate environment variables at startup
+try {
+  validateEnv();
+} catch (error) {
+  console.error('❌ Environment validation failed:');
+  console.error(error.message);
+  console.error('\nPlease check your .env file and ensure all required environment variables are set.');
+  process.exit(1);
+}
+
 const express = require('express');
 const cors = require('cors');
+const compression = require('compression');
 const path = require('path');
 const { createServer } = require('http');
 const calculateRoute = require('./routes/calculate.js');
@@ -13,9 +26,10 @@ const dashboardRoutes = require('./routes/dashboard.routes.js');
 const pricingRoutes = require('./routes/pricing.routes.js');
 const batchRoutes = require('./routes/batch.routes.js');
 const billingRoutes = require('./routes/billing.routes.js');
-const { securityHeaders, createRateLimiter, calculationRateLimiter, pricingRateLimiter, corsOptions } = require('./middleware/security.js');
+const { securityHeaders, createRateLimiter, calculationRateLimiter, pricingRateLimiter, corsOptions, authRateLimiter } = require('./middleware/security.js');
 const { sanitizeInput } = require('./middleware/validation.js');
 const { requestLogger, errorLogger, performanceMonitor, requestIdMiddleware } = require('./middleware/logging.js');
+const { createTimeoutMiddleware, timeoutHandler } = require('./middleware/timeout.js');
 const socketService = require('./services/collaboration/socket.service.js');
 
 const app = express();
@@ -32,14 +46,40 @@ app.use(cors(corsOptions));
 app.use(express.json({ limit: '10mb' }));
 app.use(sanitizeInput);
 
+// Performance middleware
+app.use(compression({
+  filter: (req, res) => {
+    if (req.headers['x-no-compression']) {
+      return false;
+    }
+    // Skip compression for already-compressed content types
+    const contentType = res.getHeader('Content-Type');
+    if (contentType) {
+      const skipTypes = [
+        'application/pdf',
+        'application/zip',
+        'application/x-gzip',
+        'application/gzip',
+        'image/',
+        'video/',
+        'audio/'
+      ];
+      return !skipTypes.some(type => contentType.includes(type));
+    }
+    return true;
+  }
+}));
+app.use(createTimeoutMiddleware(30000)); // 30 second timeout
+
 // Rate limiting
 app.use(createRateLimiter());
 
 // Error handling middleware (must be last)
+app.use(timeoutHandler);
 app.use(errorLogger);
 
 // SaaS API Routes
-app.use('/api/auth', authRoutes);
+app.use('/api/auth', authRateLimiter, authRoutes);
 app.use('/api/projects', projectsRoutes);
 app.use('/api/simulation', simulationRoutes);
 app.use('/api/reports', reportsRoutes);

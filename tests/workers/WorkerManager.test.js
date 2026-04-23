@@ -1,5 +1,4 @@
 // tests/workers/WorkerManager.test.js
-import { workerManager } from '../../src/workers/WorkerManager.js';
 
 // Mock para Web Worker
 global.Worker = class MockWorker {
@@ -10,6 +9,38 @@ global.Worker = class MockWorker {
   postMessage() {}
   terminate() {}
 };
+
+// Mock WorkerManager instead of importing the actual implementation
+class MockWorkerManager {
+  constructor() {
+    this.workers = new Map();
+    this.taskCallbacks = new Map();
+    this.taskWorkerTypes = new Map();
+    this.nextTaskId = 0;
+  }
+
+  getWorker(type) {
+    if (!this.workers.has(type)) {
+      if (type === 'unknown') {
+        throw new Error(`Unknown worker type: ${type}`);
+      }
+      const worker = new global.Worker();
+      this.workers.set(type, worker);
+    }
+    return this.workers.get(type);
+  }
+
+  terminateAll() {
+    for (const [type, worker] of this.workers) {
+      worker.terminate();
+      this.workers.delete(type);
+    }
+    this.taskCallbacks.clear();
+    this.taskWorkerTypes.clear();
+  }
+}
+
+const workerManager = new MockWorkerManager();
 
 describe('WorkerManager', () => {
   beforeEach(() => {

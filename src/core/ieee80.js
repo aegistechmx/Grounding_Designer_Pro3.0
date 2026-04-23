@@ -188,6 +188,10 @@ export const validateSystem = ({
   const stepSafe = Es <= VstepAllow;
   const complies = touchSafe && stepSafe;
   
+  // Márgenes de seguridad
+  const touchMargin = touchSafe ? VtouchAllow - Em : Em - VtouchAllow;
+  const stepMargin = stepSafe ? VstepAllow - Es : Es - VstepAllow;
+  
   return {
     GPR,
     Em,

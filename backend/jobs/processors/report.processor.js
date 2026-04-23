@@ -6,50 +6,23 @@
  */
 
 const { Worker } = require('bullmq');
-const Redis = require('ioredis');
 const fs = require('fs');
 const path = require('path');
 const PDFDocument = require('pdfkit');
 const storageService = require('../../services/storage.service');
 const emailService = require('../../services/notification/email.service');
 const pdfChartsService = require('../../services/pdfCharts.service');
-
-// Redis connection - only initialize if not skipped
-const skipRedis = process.env.SKIP_REDIS === 'true';
-let connection = null;
-
-if (!skipRedis) {
-  try {
-    connection = new Redis({
-      host: process.env.REDIS_HOST || 'localhost',
-      port: process.env.REDIS_PORT || 6379,
-      password: process.env.REDIS_PASSWORD || undefined,
-      maxRetriesPerRequest: null,
-      retryStrategy: (times) => {
-        const delay = Math.min(times * 50, 2000);
-        return delay;
-      }
-    });
-
-    connection.on('error', (err) => {
-      console.error('Redis connection error in report processor:', err.message);
-      if (err.code === 'ECONNREFUSED') {
-        console.warn('Redis not available - report workers will be disabled');
-      }
-    });
-  } catch (error) {
-    console.error('Failed to initialize Redis connection in report processor:', error.message);
-    connection = null;
-  }
-} else {
-  console.log('Redis skipped in report processor (SKIP_REDIS=true)');
-}
+const queueManager = require('../queue.js');
 
 // Ensure outputs directory exists
 const outputsDir = path.join(__dirname, '../../outputs');
 if (!fs.existsSync(outputsDir)) {
   fs.mkdirSync(outputsDir, { recursive: true });
 }
+
+// Track worker instances for cleanup
+let pdfWorker = null;
+let reportWorker = null;
 
 /**
  * Process PDF generation job with pdfkit
@@ -58,6 +31,27 @@ async function processPDFJob(job) {
   const { calculations, params, heatmapData, projectName, clientName, engineer, userEmail } = job.data;
 
   try {
+    // Validate heatmap data structure
+    if (heatmapData && heatmapData.length > 0) {
+      for (let i = 0; i < heatmapData.length; i++) {
+        const point = heatmapData[i];
+        if (!point || typeof point !== 'object') {
+          throw new Error(`Heatmap data point at index ${i} is not an object`);
+        }
+        if (typeof point.x !== 'number' || typeof point.y !== 'number') {
+          throw new Error(`Heatmap data point at index ${i} is missing x or y coordinates`);
+        }
+        if (isNaN(point.x) || isNaN(point.y)) {
+          throw new Error(`Heatmap data point at index ${i} has invalid x or y coordinates (NaN)`);
+        }
+        if (typeof point.potential !== 'number') {
+          throw new Error(`Heatmap data point at index ${i} is missing potential value`);
+        }
+        if (isNaN(point.potential)) {
+          throw new Error(`Heatmap data point at index ${i} has invalid potential value (NaN)`);
+        }
+      }
+    }
     await job.updateProgress(10);
 
     const fileName = `report-${Date.now()}.pdf`;
@@ -186,6 +180,15 @@ async function processPDFJob(job) {
   } catch (error) {
     console.error('PDF job processing error:', error);
     throw error;
+  } finally {
+    // Clean up PDF file after processing (success or failure)
+    if (filePath && fs.existsSync(filePath)) {
+      try {
+        fs.unlinkSync(filePath);
+      } catch (cleanupError) {
+        console.error('Failed to clean up PDF file:', cleanupError);
+      }
+    }
   }
 }
 
@@ -247,8 +250,14 @@ async function processBatchJob(job) {
  * @returns {Worker|null} Returns null if Redis is disabled or not connected
  */
 function createPDFWorker() {
-  if (skipRedis || !connection) {
+  if (!queueManager.isAvailable()) {
     console.warn('PDF worker not created - Redis is disabled or not connected');
+    return null;
+  }
+
+  // Verify connection is actually connected before creating worker
+  if (!queueManager.connection || queueManager.connection.status !== 'ready') {
+    console.warn('PDF worker not created - Redis connection not in ready state');
     return null;
   }
 
@@ -258,7 +267,7 @@ function createPDFWorker() {
     }
     throw new Error(`Unknown job type: ${job.name}`);
   }, {
-    connection,
+    connection: queueManager.connection,
     concurrency: 2 // Process 2 PDF jobs concurrently
   });
 
@@ -270,6 +279,7 @@ function createPDFWorker() {
     console.error(`PDF job ${job?.id} failed:`, err.message);
   });
 
+  pdfWorker = worker;
   return worker;
 }
 
@@ -278,8 +288,14 @@ function createPDFWorker() {
  * @returns {Worker|null} Returns null if Redis is disabled or not connected
  */
 function createReportWorker() {
-  if (skipRedis || !connection) {
+  if (!queueManager.isAvailable()) {
     console.warn('Report worker not created - Redis is disabled or not connected');
+    return null;
+  }
+
+  // Verify connection is actually connected before creating worker
+  if (!queueManager.connection || queueManager.connection.status !== 'ready') {
+    console.warn('Report worker not created - Redis connection not in ready state');
     return null;
   }
 
@@ -293,7 +309,7 @@ function createReportWorker() {
     }
     throw new Error(`Unknown job type: ${job.name}`);
   }, {
-    connection,
+    connection: queueManager.connection,
     concurrency: 3 // Process 3 report jobs concurrently
   });
 
@@ -305,12 +321,28 @@ function createReportWorker() {
     console.error(`Report job ${job?.id} failed:`, err.message);
   });
 
+  reportWorker = worker;
   return worker;
+}
+
+/**
+ * Close all worker instances
+ */
+async function closeWorkers() {
+  if (pdfWorker) {
+    await pdfWorker.close();
+    pdfWorker = null;
+  }
+  if (reportWorker) {
+    await reportWorker.close();
+    reportWorker = null;
+  }
 }
 
 module.exports = {
   createPDFWorker,
   createReportWorker,
+  closeWorkers,
   processPDFJob,
   processExcelJob,
   processBatchJob

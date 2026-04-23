@@ -12,16 +12,10 @@ const femService = require('../services/fem.service.js');
 const heatmapService = require('../services/heatmap.service.js');
 const aiService = require('../services/ai.service.js');
 const { addJob, getJobStatus } = require('../jobs/queue.js');
-const { Pool } = require('pg');
+const { getPool } = require('../database/pool.js');
 
 // Database connection
-const pool = new Pool({
-  host: process.env.DB_HOST || 'localhost',
-  port: process.env.DB_PORT || 5432,
-  database: process.env.DB_NAME || 'grounding_saas',
-  user: process.env.DB_USER || 'postgres',
-  password: process.env.DB_PASSWORD
-});
+const pool = getPool();
 
 /**
  * Run IEEE 80 simulation (synchronous, fast)

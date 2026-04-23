@@ -1,5 +1,5 @@
 const express = require('express');
-const { pdfQueue } = require('../jobs/queue.js');
+const { pdfQueue, isAvailable } = require('../jobs/queue.js');
 const { calculationRateLimiter } = require('../middleware/security.js');
 
 const router = express.Router();
@@ -10,6 +10,14 @@ const router = express.Router();
  */
 router.post('/generate', calculationRateLimiter, async (req, res) => {
   try {
+    // Check if queue is available
+    if (!isAvailable()) {
+      return res.status(503).json({
+        success: false,
+        error: 'PDF generation service is currently unavailable'
+      });
+    }
+
     const { calculations, params, heatmapImage, projectName, clientName, engineer } = req.body;
 
     // Validate required fields

@@ -8,6 +8,7 @@ const Redis = require('ioredis');
 
 let connection = null;
 let queues = {};
+let connectionReady = false; // Track connection state
 
 // Only initialize Redis if not in debug mode without Redis
 const skipRedis = process.env.SKIP_REDIS === 'true';
@@ -37,6 +38,7 @@ if (!skipRedis) {
     // Wait for connection to be established before creating queues
     connection.on('connect', () => {
       console.log('Redis connected - creating job queues');
+      connectionReady = true;
       
       // Create queues
       queues = {
@@ -51,6 +53,7 @@ if (!skipRedis) {
 
     connection.on('close', () => {
       console.warn('Redis connection closed - job queues may be unavailable');
+      connectionReady = false;
     });
 
   } catch (error) {
@@ -66,11 +69,18 @@ Object.defineProperty(module.exports, 'pdfQueue', {
   get: () => skipRedis ? null : queues.pdf
 });
 
+// Export connection via getter to prevent external misuse
+Object.defineProperty(module.exports, 'connection', {
+  get: () => connection,
+  configurable: false,
+  enumerable: true
+});
+
 /**
  * Check if queues are available
  */
 module.exports.isAvailable = function() {
-  return !skipRedis && connection !== null && queues.pdf !== undefined;
+  return !skipRedis && connectionReady && connection !== null && connection.status === 'ready' && queues.pdf !== undefined;
 };
 
 /**

@@ -1,45 +1,51 @@
 // src/simulation/scenarios/FaultScenarios.js
-// DEFINICIÓN DE ESCENARIOS DE FALLA
+// Fault scenario definitions
+
+const DEFAULT_CURRENT = 5000;
+const DEFAULT_DURATION = 0.5;
+const DEFAULT_DIVISION_FACTOR = 0.15;
+const DEFAULT_NAME = 'Custom';
+const DEFAULT_DESCRIPTION = 'Custom configuration';
 
 export const FaultScenarios = {
   /**
-   * Escenario estándar para subestación industrial
+   * Standard industrial substation scenario
    */
   industrialStandard: {
     id: 'industrial_std',
-    name: 'Industrial Estándar',
+    name: 'Industrial Standard',
     current: 5000,
     duration: 0.5,
     divisionFactor: 0.15,
-    description: 'Falla típica en subestación industrial'
+    description: 'Typical industrial substation fault'
   },
 
   /**
-   * Escenario conservador (máxima seguridad)
+   * Conservative scenario (maximum safety)
    */
   conservative: {
     id: 'conservative',
-    name: 'Conservador',
+    name: 'Conservative',
     current: 10000,
     duration: 0.35,
     divisionFactor: 0.2,
-    description: 'Escenario de alta seguridad'
+    description: 'High safety scenario'
   },
 
   /**
-   * Escenario económico (falla rápida)
+   * Economic scenario (fast fault clearing)
    */
   economic: {
     id: 'economic',
-    name: 'Económico',
+    name: 'Economic',
     current: 3000,
     duration: 0.7,
     divisionFactor: 0.1,
-    description: 'Protecciones rápidas'
+    description: 'Fast protection'
   },
 
   /**
-   * Escenario para data center
+   * Data center scenario
    */
   dataCenter: {
     id: 'datacenter',
@@ -47,11 +53,11 @@ export const FaultScenarios = {
     current: 8000,
     duration: 0.25,
     divisionFactor: 0.12,
-    description: 'Alta disponibilidad'
+    description: 'High availability'
   },
 
   /**
-   * Escenario para hospital
+   * Hospital scenario
    */
   hospital: {
     id: 'hospital',
@@ -59,21 +65,23 @@ export const FaultScenarios = {
     current: 6000,
     duration: 0.2,
     divisionFactor: 0.18,
-    description: 'Protecciones ultrasensibles'
+    description: 'Ultra-sensitive protection'
   }
 };
 
 /**
- * Crea escenario personalizado
+ * Creates custom fault scenario
+ * @param {Object} params - Scenario parameters
+ * @returns {Object} Custom scenario
  */
 export function createCustomScenario(params) {
   return {
     id: `custom_${Date.now()}`,
-    name: params.name || 'Personalizado',
-    current: params.current || 5000,
-    duration: params.duration || 0.5,
-    divisionFactor: params.divisionFactor || 0.15,
-    description: params.description || 'Configuración personalizada'
+    name: params.name ?? DEFAULT_NAME,
+    current: params.current ?? DEFAULT_CURRENT,
+    duration: params.duration ?? DEFAULT_DURATION,
+    divisionFactor: params.divisionFactor ?? DEFAULT_DIVISION_FACTOR,
+    description: params.description ?? DEFAULT_DESCRIPTION
   };
 }
 

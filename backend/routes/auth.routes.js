@@ -52,18 +52,9 @@ router.post('/login', async (req, res) => {
 /**
  * Get current user info
  */
-router.get('/me', async (req, res) => {
+router.get('/me', authenticate, async (req, res) => {
   try {
-    const authHeader = req.headers.authorization;
-    
-    if (!authHeader) {
-      return res.status(401).json({ success: false, error: 'No authorization header' });
-    }
-    
-    const token = authHeader.split(' ')[1];
-    const decoded = authService.verifyToken(token);
-    
-    const user = await authService.getUserById(decoded.userId);
+    const user = await authService.getUserById(req.user.userId);
     
     res.json({
       success: true,
@@ -78,18 +69,9 @@ router.get('/me', async (req, res) => {
 /**
  * Update user info
  */
-router.put('/me', async (req, res) => {
+router.put('/me', authenticate, async (req, res) => {
   try {
-    const authHeader = req.headers.authorization;
-    
-    if (!authHeader) {
-      return res.status(401).json({ success: false, error: 'No authorization header' });
-    }
-    
-    const token = authHeader.split(' ')[1];
-    const decoded = authService.verifyToken(token);
-    
-    const user = await authService.updateUser(decoded.userId, req.body);
+    const user = await authService.updateUser(req.user.userId, req.body);
     
     res.json({
       success: true,
@@ -104,17 +86,8 @@ router.put('/me', async (req, res) => {
 /**
  * Check plan limits
  */
-router.get('/limits', async (req, res) => {
+router.get('/limits', authenticate, async (req, res) => {
   try {
-    const authHeader = req.headers.authorization;
-    
-    if (!authHeader) {
-      return res.status(401).json({ success: false, error: 'No authorization header' });
-    }
-    
-    const token = authHeader.split(' ')[1];
-    const decoded = authService.verifyToken(token);
-    
     const limits = {
       free: {
         simulations: 10,
@@ -136,11 +109,11 @@ router.get('/limits', async (req, res) => {
       }
     };
     
-    const userLimits = limits[decoded.plan] || limits.free;
+    const userLimits = limits[req.user.plan] || limits.free;
     
     res.json({
       success: true,
-      plan: decoded.plan,
+      plan: req.user.plan,
       limits: userLimits
     });
   } catch (error) {

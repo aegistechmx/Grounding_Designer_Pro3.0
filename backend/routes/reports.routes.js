@@ -9,18 +9,12 @@ const { authenticate } = require('../middleware/auth.js');
 const requireFeature = require('../middleware/requireFeature.js');
 const reportService = require('../services/report.service.js');
 const { addJob, getJobStatus } = require('../jobs/queue.js');
-const { Pool } = require('pg');
+const { getPool } = require('../database/pool.js');
 const fs = require('fs/promises');
 const path = require('path');
 
 // Database connection
-const pool = new Pool({
-  host: process.env.DB_HOST || 'localhost',
-  port: process.env.DB_PORT || 5432,
-  database: process.env.DB_NAME || 'grounding_saas',
-  user: process.env.DB_USER || 'postgres',
-  password: process.env.DB_PASSWORD
-});
+const pool = getPool();
 
 /**
  * Generate PDF report (asynchronous)

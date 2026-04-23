@@ -23,30 +23,30 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">83.33% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/24</span>
+                <span class='fraction'>20/24</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">55.55% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>0/27</span>
+                <span class='fraction'>15/27</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">80% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>0/5</span>
+                <span class='fraction'>4/5</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">81.81% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/22</span>
+                <span class='fraction'>18/22</span>
             </div>
         
             
@@ -61,7 +61,7 @@
             </div>
         </template>
     </div>
-    <div class='status-line low'></div>
+    <div class='status-line high'></div>
     <pre><table class="coverage">
 <tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
 <a name='L2'></a><a href='#L2'>2</a>
@@ -160,9 +160,9 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">6x</span>
+<span class="cline-any cline-yes">6x</span>
+<span class="cline-any cline-yes">6x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -195,33 +195,33 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">4x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -248,10 +248,10 @@ import { FEMAssembler } from '../engine/fem/FEMAssembler.js';
 import MultiLayerSoilModel from '../engine/soil/MultiLayerSoilModel.js';
 &nbsp;
 export class FEMSimulationRunner {
-<span class="fstat-no" title="function not covered" >  co</span>nstructor(project, options = <span class="branch-0 cbranch-no" title="branch not covered" >{})</span> {
-<span class="cstat-no" title="statement not covered" >    this.project = project;</span>
-<span class="cstat-no" title="statement not covered" >    this.options = options;</span>
-<span class="cstat-no" title="statement not covered" >    this.femAssembler = null;</span>
+  constructor(project, options = {}) {
+    this.project = project;
+    this.options = options;
+    this.femAssembler = null;
   }
 &nbsp;
   /**
@@ -283,34 +283,34 @@ export class FEMSimulationRunner {
   /**
    * Mapea resultados FEM al formato existente
    */
-<span class="fstat-no" title="function not covered" >  ma</span>pResultsToFormat(femResults) {
-    const scenario = <span class="cstat-no" title="statement not covered" >this.project.scenarios?.[0];</span>
+  mapResultsToFormat(femResults) {
+    const scenario = this.project.scenarios?.[0];
     
-<span class="cstat-no" title="statement not covered" >    if (!scenario) {</span>
-<span class="cstat-no" title="statement not covered" >      throw new Error('No hay escenarios disponibles en el proyecto');</span>
+    if (!scenario) {
+      throw new Error('No hay escenarios disponibles en el proyecto');
     }
     
     // Encontrar tensión máxima de paso y contacto
-    const stepVoltageMap = <span class="cstat-no" title="statement not covered" >femResults.stepVoltageMap || [];</span>
-    const touchVoltageMap = <span class="cstat-no" title="statement not covered" >femResults.touchVoltageMap || [];</span>
-    const maxStepVoltage = <span class="cstat-no" title="statement not covered" >stepVoltageMap.length &gt; 0 ? Math.max(...stepVoltageMap.map(<span class="fstat-no" title="function not covered" >s </span>=&gt; <span class="cstat-no" title="statement not covered" >s.value)</span>) : 0;</span>
-    const maxTouchVoltage = <span class="cstat-no" title="statement not covered" >touchVoltageMap.length &gt; 0 ? Math.max(...touchVoltageMap.map(<span class="fstat-no" title="function not covered" >t </span>=&gt; <span class="cstat-no" title="statement not covered" >t.value)</span>) : 0;</span>
+    const stepVoltageMap = femResults.stepVoltageMap || <span class="branch-1 cbranch-no" title="branch not covered" >[];</span>
+    const touchVoltageMap = femResults.touchVoltageMap || <span class="branch-1 cbranch-no" title="branch not covered" >[];</span>
+    const maxStepVoltage = stepVoltageMap.length &gt; 0 ? Math.max(...stepVoltageMap.map(s =&gt; s.value)) : 0;
+    const maxTouchVoltage = touchVoltageMap.length &gt; 0 ? Math.max(...touchVoltageMap.map(t =&gt; t.value)) : 0;
     
     // Calcular límites tolerables (IEEE 80)
-    const soilResistivity = <span class="cstat-no" title="statement not covered" >this.project.soil?.resistivity || 100;</span>
-    const surfaceResistivity = <span class="cstat-no" title="statement not covered" >Math.max(1, this.project.soil?.surfaceResistivity || 10000);</span>
-    const surfaceDepth = <span class="cstat-no" title="statement not covered" >Math.max(0.01, this.project.soil?.surfaceDepth || 0.2);</span>
-    const duration = <span class="cstat-no" title="statement not covered" >Math.max(0.1, scenario.duration || 0.35);</span>
+    const soilResistivity = this.project.soil?.resistivity || <span class="branch-1 cbranch-no" title="branch not covered" >100;</span>
+    const surfaceResistivity = Math.max(1, this.project.soil?.surfaceResistivity || <span class="branch-1 cbranch-no" title="branch not covered" >10000)</span>;
+    const surfaceDepth = Math.max(0.01, this.project.soil?.surfaceDepth || <span class="branch-1 cbranch-no" title="branch not covered" >0.2)</span>;
+    const duration = Math.max(0.1, scenario.duration || <span class="branch-1 cbranch-no" title="branch not covered" >0.35)</span>;
     
-    const Cs = <span class="cstat-no" title="statement not covered" >1 - (0.09 * (1 - soilResistivity / surfaceResistivity)) /</span>
+    const Cs = 1 - (0.09 * (1 - soilResistivity / surfaceResistivity)) /
                (2 * surfaceDepth + 0.09);
     
-    const Etouch70 = <span class="cstat-no" title="statement not covered" >(1000 + 1.5 * Cs * surfaceResistivity) *</span>
+    const Etouch70 = (1000 + 1.5 * Cs * surfaceResistivity) *
                      (0.157 / Math.sqrt(duration));
-    const Estep70 = <span class="cstat-no" title="statement not covered" >(1000 + 6 * Cs * surfaceResistivity) *</span>
+    const Estep70 = (1000 + 6 * Cs * surfaceResistivity) *
                     (0.157 / Math.sqrt(duration));
     
-<span class="cstat-no" title="statement not covered" >    return {</span>
+    return {
       Rg: femResults.groundResistance,
       GPR: Math.max(...femResults.voltageField),
       Em: maxTouchVoltage,
@@ -337,7 +337,7 @@ export default FEMSimulationRunner;
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-04-22T08:10:13.923Z
+                at 2026-04-23T09:01:23.635Z
             </div>
         <script src="../prettify.js"></script>
         <script>

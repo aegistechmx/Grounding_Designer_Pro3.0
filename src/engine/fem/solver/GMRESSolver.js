@@ -1,204 +1,239 @@
 // src/engine/fem/solver/GMRESSolver.js
-// Solver GMRES (Generalized Minimal Residual) para problemas más difíciles
+// GMRES (Generalized Minimal Residual) solver for difficult linear systems
+
+const DEFAULT_MAX_ITERATIONS = 1000;
+const DEFAULT_TOLERANCE = 1e-8;
+const DEFAULT_RESTART = 50;
+const EPSILON = 1e-12;
 
 export class GMRESSolver {
   constructor(options = {}) {
-    this.maxIterations = options.maxIterations || 1000;
-    this.tolerance = options.tolerance || 1e-8;
-    this.restart = options.restart || 50;
-    this.verbose = options.verbose || false;
+    this.maxIterations = options.maxIterations ?? DEFAULT_MAX_ITERATIONS;
+    this.tolerance = options.tolerance ?? DEFAULT_TOLERANCE;
+    this.restart = options.restart ?? DEFAULT_RESTART;
+    this.verbose = options.verbose ?? false;
   }
 
   /**
-   * Resuelve K * x = b usando GMRES
+   * Solves K * x = b using GMRES algorithm
+   * @param {Object} K - Matrix with multiply method
+   * @param {Array} b - Right-hand side vector
+   * @returns {Object} Solution with solution, iterations, executionTime, converged, residual
    */
   solve(K, b) {
     const startTime = performance.now();
-    const n = b.length;
+    const vectorSize = b.length;
     
-    let x = new Array(n).fill(0);
-    let r = this.computeResidual(K, x, b);
-    let beta = this.norm(r);
+    let solution = new Array(vectorSize).fill(0);
+    let residual = this.computeResidual(K, solution, b);
+    let residualNorm = this.norm(residual);
     
-    if (beta < this.tolerance) {
-      return { solution: x, iterations: 0, converged: true };
+    if (residualNorm < this.tolerance) {
+      return this.buildResult(solution, 0, startTime, true, residualNorm);
     }
     
-    let iterations = 0;
-    let converged = false;
+    let totalIterations = 0;
+    let hasConverged = false;
     
-    // Vectores de Krylov
-    const V = [];
-    const H = [];
-    const g = [];
+    // Krylov subspace vectors
+    const krylovVectors = [];
+    const hessenbergMatrix = [];
     
-    while (iterations < this.maxIterations && !converged) {
-      // Reiniciar cada 'restart' iteraciones
-      const restartIter = Math.min(this.restart, this.maxIterations - iterations);
+    while (totalIterations < this.maxIterations && !hasConverged) {
+      const restartIterations = Math.min(this.restart, this.maxIterations - totalIterations);
       
       // Arnoldi iteration
-      V.length = 0;
-      H.length = 0;
+      krylovVectors.length = 0;
+      hessenbergMatrix.length = 0;
       
-      let v = this.scale(r, 1 / beta);
-      V.push(v);
+      let normalizedVector = this.scale(residual, 1 / residualNorm);
+      krylovVectors.push(normalizedVector);
       
-      for (let j = 0; j < restartIter; j++) {
-        // Calcular w = K * v
-        let w = K.multiply(V[j]);
+      for (let iteration = 0; iteration < restartIterations; iteration++) {
+        // Compute w = K * v
+        let ArnoldiVector = K.multiply(krylovVectors[iteration]);
         
         // Arnoldi orthogonalization
-        const h = new Array(j + 2).fill(0);
-        for (let i = 0; i <= j; i++) {
-          h[i] = this.dotProduct(w, V[i]);
-          w = this.add(w, this.scale(V[i], -h[i]));
+        const hessenbergRow = new Array(iteration + 2).fill(0);
+        for (let i = 0; i <= iteration; i++) {
+          hessenbergRow[i] = this.dotProduct(ArnoldiVector, krylovVectors[i]);
+          ArnoldiVector = this.add(ArnoldiVector, this.scale(krylovVectors[i], -hessenbergRow[i]));
         }
         
-        h[j + 1] = this.norm(w);
+        hessenbergRow[iteration + 1] = this.norm(ArnoldiVector);
         
-        if (h[j + 1] > 1e-12) {
-          V.push(this.scale(w, 1 / h[j + 1]));
+        if (hessenbergRow[iteration + 1] > EPSILON) {
+          krylovVectors.push(this.scale(ArnoldiVector, 1 / hessenbergRow[iteration + 1]));
         }
         
-        H.push(h);
+        hessenbergMatrix.push(hessenbergRow);
         
-        // Resolver problema de mínimos cuadrados
-        const y = this.solveLeastSquares(H, beta, j + 1);
+        // Solve least squares problem
+        const coefficients = this.solveLeastSquares(hessenbergMatrix, residualNorm, iteration + 1);
         
-        // Actualizar solución
-        x = new Array(n).fill(0);
-        for (let i = 0; i <= j; i++) {
-          for (let k = 0; k < n; k++) {
-            x[k] += y[i] * V[i][k];
+        // Update solution
+        solution = new Array(vectorSize).fill(0);
+        for (let i = 0; i <= iteration; i++) {
+          for (let k = 0; k < vectorSize; k++) {
+            solution[k] += coefficients[i] * krylovVectors[i][k];
           }
         }
         
-        // Calcular nuevo residual
-        r = this.computeResidual(K, x, b);
-        const residualNorm = this.norm(r);
+        // Compute new residual
+        residual = this.computeResidual(K, solution, b);
+        residualNorm = this.norm(residual);
         
         if (this.verbose) {
-          console.log(`  Iteración ${iterations + j + 1}: residual = ${residualNorm.toExponential(2)}`);
+          console.log(`  Iteration ${totalIterations + iteration + 1}: residual = ${residualNorm.toExponential(2)}`);
         }
         
         if (residualNorm < this.tolerance) {
-          iterations += j + 1;
-          converged = true;
+          totalIterations += iteration + 1;
+          hasConverged = true;
           break;
         }
       }
       
-      if (!converged) {
-        // Preparar para reinicio
-        r = this.computeResidual(K, x, b);
-        beta = this.norm(r);
-        iterations += restartIter;
+      if (!hasConverged) {
+        // Prepare for restart
+        residual = this.computeResidual(K, solution, b);
+        residualNorm = this.norm(residual);
+        totalIterations += restartIterations;
       }
     }
     
     const endTime = performance.now();
     
     if (this.verbose) {
-      console.log(`✅ GMRES convergió en ${iterations} iteraciones`);
-      console.log(`   Tiempo: ${(endTime - startTime).toFixed(2)} ms`);
+      console.log(`✅ GMRES converged in ${totalIterations} iterations`);
+      console.log(`   Time: ${(endTime - startTime).toFixed(2)} ms`);
     }
     
+    // Compute final residual
+    const finalResidual = this.computeResidual(K, solution, b);
+    const finalResidualNorm = this.norm(finalResidual);
+    
+    return this.buildResult(solution, totalIterations, startTime, hasConverged, finalResidualNorm);
+  }
+
+  /**
+   * Builds result object
+   */
+  buildResult(solution, iterations, startTime, converged, residualNorm) {
+    const endTime = performance.now();
     return {
-      solution: x,
+      solution,
       iterations,
       executionTime: endTime - startTime,
-      converged
+      converged,
+      residual: residualNorm
     };
   }
 
   /**
-   * Resuelve sistema de mínimos cuadrados para GMRES
+   * Solves least squares problem using Givens rotations
+   * @param {Array} hessenbergMatrix - Upper Hessenberg matrix
+   * @param {number} beta - Initial residual norm
+   * @param {number} matrixSize - Size of the matrix
+   * @returns {Array} Solution vector
    */
-  solveLeastSquares(H, beta, m) {
-    // Implementación simplificada - usar rotaciones de Givens
-    const y = new Array(m + 1).fill(0);
-    const g = new Array(m + 1).fill(0);
-    g[0] = beta;
+  solveLeastSquares(hessenbergMatrix, beta, matrixSize) {
+    const solution = new Array(matrixSize + 1).fill(0);
+    const givensVector = new Array(matrixSize + 1).fill(0);
+    givensVector[0] = beta;
     
-    // Copiar H
-    const Hcopy = H.map(h => [...h]);
+    // Copy Hessenberg matrix
+    const matrixCopy = hessenbergMatrix.map(row => [...row]);
     
-    for (let i = 0; i < m; i++) {
-      // Rotación de Givens
-      const hii = Hcopy[i][i];
-      const hip1i = Hcopy[i + 1]?.[i] || 0;
+    for (let i = 0; i < matrixSize; i++) {
+      // Givens rotation
+      const diagonalElement = matrixCopy[i][i];
+      const subDiagonalElement = matrixCopy[i + 1]?.[i] || 0;
       
-      const c = hii / Math.sqrt(hii * hii + hip1i * hip1i);
-      const s = hip1i / Math.sqrt(hii * hii + hip1i * hip1i);
+      const rotationDenominator = Math.sqrt(diagonalElement * diagonalElement + subDiagonalElement * subDiagonalElement);
       
-      // Aplicar rotación
-      for (let j = i; j < m + 1; j++) {
-        const temp = c * Hcopy[i][j] + s * Hcopy[i + 1]?.[j] || 0;
-        Hcopy[i + 1][j] = -s * Hcopy[i][j] + c * Hcopy[i + 1]?.[j] || 0;
-        Hcopy[i][j] = temp;
+      // Handle degenerate case to prevent division by zero
+      const cosine = rotationDenominator < EPSILON ? 1 : diagonalElement / rotationDenominator;
+      const sine = rotationDenominator < EPSILON ? 0 : subDiagonalElement / rotationDenominator;
+      
+      // Apply rotation
+      for (let j = i; j < matrixSize + 1; j++) {
+        const temp = cosine * matrixCopy[i][j] + sine * (matrixCopy[i + 1]?.[j] || 0);
+        if (matrixCopy[i + 1]) {
+          matrixCopy[i + 1][j] = -sine * matrixCopy[i][j] + cosine * (matrixCopy[i + 1]?.[j] || 0);
+        }
+        matrixCopy[i][j] = temp;
       }
       
-      const temp = c * g[i] + s * g[i + 1];
-      g[i + 1] = -s * g[i] + c * g[i + 1];
-      g[i] = temp;
+      const temp = cosine * givensVector[i] + sine * givensVector[i + 1];
+      givensVector[i + 1] = -sine * givensVector[i] + cosine * givensVector[i + 1];
+      givensVector[i] = temp;
     }
     
     // Back substitution
-    for (let i = m - 1; i >= 0; i--) {
+    for (let i = matrixSize - 1; i >= 0; i--) {
       let sum = 0;
-      for (let j = i + 1; j < m; j++) {
-        sum += Hcopy[i][j] * y[j];
+      for (let j = i + 1; j < matrixSize; j++) {
+        sum += matrixCopy[i][j] * solution[j];
       }
-      y[i] = (g[i] - sum) / Hcopy[i][i];
+      
+      // Handle potential division by zero
+      const diagonalValue = matrixCopy[i][i];
+      solution[i] = Math.abs(diagonalValue) < EPSILON ? 0 : (givensVector[i] - sum) / diagonalValue;
     }
     
-    return y;
+    return solution;
   }
 
   /**
-   * Calcula residual r = b - K*x
+   * Computes residual r = b - K*x
+   * @param {Object} K - Matrix with multiply method
+   * @param {Array} x - Solution vector
+   * @param {Array} b - Right-hand side vector
+   * @returns {Array} Residual vector
    */
   computeResidual(K, x, b) {
     const Kx = K.multiply(x);
-    const r = new Array(b.length);
-    
-    for (let i = 0; i < b.length; i++) {
-      r[i] = b[i] - Kx[i];
-    }
-    
-    return r;
+    return b.map((value, index) => value - Kx[index]);
   }
 
   /**
-   * Producto punto
+   * Computes dot product of two vectors
+   * @param {Array} vectorA - First vector
+   * @param {Array} vectorB - Second vector
+   * @returns {number} Dot product
    */
-  dotProduct(a, b) {
-    let sum = 0;
-    for (let i = 0; i < a.length; i++) {
-      sum += a[i] * b[i];
-    }
-    return sum;
+  dotProduct(vectorA, vectorB) {
+    return vectorA.reduce((sum, value, index) => sum + value * vectorB[index], 0);
   }
 
   /**
-   * Norma euclidiana
+   * Computes Euclidean norm of a vector
+   * @param {Array} vector - Input vector
+   * @returns {number} Euclidean norm
    */
-  norm(v) {
-    return Math.sqrt(this.dotProduct(v, v));
+  norm(vector) {
+    return Math.sqrt(this.dotProduct(vector, vector));
   }
 
   /**
-   * Escala vector
+   * Scales a vector by a factor
+   * @param {Array} vector - Input vector
+   * @param {number} factor - Scaling factor
+   * @returns {Array} Scaled vector
    */
-  scale(v, factor) {
-    return v.map(x => x * factor);
+  scale(vector, factor) {
+    return vector.map(value => value * factor);
   }
 
   /**
-   * Suma vectores
+   * Adds two vectors element-wise
+   * @param {Array} vectorA - First vector
+   * @param {Array} vectorB - Second vector
+   * @returns {Array} Sum of vectors
    */
-  add(a, b) {
-    return a.map((x, i) => x + b[i]);
+  add(vectorA, vectorB) {
+    return vectorA.map((value, index) => value + vectorB[index]);
   }
 }
 

@@ -5,25 +5,30 @@
 
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
-const { Pool } = require('pg');
+const { getPool } = require('../database/pool.js');
 
 // Database connection
-const pool = new Pool({
-  host: process.env.DB_HOST || 'localhost',
-  port: process.env.DB_PORT || 5432,
-  database: process.env.DB_NAME || 'grounding_saas',
-  user: process.env.DB_USER || 'postgres',
-  password: process.env.DB_PASSWORD
-});
+const pool = getPool();
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
+const JWT_SECRET = process.env.JWT_SECRET;
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
+
+/**
+ * Validate JWT_SECRET is set
+ */
+function validateJWTSecret() {
+  if (!JWT_SECRET) {
+    throw new Error('JWT_SECRET environment variable is required');
+  }
+}
 
 class AuthService {
   /**
    * Register new user
    */
   async register(userData) {
+    validateJWTSecret();
+    
     const { email, password, firstName, lastName, role = 'engineer', plan = 'free' } = userData;
     
     try {
@@ -38,7 +43,7 @@ class AuthService {
       }
       
       // Hash password
-      const passwordHash = await bcrypt.hash(password, 10);
+      const passwordHash = await bcrypt.hash(password, 12);
       
       // Insert user
       const result = await pool.query(
@@ -122,13 +127,15 @@ class AuthService {
    * Generate JWT token
    */
   generateToken(user) {
+    validateJWTSecret();
+    
     const payload = {
       userId: user.id,
       email: user.email,
       role: user.role,
       plan: user.plan
     };
-    
+
     return jwt.sign(payload, JWT_SECRET, {
       expiresIn: JWT_EXPIRES_IN
     });
@@ -138,6 +145,8 @@ class AuthService {
    * Verify JWT token
    */
   verifyToken(token) {
+    validateJWTSecret();
+    
     try {
       return jwt.verify(token, JWT_SECRET);
     } catch (error) {

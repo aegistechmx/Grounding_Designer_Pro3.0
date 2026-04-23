@@ -50,17 +50,38 @@ class StorageService {
   }
 
   /**
+   * Sanitize file key to prevent path traversal attacks
+   */
+  sanitizeKey(key) {
+    // Decode URL-encoded sequences first to catch %2e%2e bypasses
+    const decoded = decodeURIComponent(key);
+    
+    // Remove any path traversal attempts
+    const sanitized = decoded.replace(/\.\./g, '').replace(/\\/g, '/');
+    
+    // Remove leading slashes to prevent absolute paths
+    const noLeadingSlashes = sanitized.replace(/^\/+/, '');
+    
+    // Remove null bytes
+    const noNullBytes = noLeadingSlashes.replace(/\0/g, '');
+    
+    return noNullBytes;
+  }
+
+  /**
    * Upload file to storage
    */
   async uploadFile(key, buffer, contentType, metadata = {}) {
+    const sanitizedKey = this.sanitizeKey(key);
+    
     if (this.useLocal) {
-      return this.uploadLocal(key, buffer);
+      return this.uploadLocal(sanitizedKey, buffer);
     }
 
     try {
       const command = new PutObjectCommand({
         Bucket: this.bucketName,
-        Key: key,
+        Key: sanitizedKey,
         Body: buffer,
         ContentType: contentType,
         Metadata: metadata
@@ -70,8 +91,8 @@ class StorageService {
       
       return {
         success: true,
-        key,
-        url: this.getFileUrl(key)
+        key: sanitizedKey,
+        url: this.getFileUrl(sanitizedKey)
       };
     } catch (error) {
       console.error('S3 upload error:', error);
@@ -86,7 +107,8 @@ class StorageService {
     const fs = require('fs').promises;
     const path = require('path');
     
-    const localPath = path.join(process.cwd(), 'storage', key);
+    const sanitizedKey = this.sanitizeKey(key);
+    const localPath = path.join(process.cwd(), 'storage', sanitizedKey);
     const dir = path.dirname(localPath);
     
     await fs.mkdir(dir, { recursive: true });
@@ -94,8 +116,8 @@ class StorageService {
     
     return {
       success: true,
-      key,
-      url: `/storage/${key}`
+      key: sanitizedKey,
+      url: `/storage/${sanitizedKey}`
     };
   }
 
@@ -103,14 +125,16 @@ class StorageService {
    * Get file from storage
    */
   async getFile(key) {
+    const sanitizedKey = this.sanitizeKey(key);
+    
     if (this.useLocal) {
-      return this.getLocalFile(key);
+      return this.getLocalFile(sanitizedKey);
     }
 
     try {
       const command = new GetObjectCommand({
         Bucket: this.bucketName,
-        Key: key
+        Key: sanitizedKey
       });
 
       const response = await this.s3Client.send(command);
@@ -135,7 +159,8 @@ class StorageService {
     const fs = require('fs').promises;
     const path = require('path');
     
-    const localPath = path.join(process.cwd(), 'storage', key);
+    const sanitizedKey = this.sanitizeKey(key);
+    const localPath = path.join(process.cwd(), 'storage', sanitizedKey);
     
     return await fs.readFile(localPath);
   }
@@ -144,19 +169,21 @@ class StorageService {
    * Delete file from storage
    */
   async deleteFile(key) {
+    const sanitizedKey = this.sanitizeKey(key);
+    
     if (this.useLocal) {
-      return this.deleteLocalFile(key);
+      return this.deleteLocalFile(sanitizedKey);
     }
 
     try {
       const command = new DeleteObjectCommand({
         Bucket: this.bucketName,
-        Key: key
+        Key: sanitizedKey
       });
 
       await this.s3Client.send(command);
       
-      return { success: true, key };
+      return { success: true, key: sanitizedKey };
     } catch (error) {
       console.error('S3 delete error:', error);
       throw new Error(`Failed to delete file: ${error.message}`);
@@ -170,25 +197,28 @@ class StorageService {
     const fs = require('fs').promises;
     const path = require('path');
     
-    const localPath = path.join(process.cwd(), 'storage', key);
+    const sanitizedKey = this.sanitizeKey(key);
+    const localPath = path.join(process.cwd(), 'storage', sanitizedKey);
     
     await fs.unlink(localPath);
     
-    return { success: true, key };
+    return { success: true, key: sanitizedKey };
   }
 
   /**
    * Generate presigned URL for file access
    */
   async getPresignedUrl(key, expiresIn = 3600) {
+    const sanitizedKey = this.sanitizeKey(key);
+    
     if (this.useLocal) {
-      return this.getFileUrl(key);
+      return this.getFileUrl(sanitizedKey);
     }
 
     try {
       const command = new GetObjectCommand({
         Bucket: this.bucketName,
-        Key: key
+        Key: sanitizedKey
       });
 
       const url = await getSignedUrl(this.s3Client, command, { expiresIn });
@@ -204,15 +234,17 @@ class StorageService {
    * Get public URL for file
    */
   getFileUrl(key) {
+    const sanitizedKey = this.sanitizeKey(key);
+    
     if (this.useLocal) {
-      return `/storage/${key}`;
+      return `/storage/${sanitizedKey}`;
     }
 
     if (this.endpoint) {
-      return `${this.endpoint}/${this.bucketName}/${key}`;
+      return `${this.endpoint}/${this.bucketName}/${sanitizedKey}`;
     }
 
-    return `https://${this.bucketName}.s3.${this.region}.amazonaws.com/${key}`;
+    return `https://${this.bucketName}.s3.${this.region}.amazonaws.com/${sanitizedKey}`;
   }
 
   /**

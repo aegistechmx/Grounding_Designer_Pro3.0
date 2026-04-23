@@ -1,5 +1,5 @@
 // src/simulation/SimulationRunner.js
-// ORQUESTADOR DE SIMULACIONES - USA CORE + DATA MODEL
+// Simulation orchestrator using core + data model
 
 import { 
   calcGridResistance, 
@@ -10,9 +10,19 @@ import {
   validateSystem 
 } from '../core/ieee80.js';
 
+const DEFAULT_BODY_WEIGHT = 70;
+const MIN_CURRENT = 0.1;
+const MIN_DIVISION_FACTOR = 0.1;
+const DEFAULT_DIVISION_FACTOR = 0.2;
+const TOUCH_VOLTAGE_RATIO = 0.18;
+const STEP_VOLTAGE_RATIO = 0.10;
+const TOUCH_TO_STEP_RATIO = 0.7;
+const DEFAULT_GRID_LENGTH = 30;
+const DEFAULT_GRID_WIDTH = 16;
+const DEFAULT_RESOLUTION = 20;
+
 /**
- * Runner principal de simulación
- * NO contiene UI, NO contiene React
+ * Main simulation runner - no UI, no React
  */
 export class SimulationRunner {
   constructor(project) {
@@ -21,33 +31,64 @@ export class SimulationRunner {
   }
 
   /**
-   * Ejecuta simulación para todos los escenarios
+   * Runs simulation for all scenarios
+   * @returns {Array} Array of simulation results
    */
   runAll() {
-    const results = [];
-    
-    for (const scenario of this.project.scenarios) {
-      const result = this.runScenario(scenario);
-      results.push(result);
-    }
-    
+    const results = this.project.scenarios.map(scenario => this.runScenario(scenario));
     this.results = results;
     return results;
   }
 
   /**
-   * Ejecuta simulación para un escenario específico
+   * Runs simulation for a specific scenario
+   * @param {Object} scenario - Fault scenario
+   * @returns {Object} Simulation result
    */
   runScenario(scenario) {
     const { grid, soil } = this.project;
     
-    // Validar datos de entrada
-    if (!grid || !soil || !scenario) {
-      throw new Error('Datos incompletos para simulación');
-    }
+    this.validateSimulationInput(grid, soil, scenario);
     
-    // 1. Resistencia de malla
-    const Rg = calcGridResistance({
+    const gridResistance = this.calculateGridResistance(grid, soil);
+    const gridCurrent = this.calculateGridCurrent(scenario);
+    const { GPR: groundPotentialRise } = calcTouchVoltage({ faultCurrent: gridCurrent, Rg: gridResistance });
+    const surfaceLayerFactor = this.calculateSurfaceLayerFactor(soil);
+    const allowableTouchVoltage = this.calculateAllowableTouchVoltage(soil, surfaceLayerFactor, scenario);
+    const allowableStepVoltage = this.calculateAllowableStepVoltage(soil, surfaceLayerFactor, scenario);
+    const actualTouchVoltage = groundPotentialRise * TOUCH_VOLTAGE_RATIO;
+    const actualStepVoltage = groundPotentialRise * STEP_VOLTAGE_RATIO;
+    const validation = this.validateSystem(gridCurrent, gridResistance, soil, scenario);
+    
+    return {
+      scenarioId: scenario.id,
+      timestamp: new Date().toISOString(),
+      Rg: gridResistance,
+      GPR: groundPotentialRise,
+      Ig: gridCurrent,
+      Cs: surfaceLayerFactor,
+      Em: actualTouchVoltage,
+      Es: actualStepVoltage,
+      Etouch70: allowableTouchVoltage,
+      Estep70: allowableStepVoltage,
+      ...validation
+    };
+  }
+
+  /**
+   * Validates simulation input parameters
+   */
+  validateSimulationInput(grid, soil, scenario) {
+    if (!grid || !soil || !scenario) {
+      throw new Error('Incomplete data for simulation');
+    }
+  }
+
+  /**
+   * Calculates grid resistance
+   */
+  calculateGridResistance(grid, soil) {
+    return calcGridResistance({
       soilResistivity: soil.resistivity,
       gridArea: grid.area,
       totalConductorLength: grid.totalConductorLength,
@@ -55,115 +96,130 @@ export class SimulationRunner {
       numRods: grid.numRods,
       rodLength: grid.rodLength
     });
-    
-    // 2. Corriente de malla y GPR
-    const currentSafe = Math.max(0.1, scenario.current || 0);
-    const divisionFactorSafe = Math.max(0.1, scenario.divisionFactor || 0.2);
-    const Ig = scenario.Ig || (currentSafe * divisionFactorSafe);
-    const { GPR: gpr, Em: em } = calcTouchVoltage({ faultCurrent: Ig, Rg });
-    
-    // 3. Factor de capa superficial
-    const Cs = calcSurfaceLayerFactor({
+  }
+
+  /**
+   * Calculates grid current
+   */
+  calculateGridCurrent(scenario) {
+    const currentSafe = Math.max(MIN_CURRENT, scenario.current ?? 0);
+    const divisionFactorSafe = Math.max(MIN_DIVISION_FACTOR, scenario.divisionFactor ?? DEFAULT_DIVISION_FACTOR);
+    return scenario.Ig ?? (currentSafe * divisionFactorSafe);
+  }
+
+  /**
+   * Calculates surface layer factor
+   */
+  calculateSurfaceLayerFactor(soil) {
+    return calcSurfaceLayerFactor({
       soilResistivity: soil.resistivity,
       surfaceResistivity: soil.surfaceResistivity,
       surfaceDepth: soil.surfaceDepth
     });
-    
-    // 4. Tensiones tolerables
-    const Etouch70 = allowableTouchVoltage({
+  }
+
+  /**
+   * Calculates allowable touch voltage
+   */
+  calculateAllowableTouchVoltage(soil, surfaceLayerFactor, scenario) {
+    return allowableTouchVoltage({
       surfaceResistivity: soil.surfaceResistivity,
-      Cs: Cs,
+      Cs: surfaceLayerFactor,
       faultDuration: scenario.duration,
-      bodyWeight: 70
+      bodyWeight: DEFAULT_BODY_WEIGHT
     });
-    
-    const Estep70 = allowableStepVoltage({
+  }
+
+  /**
+   * Calculates allowable step voltage
+   */
+  calculateAllowableStepVoltage(soil, surfaceLayerFactor, scenario) {
+    return allowableStepVoltage({
       surfaceResistivity: soil.surfaceResistivity,
-      Cs: Cs,
+      Cs: surfaceLayerFactor,
       faultDuration: scenario.duration,
-      bodyWeight: 70
+      bodyWeight: DEFAULT_BODY_WEIGHT
     });
-    
-    // 5. Tensiones reales (aproximación práctica)
-    const Em = gpr * 0.18;
-    const Es = gpr * 0.10;
-    
-    // 6. Verificación de cumplimiento
-    const validation = validateSystem({
-      faultCurrent: Ig,
-      Rg,
+  }
+
+  /**
+   * Validates system compliance
+   */
+  validateSystem(gridCurrent, gridResistance, soil, scenario) {
+    return validateSystem({
+      faultCurrent: gridCurrent,
+      Rg: gridResistance,
       soilResistivity: soil.resistivity,
       surfaceResistivity: soil.surfaceResistivity,
       surfaceDepth: soil.surfaceDepth,
       faultDuration: scenario.duration,
-      bodyWeight: 70
+      bodyWeight: DEFAULT_BODY_WEIGHT
     });
-    
-    return {
-      scenarioId: scenario.id,
-      timestamp: new Date().toISOString(),
-      Rg,
-      GPR: gpr,
-      Ig,
-      Cs,
-      Em,
-      Es,
-      Etouch70,
-      Estep70,
-      ...validation
-    };
   }
 
   /**
-   * Simula tensión de paso en un punto específico
+   * Simulates step voltage at a specific point
+   * @param {number} x - X coordinate
+   * @param {number} y - Y coordinate
+   * @param {Object} scenario - Fault scenario
+   * @returns {number} Step voltage at point
    */
   simulateStepVoltageAtPoint(x, y, scenario) {
     const { grid, soil } = this.project;
-    const gridLength = Math.max(1, grid?.length || 30);
-    const gridWidth = Math.max(1, grid?.width || 16);
-    const Rg = calcGridResistance({
-      soilResistivity: soil?.resistivity || 100,
-      gridArea: grid?.area || 1,
-      totalConductorLength: grid?.totalConductorLength || 0,
-      burialDepth: grid?.depth || 0.6
+    const gridLength = Math.max(1, grid?.length ?? DEFAULT_GRID_LENGTH);
+    const gridWidth = Math.max(1, grid?.width ?? DEFAULT_GRID_WIDTH);
+    const gridResistance = calcGridResistance({
+      soilResistivity: soil?.resistivity ?? 100,
+      gridArea: grid?.area ?? 1,
+      totalConductorLength: grid?.totalConductorLength ?? 0,
+      burialDepth: grid?.depth ?? 0.6
     });
-    const Ig = scenario.Ig || scenario.current * scenario.divisionFactor;
-    const { GPR: gpr } = calcTouchVoltage({ faultCurrent: Ig, Rg });
+    const gridCurrent = scenario.Ig ?? scenario.current * scenario.divisionFactor;
+    const { GPR: groundPotentialRise } = calcTouchVoltage({ faultCurrent: gridCurrent, Rg: gridResistance });
     
-    // Decaimiento de tensión con distancia
+    const voltage = this.calculateVoltageDecay(groundPotentialRise, x, y, gridLength, gridWidth);
+    return Math.max(0, voltage);
+  }
+
+  /**
+   * Calculates voltage decay based on distance from center
+   */
+  calculateVoltageDecay(groundPotentialRise, x, y, gridLength, gridWidth) {
     const centerX = gridLength / 2;
     const centerY = gridWidth / 2;
     const distance = Math.sqrt(Math.pow(x - centerX, 2) + Math.pow(y - centerY, 2));
     const maxDistance = Math.max(gridLength, gridWidth) / 2;
     
-    let voltage = gpr * (1 - distance / maxDistance);
-    voltage = Math.max(0, voltage);
-    
-    return voltage;
+    return groundPotentialRise * (1 - distance / maxDistance);
   }
 
   /**
-   * Simula tensión de contacto en un punto específico
+   * Simulates touch voltage at a specific point
+   * @param {number} x - X coordinate
+   * @param {number} y - Y coordinate
+   * @param {Object} scenario - Fault scenario
+   * @returns {number} Touch voltage at point
    */
   simulateTouchVoltageAtPoint(x, y, scenario) {
     const stepVoltage = this.simulateStepVoltageAtPoint(x, y, scenario);
-    // Tensión de contacto ≈ 60-80% de tensión de paso
-    return stepVoltage * 0.7;
+    return stepVoltage * TOUCH_TO_STEP_RATIO;
   }
 
   /**
-   * Genera mapa de tensiones para toda la malla
+   * Generates voltage map for entire grid
+   * @param {number} resolution - Grid resolution
+   * @returns {Array} Array of voltage points
    */
-  generateVoltageMap(resolution = 20) {
+  generateVoltageMap(resolution = DEFAULT_RESOLUTION) {
     const { grid } = this.project;
     const scenario = this.project.scenarios?.[0];
     if (!scenario) return [];
     
-    const gridLength = Math.max(1, grid?.length || 30);
-    const gridWidth = Math.max(1, grid?.width || 16);
-    const resolutionSafe = Math.max(1, resolution || 20);
+    const gridLength = Math.max(1, grid?.length ?? DEFAULT_GRID_LENGTH);
+    const gridWidth = Math.max(1, grid?.width ?? DEFAULT_GRID_WIDTH);
+    const resolutionSafe = Math.max(1, resolution ?? DEFAULT_RESOLUTION);
     
-    const map = [];
+    const voltageMap = [];
     const stepX = gridLength / resolutionSafe;
     const stepY = gridWidth / resolutionSafe;
     
@@ -172,16 +228,18 @@ export class SimulationRunner {
         const x = i * stepX;
         const y = j * stepY;
         const voltage = this.simulateStepVoltageAtPoint(x, y, scenario);
-        map.push({ x, y, voltage });
+        voltageMap.push({ x, y, voltage });
       }
     }
     
-    return map;
+    return voltageMap;
   }
 }
 
 /**
- * Función rápida para simular sin instanciar clase
+ * Quick simulation function without class instantiation
+ * @param {Object} project - Project configuration
+ * @returns {Array} Simulation results
  */
 export function quickSimulate(project) {
   const runner = new SimulationRunner(project);
