@@ -18,11 +18,13 @@ function drawContourLabels(ctx, contours, levels, mapper) {
   ctx.textBaseline = 'middle';
 
   contours.forEach((line, i) => {
-    if (line.length < 10) return; // Skip short contours
+    if (!line || line.length < 10) return; // Skip null/undefined or short contours
 
     const mid = Math.floor(line.length / 2);
     const p1 = line[mid];
     const p2 = line[mid + 1];
+
+    if (!p1 || !p2) return; // Skip if points are invalid
 
     // Calculate angle of contour at midpoint
     const angle = Math.atan2(p2.y - p1.y, p2.x - p1.x);
@@ -36,7 +38,8 @@ function drawContourLabels(ctx, contours, levels, mapper) {
     ctx.rotate(angle);
 
     // Draw label with background for visibility
-    const label = `${levels[i].toFixed(0)} V`;
+    const levelValue = levels[i] !== undefined ? levels[i] : 0;
+    const label = `${levelValue.toFixed(0)} V`;
     const textWidth = ctx.measureText(label).width;
     
     // Background for label
@@ -74,11 +77,13 @@ function drawContourLabelsWithOptions(ctx, contours, levels, mapper, options = {
   ctx.textBaseline = 'middle';
 
   contours.forEach((line, i) => {
-    if (line.length < 10) return;
+    if (!line || line.length < 10) return; // Skip null/undefined or short contours
 
     const mid = Math.floor(line.length / 2);
     const p1 = line[mid];
     const p2 = line[mid + 1];
+
+    if (!p1 || !p2) return; // Skip if points are invalid
 
     const angle = Math.atan2(p2.y - p1.y, p2.x - p1.x);
 
@@ -89,7 +94,8 @@ function drawContourLabelsWithOptions(ctx, contours, levels, mapper, options = {
     ctx.translate(px, py);
     ctx.rotate(angle);
 
-    const label = `${levels[i].toFixed(0)} V`;
+    const levelValue = levels[i] !== undefined ? levels[i] : 0;
+    const label = `${levelValue.toFixed(0)} V`;
     const textWidth = ctx.measureText(label).width;
 
     if (showBackground) {

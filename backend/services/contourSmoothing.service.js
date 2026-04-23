@@ -22,7 +22,9 @@ function smoothContour(points, tension = 0.5, segments = 12) {
     const p2 = points[i + 1];
     const p3 = points[i + 2] || p2;
 
-    for (let t = 0; t <= 1; t += 1 / segments) {
+    // Use integer iteration to avoid floating point precision issues
+    for (let j = 0; j <= segments; j++) {
+      const t = j / segments;
       const t2 = t * t;
       const t3 = t2 * t;
 

@@ -32,6 +32,10 @@ ${layerName}
 `;
 
     line.forEach(p => {
+      if (!p || p.x === undefined || p.x === null || p.y === undefined || p.y === null) {
+        return; // Skip invalid points
+      }
+      
       dxf += `0
 VERTEX
 8
@@ -94,6 +98,10 @@ ${layerName}
 `;
 
     line.forEach(p => {
+      if (!p || p.x === undefined || p.x === null || p.y === undefined || p.y === null) {
+        return; // Skip invalid points
+      }
+      
       const z = includeZ ? (p.z !== undefined ? p.z.toFixed(4) : zValue.toFixed(4)) : '0.0';
       
       dxf += `0
