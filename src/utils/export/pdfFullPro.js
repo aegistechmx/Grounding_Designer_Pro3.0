@@ -1,5 +1,25 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { PdfService } from '../../services/pdf/PdfService';
+
+// Legacy wrapper - delegates to new PdfService
+export const generateFullProPDF = async (data) => {
+  try {
+    // Try to use new unified PDF service
+    const doc = await PdfService.pro(data);
+    return doc;
+  } catch (error) {
+    console.error('PDF Service error, falling back to legacy implementation:', error);
+    // Fallback to legacy implementation
+    return generateFullProPDFLegacy(data);
+  }
+};
+
+// Legacy implementation (kept for fallback)
+const generateFullProPDFLegacy = async (data) => {
+  // Original implementation continues below
+  return generatePDF(data);
+};
 
 // ============================================
 // FUNCIONES DE SEGURIDAD

@@ -8,16 +8,35 @@ import autoTable from 'jspdf-autotable';
 import { buildFullReport } from '../core/reportModel';
 import { generateChartImage, generateGaugeChartImage, generateComparisonChart } from './chartJSGenerator';
 import { loadLogoAsBase64 } from './pdfExportWithLogo';
+import { PdfService } from '../../services/pdf/PdfService';
 
 /**
- * Generates a PDF with professional Chart.js charts
- * @param {Object} params - Project parameters
- * @param {Object} calculations - Calculation results
- * @param {Object} recommendations - Recommendations array
- * @param {string} logoBase64 - Optional logo in base64
- * @returns {Promise<jsPDF>} PDF document
+ * Legacy wrapper - delegates to new PdfService
  */
 export async function generatePDFWithCharts(params, calculations, recommendations = [], logoBase64 = null) {
+  try {
+    // Try to use new unified PDF service
+    const doc = await PdfService.pro({
+      calculations,
+      params,
+      recommendations,
+      projectName: params.projectName || 'Project',
+      clientName: params.clientName || 'Client',
+      engineer: params.engineerName || 'Engineer',
+      date: new Date().toISOString()
+    });
+    return doc;
+  } catch (error) {
+    console.error('PDF Service error, falling back to legacy implementation:', error);
+    // Fallback to legacy implementation
+    return generatePDFWithChartsLegacy(params, calculations, recommendations, logoBase64);
+  }
+}
+
+/**
+ * Legacy implementation (kept for fallback)
+ */
+async function generatePDFWithChartsLegacy(params, calculations, recommendations = [], logoBase64 = null) {
   // Build report model
   const report = buildFullReport({ params, calculations, recommendations });
   

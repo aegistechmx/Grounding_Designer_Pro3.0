@@ -169,9 +169,6 @@ class PricingService {
       return null; // Already on highest plan
     }
 
-    const nextPlanName = plans[currentIndex + 1];
-    const nextPlan = this.plans[nextPlanName];
-
     const reasons = [];
 
     Object.keys(currentPlan.limits).forEach(key => {
@@ -182,8 +179,7 @@ class PricingService {
         reasons.push({
           feature: key,
           current: currentUsage,
-          limit: currentLimit,
-          nextLimit: nextPlan.limits[key]
+          limit: currentLimit
         });
       }
     });
@@ -192,9 +188,40 @@ class PricingService {
       return null;
     }
 
+    // Check all higher plans and recommend the cheapest one that meets needs
+    const higherPlans = plans.slice(currentIndex + 1);
+    let recommendedPlan = null;
+    let minPrice = Infinity;
+
+    for (const planName of higherPlans) {
+      const plan = this.plans[planName];
+      let meetsNeeds = true;
+
+      // Check if this plan meets all the reasons for upgrade
+      for (const reason of reasons) {
+        const planLimit = plan.limits[reason.feature];
+        if (planLimit !== -1 && planLimit <= reason.current) {
+          meetsNeeds = false;
+          break;
+        }
+      }
+
+      if (meetsNeeds && plan.price < minPrice) {
+        minPrice = plan.price;
+        recommendedPlan = planName;
+      }
+    }
+
+    if (!recommendedPlan) {
+      // If no plan meets needs, recommend the highest plan
+      recommendedPlan = higherPlans[higherPlans.length - 1];
+    }
+
+    const nextPlan = this.plans[recommendedPlan];
+
     return {
       currentPlan: userPlan,
-      recommendedPlan: nextPlanName,
+      recommendedPlan,
       reasons,
       priceIncrease: nextPlan.price - currentPlan.price,
       newFeatures: nextPlan.features.filter(f => !currentPlan.features.includes(f))
@@ -207,7 +234,12 @@ class PricingService {
   calculateProratedAmount(currentPlan, newPlan, daysRemainingInMonth) {
     const current = this.getPlan(currentPlan);
     const next = this.getPlan(newPlan);
-    const daysInMonth = 30;
+
+    // Get actual days in current month
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
 
     const priceDifference = next.price - current.price;
     const proratedAmount = (priceDifference / daysInMonth) * daysRemainingInMonth;
@@ -215,7 +247,8 @@ class PricingService {
     return {
       priceDifference,
       proratedAmount,
-      daysRemaining: daysRemainingInMonth
+      daysRemaining: daysRemainingInMonth,
+      daysInMonth
     };
   }
 

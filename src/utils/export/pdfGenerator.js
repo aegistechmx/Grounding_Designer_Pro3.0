@@ -1,8 +1,31 @@
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import autoTable from 'jspdf-autotable';
+import { PdfService } from '../../services/pdf/PdfService';
 
+// Legacy wrapper - delegates to new PdfService
 export const generatePDFWithHeatmap = async (params, calculations, recommendations, heatmapElementId = 'dashboard-heatmap') => {
+  try {
+    // Try to use new unified PDF service
+    const doc = await PdfService.pro({
+      calculations,
+      params,
+      recommendations,
+      projectName: params.projectName || 'Project',
+      clientName: params.clientName || 'Client',
+      engineer: params.engineerName || 'Engineer',
+      date: new Date().toISOString()
+    });
+    return doc;
+  } catch (error) {
+    console.error('PDF Service error, falling back to legacy implementation:', error);
+    // Fallback to legacy implementation
+    return generatePDFWithHeatmapLegacy(params, calculations, recommendations, heatmapElementId);
+  }
+};
+
+// Legacy implementation (kept for fallback)
+const generatePDFWithHeatmapLegacy = async (params, calculations, recommendations, heatmapElementId = 'dashboard-heatmap') => {
   const doc = new jsPDF({
     orientation: 'portrait',
     unit: 'mm',

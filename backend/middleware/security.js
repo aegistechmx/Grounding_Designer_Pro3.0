@@ -27,6 +27,18 @@ export const calculationRateLimiter = rateLimit({
   legacyHeaders: false,
 });
 
+// Rate limiting for pricing endpoints
+export const pricingRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 50, // limit each IP to 50 pricing requests per 15 minutes
+  message: {
+    error: 'Too many pricing requests, please try again later.',
+    retryAfter: 900 // 15 minutes in seconds
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 // Security headers configuration
 export const securityHeaders = helmet({
   contentSecurityPolicy: {

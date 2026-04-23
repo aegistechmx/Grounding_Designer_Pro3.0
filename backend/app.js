@@ -10,7 +10,7 @@ import authRoutes from './routes/auth.routes.js';
 import dashboardRoutes from './routes/dashboard.routes.js';
 import pricingRoutes from './routes/pricing.routes.js';
 import batchRoutes from './routes/batch.routes.js';
-import { securityHeaders, createRateLimiter, calculationRateLimiter, corsOptions } from './middleware/security.js';
+import { securityHeaders, createRateLimiter, calculationRateLimiter, pricingRateLimiter, corsOptions } from './middleware/security.js';
 import { sanitizeInput } from './middleware/validation.js';
 import { requestLogger, errorLogger, performanceMonitor, requestIdMiddleware } from './middleware/logging.js';
 
@@ -39,7 +39,7 @@ app.use('/api/projects', projectsRoutes);
 app.use('/api/simulation', simulationRoutes);
 app.use('/api/reports', reportsRoutes);
 app.use('/api/dashboard', dashboardRoutes);
-app.use('/api/pricing', pricingRoutes);
+app.use('/api/pricing', pricingRateLimiter, pricingRoutes);
 app.use('/api/batch', batchRoutes);
 
 // Legacy Routes (maintain backward compatibility)

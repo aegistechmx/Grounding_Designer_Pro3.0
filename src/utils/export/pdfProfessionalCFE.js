@@ -17,16 +17,35 @@ import {
   generateProfessionalCertificate
 } from '../core/professionalReportEngine';
 import { loadLogoAsBase64 } from './pdfExportWithLogo';
+import { PdfService } from '../../services/pdf/PdfService';
 
 /**
- * Generate professional CFE PDF
- * @param {Object} params - Design parameters
- * @param {Object} calculations - Calculation results
- * @param {Array} sensitivityData - Sensitivity analysis data
- * @param {string} logoBase64 - Optional logo in base64
- * @returns {Promise<jsPDF>} PDF document
+ * Legacy wrapper - delegates to new PdfService
  */
 export async function generateProfessionalCFEPDF(params, calculations, sensitivityData = [], logoBase64 = null) {
+  try {
+    // Try to use new unified PDF service
+    const doc = await PdfService.pro({
+      calculations,
+      params,
+      recommendations: sensitivityData,
+      projectName: params.projectName || 'Project',
+      clientName: params.clientName || 'Client',
+      engineer: params.engineerName || 'Engineer',
+      date: new Date().toISOString()
+    });
+    return doc;
+  } catch (error) {
+    console.error('PDF Service error, falling back to legacy implementation:', error);
+    // Fallback to legacy implementation
+    return generateProfessionalCFEPDFLegacy(params, calculations, sensitivityData, logoBase64);
+  }
+}
+
+/**
+ * Legacy implementation (kept for fallback)
+ */
+async function generateProfessionalCFEPDFLegacy(params, calculations, sensitivityData = [], logoBase64 = null) {
   // Load logo
   const logo = logoBase64 || await loadLogoAsBase64();
   

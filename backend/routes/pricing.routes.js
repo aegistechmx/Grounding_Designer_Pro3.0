@@ -191,20 +191,35 @@ router.post('/calculate-prorated', authMiddleware, async (req, res) => {
   try {
     const { newPlan, daysRemaining } = req.body;
     const currentPlan = req.user.plan || 'free';
-    
+
+    // Input validation
+    if (!newPlan || typeof newPlan !== 'string') {
+      return res.status(400).json({ success: false, error: 'New plan is required' });
+    }
+
+    if (!VALID_PLANS.includes(newPlan)) {
+      return res.status(400).json({ success: false, error: 'Invalid plan' });
+    }
+
+    if (daysRemaining !== undefined) {
+      if (typeof daysRemaining !== 'number' || daysRemaining < 0 || daysRemaining > 31) {
+        return res.status(400).json({ success: false, error: 'Days remaining must be between 0 and 31' });
+      }
+    }
+
     const prorated = pricingService.calculateProratedAmount(
       currentPlan,
       newPlan,
       daysRemaining || 30
     );
-    
+
     res.json({
       success: true,
       prorated
     });
   } catch (error) {
-    console.error('Calculate prorated error:', error);
-    res.status(500).json({ success: false, error: error.message });
+    errorLogger(error, 'Calculate prorated error');
+    res.status(500).json({ success: false, error: 'Failed to calculate prorated amount' });
   }
 });
 
@@ -215,16 +230,25 @@ router.post('/validate-transition', authMiddleware, async (req, res) => {
   try {
     const { newPlan } = req.body;
     const currentPlan = req.user.plan || 'free';
-    
+
+    // Input validation
+    if (!newPlan || typeof newPlan !== 'string') {
+      return res.status(400).json({ success: false, error: 'New plan is required' });
+    }
+
+    if (!VALID_PLANS.includes(newPlan)) {
+      return res.status(400).json({ success: false, error: 'Invalid plan' });
+    }
+
     const validation = pricingService.validatePlanTransition(currentPlan, newPlan);
-    
+
     res.json({
       success: true,
       validation
     });
   } catch (error) {
-    console.error('Validate transition error:', error);
-    res.status(500).json({ success: false, error: error.message });
+    errorLogger(error, 'Validate transition error');
+    res.status(500).json({ success: false, error: 'Failed to validate transition' });
   }
 });
 
@@ -232,30 +256,56 @@ router.post('/validate-transition', authMiddleware, async (req, res) => {
  * Update user plan (would integrate with payment processor in production)
  */
 router.put('/plan', authMiddleware, async (req, res) => {
+  const client = await pool.connect();
+
   try {
     const userId = req.user.userId;
     const { newPlan } = req.body;
-    
+    const currentPlan = req.user.plan || 'free';
+
+    // Input validation
+    if (!newPlan || typeof newPlan !== 'string') {
+      return res.status(400).json({ success: false, error: 'New plan is required' });
+    }
+
+    if (!VALID_PLANS.includes(newPlan)) {
+      return res.status(400).json({ success: false, error: 'Invalid plan' });
+    }
+
+    // Authorization check - only users can update their own plan
+    // In production, add role-based check for admin operations
+    if (req.user.userId !== userId) {
+      return res.status(403).json({ success: false, error: 'Unauthorized' });
+    }
+
+    // Start transaction to prevent race condition
+    await client.query('BEGIN');
+
     // Validate transition
-    const validation = pricingService.validatePlanTransition(req.user.plan, newPlan);
-    
+    const validation = pricingService.validatePlanTransition(currentPlan, newPlan);
+
     if (!validation.valid) {
+      await client.query('ROLLBACK');
       return res.status(400).json({ success: false, error: validation.reason });
     }
-    
-    // Update user plan
-    const result = await pool.query(
+
+    // Lock user row and update plan atomically
+    const result = await client.query(
       'UPDATE users SET plan = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING *',
       [newPlan, userId]
     );
-    
+
     if (result.rows.length === 0) {
+      await client.query('ROLLBACK');
       return res.status(404).json({ success: false, error: 'User not found' });
     }
-    
+
+    // Commit transaction
+    await client.query('COMMIT');
+
     const updatedUser = result.rows[0];
     const plan = pricingService.getPlan(newPlan);
-    
+
     res.json({
       success: true,
       user: {
@@ -266,8 +316,11 @@ router.put('/plan', authMiddleware, async (req, res) => {
       plan
     });
   } catch (error) {
-    console.error('Update plan error:', error);
-    res.status(500).json({ success: false, error: error.message });
+    await client.query('ROLLBACK');
+    errorLogger(error, 'Update plan error');
+    res.status(500).json({ success: false, error: 'Failed to update plan' });
+  } finally {
+    client.release();
   }
 });
 
