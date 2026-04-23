@@ -123,6 +123,210 @@ function drawHeatmap(ctx, data, mapper, min, max) {
 }
 
 // ================================
+// 🧠 CURVAS EQUIPOTENCIALES (MARCHING SQUARES)
+// ================================
+
+// ================================
+// ⚙️ CONFIG
+// ================================
+const GRID_SIZE = 60; // resolución (ajustable)
+const EPSILON = 1e-6;
+
+// ================================
+// 📏 INTERPOLACIÓN LINEAL
+// ================================
+function lerp(a, b, t) {
+  return a + (b - a) * t;
+}
+
+function interp(p1, p2, v1, v2, level) {
+  if (Math.abs(v2 - v1) < EPSILON) return p1;
+  const t = (level - v1) / (v2 - v1);
+  return {
+    x: lerp(p1.x, p2.x, t),
+    y: lerp(p1.y, p2.y, t)
+  };
+}
+
+// ================================
+// 🌐 IDW (Interpolación rápida)
+// ================================
+function interpolateIDW(x, y, points, power = 2) {
+  let num = 0;
+  let den = 0;
+
+  for (const p of points) {
+    const dx = p.x - x;
+    const dy = p.y - y;
+    const d = Math.sqrt(dx * dx + dy * dy) + EPSILON;
+
+    const w = 1 / Math.pow(d, power);
+
+    num += w * p.potential;
+    den += w;
+  }
+
+  return num / den;
+}
+
+// ================================
+// 🗺️ GENERAR GRID ESCALAR
+// ================================
+function buildScalarField(data, mapper) {
+  const grid = [];
+
+  for (let i = 0; i <= GRID_SIZE; i++) {
+    const row = [];
+
+    for (let j = 0; j <= GRID_SIZE; j++) {
+      const x = mapper.minX + (i / GRID_SIZE) * (mapper.maxX - mapper.minX);
+      const y = mapper.minY + (j / GRID_SIZE) * (mapper.maxY - mapper.minY);
+
+      const value = interpolateIDW(x, y, data);
+
+      row.push({
+        x,
+        y,
+        value
+      });
+    }
+
+    grid.push(row);
+  }
+
+  return grid;
+}
+
+// ================================
+// 🧠 CASE TABLE (Marching Squares)
+// ================================
+const CASES = {
+  0: [],
+  1: [[3, 0]],
+  2: [[0, 1]],
+  3: [[3, 1]],
+  4: [[1, 2]],
+  5: [[3, 2], [0, 1]],
+  6: [[0, 2]],
+  7: [[3, 2]],
+  8: [[2, 3]],
+  9: [[0, 2]],
+  10: [[1, 3], [0, 2]],
+  11: [[1, 3]],
+  12: [[1, 3]],
+  13: [[0, 1]],
+  14: [[3, 0]],
+  15: []
+};
+
+// Edges:
+// 0 = top
+// 1 = right
+// 2 = bottom
+// 3 = left
+
+// ================================
+// 🔗 EDGE INTERSECTION
+// ================================
+function getEdgePoint(edge, cell, level) {
+  const { tl, tr, br, bl } = cell;
+
+  switch (edge) {
+    case 0: // top
+      return interp(tl, tr, tl.value, tr.value, level);
+    case 1: // right
+      return interp(tr, br, tr.value, br.value, level);
+    case 2: // bottom
+      return interp(bl, br, bl.value, br.value, level);
+    case 3: // left
+      return interp(tl, bl, tl.value, bl.value, level);
+  }
+}
+
+// ================================
+// 🧩 MARCHING SQUARES CORE
+// ================================
+function marchingSquares(grid, level) {
+  const lines = [];
+
+  for (let i = 0; i < GRID_SIZE; i++) {
+    for (let j = 0; j < GRID_SIZE; j++) {
+
+      const tl = grid[i][j];
+      const tr = grid[i + 1][j];
+      const br = grid[i + 1][j + 1];
+      const bl = grid[i][j + 1];
+
+      const cell = { tl, tr, br, bl };
+
+      // bitmask
+      let index = 0;
+      if (tl.value > level) index |= 8;
+      if (tr.value > level) index |= 4;
+      if (br.value > level) index |= 2;
+      if (bl.value > level) index |= 1;
+
+      const config = CASES[index];
+      if (!config) continue;
+
+      config.forEach(pair => {
+        const p1 = getEdgePoint(pair[0], cell, level);
+        const p2 = getEdgePoint(pair[1], cell, level);
+
+        lines.push([p1, p2]);
+      });
+    }
+  }
+
+  return lines;
+}
+
+// ================================
+// 🔗 UNIR SEGMENTOS EN CURVAS
+// ================================
+function connectLines(segments) {
+  const lines = [];
+  const used = new Set();
+
+  function key(p) {
+    return `${p.x.toFixed(4)},${p.y.toFixed(4)}`;
+  }
+
+  for (let i = 0; i < segments.length; i++) {
+    if (used.has(i)) continue;
+
+    const line = [...segments[i]];
+    used.add(i);
+
+    let extended = true;
+
+    while (extended) {
+      extended = false;
+
+      for (let j = 0; j < segments.length; j++) {
+        if (used.has(j)) continue;
+
+        const seg = segments[j];
+
+        if (key(line[line.length - 1]) === key(seg[0])) {
+          line.push(seg[1]);
+          used.add(j);
+          extended = true;
+        } else if (key(line[line.length - 1]) === key(seg[1])) {
+          line.push(seg[0]);
+          used.add(j);
+          extended = true;
+        }
+      }
+    }
+
+    lines.push(line);
+  }
+
+  return lines;
+}
+
+// ================================
 // 🧠 CURVAS EQUIPOTENCIALES
 // ================================
 function drawContours(ctx, data, mapper, min, max) {
@@ -133,45 +337,32 @@ function drawContours(ctx, data, mapper, min, max) {
     levels.push(min + (i / steps) * (max - min));
   }
 
-  // Simple contour lines - draw isolines at each level
+  // Build scalar field with IDW interpolation
+  const grid = buildScalarField(data, mapper);
+
+  // Generate contours using Marching Squares
+  const allContours = [];
+
+  levels.forEach(level => {
+    const segments = marchingSquares(grid, level);
+    const lines = connectLines(segments);
+    allContours.push(...lines);
+  });
+
+  // Draw contours
   ctx.strokeStyle = '#000';
   ctx.lineWidth = 1;
 
-  for (const level of levels) {
+  allContours.forEach(line => {
     ctx.beginPath();
-    let started = false;
-
-    for (let i = 0; i < 80; i++) {
-      for (let j = 0; j < 80; j++) {
-        const x = mapper.minX + (i / 80) * (mapper.maxX - mapper.minX);
-        const y = mapper.minY + (j / 80) * (mapper.maxY - mapper.minY);
-
-        // Find nearest point
-        let closest = data[0];
-        let minDist = Infinity;
-        for (const p of data) {
-          const d = (p.x - x) ** 2 + (p.y - y) ** 2;
-          if (d < minDist) {
-            minDist = d;
-            closest = p;
-          }
-        }
-
-        // Check if near contour level
-        if (Math.abs(closest.potential - level) < (max - min) * 0.05) {
-          const px = mapper.mapX(x);
-          const py = mapper.mapY(y);
-          if (!started) {
-            ctx.moveTo(px, py);
-            started = true;
-          } else {
-            ctx.lineTo(px, py);
-          }
-        }
-      }
-    }
+    line.forEach((point, i) => {
+      const px = mapper.mapX(point.x);
+      const py = mapper.mapY(point.y);
+      if (i === 0) ctx.moveTo(px, py);
+      else ctx.lineTo(px, py);
+    });
     ctx.stroke();
-  }
+  });
 }
 
 // ================================
