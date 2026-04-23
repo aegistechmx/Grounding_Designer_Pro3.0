@@ -5,8 +5,8 @@
 
 import express from 'express';
 const router = express.Router();
-import authMiddleware from '../middleware/auth';
-import { getPool } from '../database/pool';
+import authMiddleware from '../middleware/auth.js';
+import { getPool } from '../database/pool.js';
 
 const pool = getPool();
 

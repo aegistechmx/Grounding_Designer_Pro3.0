@@ -154,4 +154,4 @@ class HeatmapService {
   }
 }
 
-module.exports = new HeatmapService();
+export default new HeatmapService();

@@ -3,8 +3,9 @@
  * Handles Stripe integration for SaaS monetization
  */
 
-const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
-const emailService = require('../notification/email.service');
+import Stripe from 'stripe';
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+import emailService from '../notification/email.service.js';
 
 class StripeService {
   constructor() {
@@ -337,4 +338,4 @@ class StripeService {
   }
 }
 
-module.exports = new StripeService();
+export default new StripeService();

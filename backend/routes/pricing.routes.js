@@ -5,9 +5,9 @@
 
 import express from 'express';
 const router = express.Router();
-import authMiddleware from '../middleware/auth';
-import pricingService from '../services/pricing.service';
-import { getPool } from '../database/pool';
+import authMiddleware from '../middleware/auth.js';
+import pricingService from '../services/pricing.service.js';
+import { getPool } from '../database/pool.js';
 import { errorLogger } from '../middleware/logging.js';
 
 // Get database pool singleton

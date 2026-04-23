@@ -3,7 +3,7 @@
  * Provides project history, metrics, and consumption data for SaaS dashboard
  */
 
-const { Pool } = require('pg');
+import { Pool } from 'pg';
 
 // Database connection
 const pool = new Pool({
@@ -262,4 +262,4 @@ class DashboardService {
   }
 }
 
-module.exports = new DashboardService();
+export default new DashboardService();

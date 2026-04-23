@@ -151,4 +151,4 @@ class IEEE80Service {
   }
 }
 
-module.exports = new IEEE80Service();
+export default new IEEE80Service();

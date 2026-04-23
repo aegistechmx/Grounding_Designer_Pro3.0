@@ -5,9 +5,9 @@
 
 import express from 'express';
 const router = express.Router();
-import authMiddleware from '../middleware/auth';
-import stripeService from '../services/billing/stripe.service';
-import { getPool } from '../database/pool';
+import authMiddleware from '../middleware/auth.js';
+import stripeService from '../services/billing/stripe.service.js';
+import { getPool } from '../database/pool.js';
 
 const pool = getPool();
 

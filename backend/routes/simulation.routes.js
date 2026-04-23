@@ -5,11 +5,12 @@
 
 import express from 'express';
 const router = express.Router();
-import authMiddleware from '../middleware/auth';
-import ieee80Service from '../services/ieee80.service';
-import femService from '../services/fem.service';
-import heatmapService from '../services/heatmap.service';
-import aiService from '../services/ai.service';
+import authMiddleware from '../middleware/auth.js';
+import requireFeature from '../middleware/requireFeature.js';
+import ieee80Service from '../services/ieee80.service.js';
+import femService from '../services/fem.service.js';
+import heatmapService from '../services/heatmap.service.js';
+import aiService from '../services/ai.service.js';
 import { addJob, getJobStatus } from '../jobs/queue.js';
 import { Pool } from 'pg';
 
@@ -51,7 +52,7 @@ router.post('/ieee80', authMiddleware, async (req, res) => {
 /**
  * Run FEM simulation (asynchronous, heavy)
  */
-router.post('/fem', authMiddleware, async (req, res) => {
+router.post('/fem', authMiddleware, requireFeature('fem_simulation'), async (req, res) => {
   try {
     const userId = req.user.userId;
     const params = req.body;

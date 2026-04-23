@@ -3,7 +3,7 @@
  * Handles project versioning and comparison
  */
 
-const { Pool } = require('pg');
+import { Pool } from 'pg';
 
 // Database connection
 const pool = new Pool({
@@ -284,4 +284,4 @@ class VersionService {
   }
 }
 
-module.exports = new VersionService();
+export default new VersionService();

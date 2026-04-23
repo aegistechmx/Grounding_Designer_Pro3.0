@@ -273,4 +273,4 @@ class PricingService {
   }
 }
 
-module.exports = new PricingService();
+export default new PricingService();

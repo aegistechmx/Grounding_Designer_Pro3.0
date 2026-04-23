@@ -3,11 +3,11 @@
  * Handles email notifications using Resend (or SendGrid)
  */
 
-const resend = require('resend');
+import { Resend } from 'resend';
 
 class EmailService {
   constructor() {
-    this.resend = resend(process.env.RESEND_API_KEY);
+    this.resend = new Resend(process.env.RESEND_API_KEY);
     this.fromEmail = process.env.EMAIL_FROM || 'noreply@groundingdesignerpro.com';
     this.fromName = process.env.EMAIL_FROM_NAME || 'Grounding Designer Pro';
   }
@@ -189,4 +189,4 @@ class EmailService {
   }
 }
 
-module.exports = new EmailService();
+export default new EmailService();

@@ -5,8 +5,8 @@
 
 import express from 'express';
 const router = express.Router();
-import authMiddleware from '../middleware/auth';
-import dashboardService from '../services/dashboard.service';
+import authMiddleware from '../middleware/auth.js';
+import dashboardService from '../services/dashboard.service.js';
 
 /**
  * Get dashboard overview

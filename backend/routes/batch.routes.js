@@ -5,17 +5,18 @@
 
 import express from 'express';
 const router = express.Router();
-import authMiddleware from '../middleware/auth';
-import batchService from '../services/batch.service';
-import storageService from '../services/storage.service';
-import { getPool } from '../database/pool';
+import authMiddleware from '../middleware/auth.js';
+import requireFeature from '../middleware/requireFeature.js';
+import batchService from '../services/batch.service.js';
+import storageService from '../services/storage.service.js';
+import { getPool } from '../database/pool.js';
 
 const pool = getPool();
 
 /**
  * Generate batch reports for a project
  */
-router.post('/project/:projectId/reports', authMiddleware, async (req, res) => {
+router.post('/project/:projectId/reports', authMiddleware, requireFeature('batch_reports'), async (req, res) => {
   try {
     const userId = req.user.userId;
     const projectId = req.params.projectId;

@@ -3,6 +3,8 @@ import { Activity, RefreshCw, Brain, Zap, Settings, Download, FileText } from 'l
 import { ValidatedSection } from '../common/ValidatedSection';
 import { InputField } from '../common/InputField';
 import { MetricCard } from '../common/MetricCard';
+import { FeatureGate, ProBadge } from '../common/FeatureGate';
+import { FEATURES } from '../../constants/plans';
 import { calculateFaultCurrent } from '../../services/faultCurrentCalculator.service';
 import { SensitivityChart } from '../visualizations/SensitivityChart';
 import { useSensitivityAnalysis } from '../../hooks/useSensitivityAnalysis';
@@ -348,34 +350,36 @@ export const DesignPanel = ({ params, calculations, updateParam, darkMode, recal
           <Zap size={16} /> {showSensitivity ? 'Ocultar Análisis de Sensibilidad' : 'Análisis de Sensibilidad'}
         </button>
 
-        <button onClick={async () => {
-          alert('Iniciando optimización...');
-          optimizer.setDangerZonesData(calculations?.riskStats?.recommendations || []);
-          const completeInput = {
-            soil: { soilResistivity: localParams.soilResistivity || 100, surfaceResistivity: localParams.surfaceLayer || 3000, surfaceDepth: localParams.surfaceDepth || 0.1 },
-            grid: { gridLength: localParams.gridLength || 50, gridWidth: localParams.gridWidth || 50, numParallel: localParams.numParallel || 10, numRods: localParams.numRods || 4, rodLength: localParams.rodLength || 2.4, gridDepth: localParams.gridDepth || 0.5 },
-            fault: { faultCurrent: localParams.faultCurrent || 1500, faultDuration: localParams.faultDuration || 0.5 }
-          };
-          const optimized = await optimizer.optimize(completeInput, 50);
-          if (optimized?.grid) {
-            if (optimized.grid.gridLength) handleParamChange('gridLength', optimized.grid.gridLength);
-            if (optimized.grid.gridWidth) handleParamChange('gridWidth', optimized.grid.gridWidth);
-            if (optimized.grid.numParallel) handleParamChange('numParallel', optimized.grid.numParallel);
-            if (optimized.grid.numRods) handleParamChange('numRods', optimized.grid.numRods);
-            if (optimized.grid.rodLength) handleParamChange('rodLength', optimized.grid.rodLength);
-          }
-          alert('Optimización completada');
-        }} disabled={optimizer.isOptimizing} className="w-full mt-2 py-2 border rounded-lg font-semibold flex items-center justify-center gap-2 text-white transition-all disabled:opacity-50"
-          style={{
-            backgroundColor: darkMode ? 'bg-green-900/30' : 'bg-green-50',
-            borderColor: darkMode ? 'border-green-700' : 'border-green-200',
-            boxShadow: darkMode
-              ? '0 0 15px rgba(34, 197, 94, 0.3), inset 0 0 8px rgba(34, 197, 94, 0.15)'
-              : '0 0 15px rgba(34, 197, 94, 0.2), inset 0 0 8px rgba(34, 197, 94, 0.1)'
-          }}
-        >
-          <Settings size={16} /> {optimizer.isOptimizing ? 'Optimizando...' : '🎯 Optimizar Diseño'}
-        </button>
+        <FeatureGate feature={FEATURES.AI_OPTIMIZATION}>
+          <button onClick={async () => {
+            alert('Iniciando optimización...');
+            optimizer.setDangerZonesData(calculations?.riskStats?.recommendations || []);
+            const completeInput = {
+              soil: { soilResistivity: localParams.soilResistivity || 100, surfaceResistivity: localParams.surfaceLayer || 3000, surfaceDepth: localParams.surfaceDepth || 0.1 },
+              grid: { gridLength: localParams.gridLength || 50, gridWidth: localParams.gridWidth || 50, numParallel: localParams.numParallel || 10, numRods: localParams.numRods || 4, rodLength: localParams.rodLength || 2.4, gridDepth: localParams.gridDepth || 0.5 },
+              fault: { faultCurrent: localParams.faultCurrent || 1500, faultDuration: localParams.faultDuration || 0.5 }
+            };
+            const optimized = await optimizer.optimize(completeInput, 50);
+            if (optimized?.grid) {
+              if (optimized.grid.gridLength) handleParamChange('gridLength', optimized.grid.gridLength);
+              if (optimized.grid.gridWidth) handleParamChange('gridWidth', optimized.grid.gridWidth);
+              if (optimized.grid.numParallel) handleParamChange('numParallel', optimized.grid.numParallel);
+              if (optimized.grid.numRods) handleParamChange('numRods', optimized.grid.numRods);
+              if (optimized.grid.rodLength) handleParamChange('rodLength', optimized.grid.rodLength);
+            }
+            alert('Optimización completada');
+          }} disabled={optimizer.isOptimizing} className="w-full mt-2 py-2 border rounded-lg font-semibold flex items-center justify-center gap-2 text-white transition-all disabled:opacity-50"
+            style={{
+              backgroundColor: darkMode ? 'bg-green-900/30' : 'bg-green-50',
+              borderColor: darkMode ? 'border-green-700' : 'border-green-200',
+              boxShadow: darkMode
+                ? '0 0 15px rgba(34, 197, 94, 0.3), inset 0 0 8px rgba(34, 197, 94, 0.15)'
+                : '0 0 15px rgba(34, 197, 94, 0.2), inset 0 0 8px rgba(34, 197, 94, 0.1)'
+            }}
+          >
+            <Settings size={16} /> {optimizer.isOptimizing ? 'Optimizando...' : '🎯 Optimizar Diseño'}
+          </button>
+        </FeatureGate>
 
         <button onClick={handleRunPipeline} disabled={isRunningPipeline} className="w-full mt-2 py-2 border rounded-lg font-semibold flex items-center justify-center gap-2 text-white transition-all disabled:opacity-50"
           style={{
@@ -389,17 +393,19 @@ export const DesignPanel = ({ params, calculations, updateParam, darkMode, recal
           <Brain size={16} /> {isRunningPipeline ? 'Ejecutando Pipeline...' : '🚀 Pipeline Completo (Avanzado)'}
         </button>
 
-        <button onClick={handleGenerateReport} className="w-full mt-2 py-2 border rounded-lg font-semibold flex items-center justify-center gap-2 text-white transition-all"
-          style={{
-            backgroundColor: darkMode ? 'bg-orange-900/30' : 'bg-orange-50',
-            borderColor: darkMode ? 'border-orange-700' : 'border-orange-200',
-            boxShadow: darkMode
-              ? '0 0 15px rgba(249, 115, 22, 0.3), inset 0 0 8px rgba(249, 115, 22, 0.15)'
-              : '0 0 15px rgba(249, 115, 22, 0.2), inset 0 0 8px rgba(249, 115, 22, 0.1)'
-          }}
-        >
-          <FileText size={16} /> 📄 Generar Reporte Ingeniería
-        </button>
+        <FeatureGate feature={FEATURES.PDF_PRO}>
+          <button onClick={handleGenerateReport} className="w-full mt-2 py-2 border rounded-lg font-semibold flex items-center justify-center gap-2 text-white transition-all"
+            style={{
+              backgroundColor: darkMode ? 'bg-orange-900/30' : 'bg-orange-50',
+              borderColor: darkMode ? 'border-orange-700' : 'border-orange-200',
+              boxShadow: darkMode
+                ? '0 0 15px rgba(249, 115, 22, 0.3), inset 0 0 8px rgba(249, 115, 22, 0.15)'
+                : '0 0 15px rgba(249, 115, 22, 0.2), inset 0 0 8px rgba(249, 115, 22, 0.1)'
+            }}
+          >
+            <FileText size={16} /> 📄 Generar Reporte Ingeniería
+          </button>
+        </FeatureGate>
 
         {/* Optimization Progress */}
         {optimizer.isOptimizing && (

@@ -5,8 +5,9 @@
 
 import express from 'express';
 const router = express.Router();
-import authMiddleware from '../middleware/auth';
-import reportService from '../services/report.service';
+import authMiddleware from '../middleware/auth.js';
+import requireFeature from '../middleware/requireFeature.js';
+import reportService from '../services/report.service.js';
 import { addJob, getJobStatus } from '../jobs/queue.js';
 import { Pool } from 'pg';
 import fs from 'fs/promises';
@@ -24,7 +25,7 @@ const pool = new Pool({
 /**
  * Generate PDF report (asynchronous)
  */
-router.post('/pdf', authMiddleware, async (req, res) => {
+router.post('/pdf', authMiddleware, requireFeature('pdf_pro'), async (req, res) => {
   try {
     const userId = req.user.userId;
     const reportData = req.body;

@@ -5,6 +5,7 @@
 
 import express from 'express';
 const router = express.Router();
+import authMiddleware from '../middleware/auth.js';
 import authService from '../services/auth.service.js';
 
 /**

@@ -3,7 +3,8 @@
  * Feature gating based on user plan (Free, Pro, Enterprise)
  */
 
-const pricingService = require('../services/pricing.service');
+import pricingService from '../services/pricing.service';
+import { getPool } from '../database/pool';
 
 /**
  * Require Pro plan
@@ -60,15 +61,7 @@ const checkPlanLimit = (action) => {
       const userPlan = req.user.plan || 'free';
       const userId = req.user.userId;
 
-      // Get current usage
-      const { Pool } = require('pg');
-      const pool = new Pool({
-        host: process.env.DB_HOST || 'localhost',
-        port: process.env.DB_PORT || 5432,
-        database: process.env.DB_NAME || 'grounding_saas',
-        user: process.env.DB_USER || 'postgres',
-        password: process.env.DB_PASSWORD
-      });
+      const pool = getPool();
 
       const usageResult = await pool.query(
         'SELECT * FROM usage_tracking WHERE user_id = $1 ORDER BY period_start DESC LIMIT 1',
@@ -123,15 +116,7 @@ const canUseFEM = async (req, res, next) => {
       });
     }
 
-    // Check FEM simulation limit
-    const { Pool } = require('pg');
-    const pool = new Pool({
-      host: process.env.DB_HOST || 'localhost',
-      port: process.env.DB_PORT || 5432,
-      database: process.env.DB_NAME || 'grounding_saas',
-      user: process.env.DB_USER || 'postgres',
-      password: process.env.DB_PASSWORD
-    });
+    const pool = getPool();
 
     const usageResult = await pool.query(
       'SELECT fem_simulation_count FROM usage_tracking WHERE user_id = $1 ORDER BY period_start DESC LIMIT 1',
@@ -164,15 +149,7 @@ const canUseAI = async (req, res, next) => {
   try {
     const userPlan = req.user.plan || 'free';
 
-    // Check AI optimization limit
-    const { Pool } = require('pg');
-    const pool = new Pool({
-      host: process.env.DB_HOST || 'localhost',
-      port: process.env.DB_PORT || 5432,
-      database: process.env.DB_NAME || 'grounding_saas',
-      user: process.env.DB_USER || 'postgres',
-      password: process.env.DB_PASSWORD
-    });
+    const pool = getPool();
 
     const usageResult = await pool.query(
       'SELECT ai_optimization_count FROM usage_tracking WHERE user_id = $1 ORDER BY period_start DESC LIMIT 1',
@@ -198,7 +175,7 @@ const canUseAI = async (req, res, next) => {
   }
 };
 
-module.exports = {
+export {
   requirePro,
   requireEnterprise,
   checkPlanLimit,
