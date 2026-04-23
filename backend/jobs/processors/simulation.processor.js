@@ -5,6 +5,8 @@
 
 const { Worker } = require('bullmq');
 const Redis = require('ioredis');
+const fs = require('fs/promises');
+const path = require('path');
 const femService = require('../../services/fem.service');
 
 // Redis connection
@@ -18,9 +20,14 @@ const connection = new Redis({
  * Process FEM simulation job
  */
 async function processFEMJob(job) {
-  const { jobId, params } = job.data;
+  const { params } = job.data;
+  const jobId = String(job.id);
   
   try {
+    const paramsPath = path.join(__dirname, '../../jobs/fem', `${jobId}.json`);
+    await fs.mkdir(path.dirname(paramsPath), { recursive: true });
+    await fs.writeFile(paramsPath, JSON.stringify(params));
+
     // Update job progress
     await job.updateProgress(10);
     
@@ -59,11 +66,12 @@ async function processFEMJob(job) {
  * Create simulation worker
  */
 function createSimulationWorker() {
-  const worker = new Worker('simulation', async (job) => {
-    if (job.name === 'fem') {
-      return await processFEMJob(job);
+  const worker = new Worker('fem', async (job) => {
+    if (job.name !== 'fem') {
+      throw new Error(`Unknown job type: ${job.name}`);
     }
-    throw new Error(`Unknown job type: ${job.name}`);
+
+    return await processFEMJob(job);
   }, {
     connection,
     concurrency: 2 // Process 2 jobs concurrently

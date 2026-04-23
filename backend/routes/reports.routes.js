@@ -1,6 +1,7 @@
 /**
  * Reports Routes
  * API endpoints for PDF, Excel, and DXF report generation
+ * Integrated with ETAP Engine v2 export services
  */
 
 const express = require('express');
@@ -12,6 +13,16 @@ const { addJob, getJobStatus } = require('../jobs/queue.js');
 const { getPool } = require('../database/pool.js');
 const fs = require('fs/promises');
 const path = require('path');
+
+// Import ETAP Engine v2 DXF export service
+let exportContoursToDXF;
+try {
+  const dxfService = require('../../src/export/dxfContours.js');
+  exportContoursToDXF = dxfService.exportContoursToDXF;
+  console.log('[Reports Routes] ETAP Engine v2 DXF export loaded');
+} catch (error) {
+  console.warn('[Reports Routes] ETAP Engine v2 DXF export not available:', error.message);
+}
 
 // Database connection
 const pool = getPool();
@@ -126,16 +137,54 @@ router.post('/excel', authenticate, async (req, res) => {
 
 /**
  * Generate DXF export
+ * Now uses ETAP Engine v2 DXF export service if available
  */
 router.post('/dxf', authenticate, async (req, res) => {
   try {
     const userId = req.user.userId;
-    const reportData = req.body;
+    const { contours, levels, options } = req.body;
     
-    // Queue DXF generation job
+    // Try to use ETAP Engine v2 DXF export directly for immediate response
+    if (exportContoursToDXF && contours && levels) {
+      console.log('[Reports Routes] Using ETAP Engine v2 DXF export');
+      
+      try {
+        const dxf = exportContoursToDXF(contours, levels, options || {});
+        
+        // Save DXF to file
+        const outputsDir = path.join(process.cwd(), 'outputs');
+        await fs.mkdir(outputsDir, { recursive: true });
+        
+        const filename = `grounding_contours_${Date.now()}.dxf`;
+        const filePath = path.join(outputsDir, filename);
+        
+        await fs.writeFile(filePath, dxf);
+        
+        // Save to database
+        const insertResult = await pool.query(
+          `INSERT INTO reports (user_id, project_id, report_type, format, file_path, file_size, status, created_at, completed_at)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+           RETURNING id`,
+          [userId, req.body.projectId || null, 'dxf', 'dxf', filePath, dxf.length, 'completed']
+        );
+        
+        res.json({
+          success: true,
+          reportId: insertResult.rows[0].id,
+          method: 'etap_v2',
+          message: 'DXF generated successfully using ETAP Engine v2'
+        });
+        
+        return;
+      } catch (dxfError) {
+        console.warn('[Reports Routes] ETAP Engine v2 DXF export failed, falling back to queue:', dxfError.message);
+      }
+    }
+    
+    // Fallback to queue-based DXF generation
     const job = await addJob('reports', {
       type: 'dxf',
-      reportData,
+      reportData: req.body,
       userId
     });
     
@@ -143,6 +192,7 @@ router.post('/dxf', authenticate, async (req, res) => {
       success: true,
       jobId: job.jobId,
       status: 'pending',
+      method: 'queue',
       message: 'DXF generation queued for processing'
     });
   } catch (error) {

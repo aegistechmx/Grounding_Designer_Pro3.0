@@ -1,6 +1,7 @@
 const express = require('express');
 const { pdfQueue, isAvailable } = require('../jobs/queue.js');
 const { calculationRateLimiter } = require('../middleware/security.js');
+const { generateVectorPDF } = require('../services/etapPDF.service.js');
 
 const router = express.Router();
 
@@ -79,6 +80,40 @@ router.get('/status/:id', async (req, res) => {
     res.status(500).json({
       success: false,
       error: error.message || 'Failed to get job status'
+    });
+  }
+});
+
+/**
+ * POST /api/pdf/vector
+ * Generate vector PDF with ETAP-style contours (direct, no queue)
+ */
+router.post('/vector', calculationRateLimiter, async (req, res) => {
+  try {
+    const { contours, options } = req.body;
+
+    // Validate required fields
+    if (!contours || !Array.isArray(contours)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Missing required field: contours array is required'
+      });
+    }
+
+    // Generate vector PDF
+    const pdfBuffer = await generateVectorPDF(contours, options);
+
+    // Set headers for PDF download
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'attachment; filename="grounding-analysis-vector.pdf"');
+    res.setHeader('Content-Length', pdfBuffer.length);
+
+    res.send(pdfBuffer);
+  } catch (error) {
+    console.error('Error generating vector PDF:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Failed to generate vector PDF'
     });
   }
 });

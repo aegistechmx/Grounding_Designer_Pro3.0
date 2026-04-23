@@ -65,8 +65,10 @@ class AuthService {
           firstName: user.first_name,
           lastName: user.last_name,
           role: user.role,
-          plan: user.plan
+          plan: user.plan,
+          subscriptionTier: user.plan
         },
+        accessToken: token,
         token
       };
     } catch (error) {
@@ -114,8 +116,10 @@ class AuthService {
           firstName: user.first_name,
           lastName: user.last_name,
           role: user.role,
-          plan: user.plan
+          plan: user.plan,
+          subscriptionTier: user.plan
         },
+        accessToken: token,
         token
       };
     } catch (error) {
@@ -188,9 +192,18 @@ class AuthService {
   /**
    * Update user
    */
-  async updateUser(userId, updateData) {
+  async updateUser(userId, updateData, options = {}) {
     try {
-      const { firstName, lastName, role, plan } = updateData;
+      const allowedFields = options.allowedFields || ['firstName', 'lastName'];
+      const sanitizedData = {};
+
+      for (const field of allowedFields) {
+        if (Object.prototype.hasOwnProperty.call(updateData, field)) {
+          sanitizedData[field] = updateData[field];
+        }
+      }
+
+      const { firstName, lastName, role, plan } = sanitizedData;
       
       const result = await pool.query(
         `UPDATE users 
@@ -216,7 +229,8 @@ class AuthService {
         firstName: user.first_name,
         lastName: user.last_name,
         role: user.role,
-        plan: user.plan
+        plan: user.plan,
+        subscriptionTier: user.plan
       };
     } catch (error) {
       throw new Error(`Failed to update user: ${error.message}`);

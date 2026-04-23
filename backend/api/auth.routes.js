@@ -8,8 +8,12 @@ const { authenticate } = require('../middleware/auth');
 
 const router = express.Router();
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
+const JWT_SECRET = process.env.JWT_SECRET;
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
+
+if (!JWT_SECRET) {
+  throw new Error('JWT_SECRET environment variable is required');
+}
 
 // Registro de usuario
 router.post('/register', async (req, res) => {
@@ -102,7 +106,7 @@ router.post('/login', async (req, res) => {
 // Obtener perfil de usuario (requiere autenticación)
 router.get('/profile', authenticate, async (req, res) => {
   try {
-    const user = await User.findById(req.userId);
+    const user = await User.findById(req.user?.userId || req.user?.id);
     if (!user) {
       return res.status(404).json({ error: 'Usuario no encontrado' });
     }
@@ -119,7 +123,7 @@ router.put('/profile', authenticate, async (req, res) => {
   try {
     const { name, company, professionalLicense } = req.body;
     
-    const user = await User.findById(req.userId);
+    const user = await User.findById(req.user?.userId || req.user?.id);
     if (!user) {
       return res.status(404).json({ error: 'Usuario no encontrado' });
     }
@@ -154,7 +158,7 @@ router.put('/change-password', authenticate, async (req, res) => {
       return res.status(400).json({ error: 'La nueva contraseña debe tener al menos 6 caracteres' });
     }
     
-    const user = await User.findById(req.userId);
+    const user = await User.findById(req.user?.userId || req.user?.id);
     if (!user) {
       return res.status(404).json({ error: 'Usuario no encontrado' });
     }

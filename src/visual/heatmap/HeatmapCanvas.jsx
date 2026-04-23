@@ -3,6 +3,7 @@ import { interpolateIDW, isWithinGridBounds } from '../../utils/interpolation';
 import { generateContourLines, generateContourLevels, createInterpolatedField } from '../../utils/contourLines';
 import { drawHeatmap } from '../../heatmap/render/drawHeatmap';
 import { generateField } from '../../heatmap/core/generateField';
+import { generateContours, drawContoursCanvas, drawLabelsCanvas, drawLegendCanvas } from '../../etap';
 
 // 🔥 REFACTORED VERSION
 const HeatmapCanvas = forwardRef(({
@@ -221,24 +222,25 @@ const HeatmapCanvas = forwardRef(({
       ctx.globalAlpha = 1;
     }
     
-    // Draw contour lines (equipotentials)
+    // Draw contour lines (equipotentials) with ETAP Engine
     if (showContours && data && data.length > 0) {
-      const fieldData = createInterpolatedField(data, resolution, interpolationPower, w, h);
-      const contourLevels = generateContourLevels(minPotential, maxPotential, numContours);
-      const contourLines = generateContourLines(fieldData, contourLevels, resolution);
-      
-      contourLines.forEach(contour => {
-        ctx.strokeStyle = contour.color;
-        ctx.lineWidth = contourThickness;
-        ctx.globalAlpha = 0.8;
-        
-        contour.lines.forEach(line => {
-          ctx.beginPath();
-          ctx.moveTo(line[0][0], line[0][1]);
-          ctx.lineTo(line[1][0], line[1][1]);
-          ctx.stroke();
-        });
+      // Use ETAP Engine to generate contours
+      const { contours, min, max } = generateContours(data, {
+        gridSize: resolution,
+        idwPower: interpolationPower,
+        contourStepMinor: 100,
+        contourStepMajor: 500,
+        smoothSegments: Math.floor(10 + smoothingLevel * 10)
       });
+      
+      // Draw contours with hierarchy
+      drawContoursCanvas(ctx, contours);
+      
+      // Draw rotated labels on major contours
+      drawLabelsCanvas(ctx, contours);
+      
+      // Draw ETAP-style legend
+      drawLegendCanvas(ctx, min, max, w - 80, 20, 150, 20);
       
       ctx.globalAlpha = 1;
     }

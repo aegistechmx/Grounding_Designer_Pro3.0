@@ -11,6 +11,7 @@
  * @returns {string} DXF file content as string
  */
 function exportContoursToDXF(contours, levels) {
+  console.log('[exportDXF] exportContoursToDXF called with', contours.length, 'contours, levels:', levels.length);
   let dxf = `0
 SECTION
 2
@@ -60,6 +61,7 @@ ENDSEC
 EOF
 `;
 
+  console.log('[exportDXF] exportContoursToDXF completed, DXF length:', dxf.length);
   return dxf;
 }
 

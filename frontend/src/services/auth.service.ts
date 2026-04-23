@@ -15,6 +15,7 @@ interface RegisterData {
 
 interface AuthResponse {
   accessToken: string;
+  token?: string;
   user: {
     id: string;
     email: string;
@@ -22,6 +23,7 @@ interface AuthResponse {
     lastName: string;
     role: string;
     subscriptionTier: string;
+    plan?: string;
   };
 }
 
@@ -30,22 +32,24 @@ export const USER_KEY = 'grounding_user';
 
 export const login = async (credentials: LoginCredentials): Promise<AuthResponse> => {
   const response = await api.post('/auth/login', credentials);
-  const { accessToken, user } = response.data;
+  const accessToken = response.data.accessToken || response.data.token;
+  const user = normalizeUser(response.data.user);
   
   localStorage.setItem(TOKEN_KEY, accessToken);
   localStorage.setItem(USER_KEY, JSON.stringify(user));
   
-  return { accessToken, user };
+  return { accessToken, token: response.data.token, user };
 };
 
 export const register = async (data: RegisterData): Promise<AuthResponse> => {
   const response = await api.post('/auth/register', data);
-  const { accessToken, user } = response.data;
+  const accessToken = response.data.accessToken || response.data.token;
+  const user = normalizeUser(response.data.user);
   
   localStorage.setItem(TOKEN_KEY, accessToken);
   localStorage.setItem(USER_KEY, JSON.stringify(user));
   
-  return { accessToken, user };
+  return { accessToken, token: response.data.token, user };
 };
 
 export const logout = (): void => {
@@ -59,9 +63,19 @@ export const getToken = (): string | null => {
 
 export const getUser = () => {
   const userStr = localStorage.getItem(USER_KEY);
-  return userStr ? JSON.parse(userStr) : null;
+  return userStr ? normalizeUser(JSON.parse(userStr)) : null;
 };
 
 export const isAuthenticated = (): boolean => {
   return !!getToken();
 };
+
+function normalizeUser(user: any) {
+  if (!user) return null;
+
+  return {
+    ...user,
+    subscriptionTier: user.subscriptionTier || user.plan || 'free',
+    plan: user.plan || user.subscriptionTier || 'free',
+  };
+}

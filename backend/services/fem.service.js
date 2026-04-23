@@ -2,11 +2,22 @@
  * FEM Simulation Service
  * Finite Element Method simulation for detailed voltage distribution
  * Heavy computation - should run in worker/job queue
+ * Now integrated with ETAP Engine v2 sparse solver
  */
 
 const { exec } = require('child_process');
 const path = require('path');
 const fs = require('fs/promises');
+
+// Import ETAP Engine v2 sparse solver
+let solveSparseFEM;
+try {
+  const sparseSolver = require('../../src/engine/fem/sparseSolver.js');
+  solveSparseFEM = sparseSolver.solveSparseFEM;
+  console.log('[FEM Service] ETAP Engine v2 sparse solver loaded');
+} catch (error) {
+  console.warn('[FEM Service] ETAP Engine v2 sparse solver not available, using fallback:', error.message);
+}
 
 class FEMService {
   /**
@@ -33,6 +44,7 @@ class FEMService {
 
   /**
    * Process FEM simulation (called by worker)
+   * Now uses ETAP Engine v2 sparse solver if available
    */
   async processFEM(jobId) {
     const paramsPath = path.join(__dirname, '../jobs/fem', `${jobId}.json`);
@@ -40,7 +52,49 @@ class FEMService {
     try {
       const params = JSON.parse(await fs.readFile(paramsPath, 'utf8'));
       
-      // Run Python FEM solver
+      console.log('[FEM Service] Processing FEM simulation with ETAP Engine v2');
+      
+      // Try to use ETAP Engine v2 sparse solver
+      if (solveSparseFEM) {
+        try {
+          const { generateIEEE80Mesh } = require('../src/engine/mesh/ieeeMesh.js');
+          
+          // Generate mesh
+          const mesh = generateIEEE80Mesh(params.grid, params.meshResolution || 70);
+          console.log('[FEM Service] Mesh generated:', mesh.nodes.length, 'nodes');
+          
+          // Build system
+          const system = {
+            nodes: mesh.nodes,
+            elements: mesh.elements,
+            conductivity: params.conductivity || 0.01,
+            boundary: params.boundary || { type: 'ground', nodes: [] },
+            sources: params.sources || []
+          };
+          
+          // Solve with sparse solver
+          const solution = await solveSparseFEM(system, {
+            tolerance: params.tolerance || 1e-6,
+            maxIterations: params.maxIterations || 1000
+          });
+          
+          console.log('[FEM Service] Sparse solver completed, convergence:', solution.convergence);
+          
+          return {
+            success: true,
+            method: 'etap_sparse',
+            solution,
+            mesh: {
+              nodes: mesh.nodes.length,
+              elements: mesh.elements.length
+            }
+          };
+        } catch (sparseError) {
+          console.warn('[FEM Service] Sparse solver failed, falling back to Python:', sparseError.message);
+        }
+      }
+      
+      // Fallback to Python FEM solver
       const pythonScript = path.join(__dirname, '../workers/fem/femSolver.py');
       
       return new Promise((resolve, reject) => {

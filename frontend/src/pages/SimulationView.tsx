@@ -13,11 +13,12 @@ export const SimulationView: React.FC = () => {
 
   useEffect(() => {
     if (simulationId) {
-      pollStatus();
+      const cleanup = pollStatus();
+      return cleanup;
     }
   }, [simulationId]);
 
-  const pollStatus = async () => {
+  const pollStatus = () => {
     const interval = setInterval(async () => {
       try {
         const data = await projectsService.getSimulationStatus(simulationId!);
@@ -31,6 +32,9 @@ export const SimulationView: React.FC = () => {
         } else if (data.status === 'failed') {
           clearInterval(interval);
           toast.error(data.error || 'Error en simulación');
+        } else if (data.status === 'not_available' || data.status === 'not_found') {
+          clearInterval(interval);
+          toast.error(data.error || 'La simulación no está disponible');
         }
       } catch (error) {
         console.error('Error polling status:', error);

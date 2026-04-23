@@ -12,7 +12,11 @@
  * @returns {Array} Smoothed contour points
  */
 function smoothContour(points, tension = 0.5, segments = 12) {
-  if (!points || points.length < 3) return points;
+  console.log('[contourSmoothing] smoothContour called with', points.length, 'points, tension:', tension, ', segments:', segments);
+  if (!points || points.length < 3) {
+    console.log('[contourSmoothing] Not enough points, returning original');
+    return points;
+  }
 
   const result = [];
 
@@ -46,6 +50,7 @@ function smoothContour(points, tension = 0.5, segments = 12) {
     }
   }
 
+  console.log('[contourSmoothing] smoothContour completed with', result.length, 'points');
   return result;
 }
 

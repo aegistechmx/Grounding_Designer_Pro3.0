@@ -3,7 +3,8 @@
  * Interpolación en GPU + gradiente continuo
  */
 
-import { createShader, createProgram, heatmapVertexShader, heatmapFragmentShader } from './Shaders';
+import { createShader, createProgram } from './Shaders';
+import { etapVertexShader, etapFragmentShader, multiContourFragmentShader } from './ETAPShader.service';
 
 export class HeatmapRenderer {
   constructor(canvas, width, height) {
@@ -28,19 +29,19 @@ export class HeatmapRenderer {
     gl.enable(gl.BLEND);
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
     
-    // Crear shaders
-    const vertexShader = createShader(gl, gl.VERTEX_SHADER, heatmapVertexShader);
-    const fragmentShader = createShader(gl, gl.FRAGMENT_SHADER, heatmapFragmentShader);
+    // Crear shaders ETAP
+    const vertexShader = createShader(gl, gl.VERTEX_SHADER, etapVertexShader);
+    const fragmentShader = createShader(gl, gl.FRAGMENT_SHADER, etapFragmentShader);
     
     if (!vertexShader || !fragmentShader) {
-      console.error('Error al crear shaders');
+      console.error('Error al crear shaders ETAP');
       return;
     }
     
     this.program = createProgram(gl, vertexShader, fragmentShader);
     
     if (!this.program) {
-      console.error('Error al crear programa');
+      console.error('Error al crear programa ETAP');
       return;
     }
     
@@ -49,7 +50,11 @@ export class HeatmapRenderer {
     // Obtener ubicaciones
     this.positionLoc = gl.getAttribLocation(this.program, 'a_position');
     this.resolutionLoc = gl.getUniformLocation(this.program, 'u_resolution');
-    this.dataTextureLoc = gl.getUniformLocation(this.program, 'u_data');
+    this.gridSizeLoc = gl.getUniformLocation(this.program, 'u_gridSize');
+    this.interpolationPowerLoc = gl.getUniformLocation(this.program, 'u_interpolationPower');
+    this.minValueLoc = gl.getUniformLocation(this.program, 'u_minValue');
+    this.maxValueLoc = gl.getUniformLocation(this.program, 'u_maxValue');
+    this.numDataPointsLoc = gl.getUniformLocation(this.program, 'u_numDataPoints');
   }
   
   createBuffers() {
@@ -67,9 +72,17 @@ export class HeatmapRenderer {
     gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexBuffer);
     gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
     
-    // Crear textura de datos
-    this.dataTexture = gl.createTexture();
-    gl.bindTexture(gl.TEXTURE_2D, this.dataTexture);
+    // Crear textura de datos (posiciones)
+    this.positionTexture = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, this.positionTexture);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    
+    // Crear textura de valores
+    this.valueTexture = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, this.valueTexture);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
@@ -83,12 +96,29 @@ export class HeatmapRenderer {
     }
     const gl = this.gl;
     
-    // Actualizar textura con nuevos datos
-    gl.bindTexture(gl.TEXTURE_2D, this.dataTexture);
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, width, height, 0, gl.RGBA, gl.UNSIGNED_BYTE, data);
+    // Prepare position and value textures for IDW interpolation
+    const numPoints = Math.min(data.length, 100);
+    const positionData = new Float32Array(numPoints * 2);
+    const valueData = new Float32Array(numPoints);
+    
+    for (let i = 0; i < numPoints; i++) {
+      positionData[i * 2] = data[i].x / width;
+      positionData[i * 2 + 1] = data[i].y / height;
+      valueData[i] = data[i].potential;
+    }
+    
+    // Update position texture
+    gl.bindTexture(gl.TEXTURE_2D, this.positionTexture);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, numPoints, 1, 0, gl.RGBA, gl.FLOAT, positionData);
+    
+    // Update value texture
+    gl.bindTexture(gl.TEXTURE_2D, this.valueTexture);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, numPoints, 1, 0, gl.RGBA, gl.FLOAT, valueData);
+    
+    this.numDataPoints = numPoints;
   }
   
-  render() {
+  render(minValue, maxValue, interpolationPower = 2.0) {
     if (!this.gl) {
       console.warn('WebGL no disponible, no se puede renderizar');
       return;
@@ -97,9 +127,25 @@ export class HeatmapRenderer {
     gl.clear(gl.COLOR_BUFFER_BIT);
     
     gl.useProgram(this.program);
-    gl.uniform2f(this.resolutionLoc, this.width, this.height);
-    gl.uniform1i(this.dataTextureLoc, 0);
     
+    // Set uniforms
+    gl.uniform2f(this.resolutionLoc, this.width, this.height);
+    gl.uniform2f(this.gridSizeLoc, this.width, this.height);
+    gl.uniform1f(this.interpolationPowerLoc, interpolationPower);
+    gl.uniform1f(this.minValueLoc, minValue);
+    gl.uniform1f(this.maxValueLoc, maxValue);
+    gl.uniform1i(this.numDataPointsLoc, this.numDataPoints || 0);
+    
+    // Bind textures
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, this.positionTexture);
+    gl.uniform1i(gl.getUniformLocation(this.program, 'u_positionTexture'), 0);
+    
+    gl.activeTexture(gl.TEXTURE1);
+    gl.bindTexture(gl.TEXTURE_2D, this.valueTexture);
+    gl.uniform1i(gl.getUniformLocation(this.program, 'u_dataTexture'), 1);
+    
+    // Draw
     gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexBuffer);
     gl.enableVertexAttribArray(this.positionLoc);
     gl.vertexAttribPointer(this.positionLoc, 2, gl.FLOAT, false, 0, 0);
@@ -118,7 +164,8 @@ export class HeatmapRenderer {
   destroy() {
     if (this.gl) {
       this.gl.deleteBuffer(this.vertexBuffer);
-      this.gl.deleteTexture(this.dataTexture);
+      this.gl.deleteTexture(this.positionTexture);
+      this.gl.deleteTexture(this.valueTexture);
       this.gl.deleteProgram(this.program);
     }
   }

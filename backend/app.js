@@ -26,6 +26,7 @@ const dashboardRoutes = require('./routes/dashboard.routes.js');
 const pricingRoutes = require('./routes/pricing.routes.js');
 const batchRoutes = require('./routes/batch.routes.js');
 const billingRoutes = require('./routes/billing.routes.js');
+const femRoutes = require('./routes/fem.routes.js');
 const { securityHeaders, createRateLimiter, calculationRateLimiter, pricingRateLimiter, corsOptions, authRateLimiter } = require('./middleware/security.js');
 const { sanitizeInput } = require('./middleware/validation.js');
 const { requestLogger, errorLogger, performanceMonitor, requestIdMiddleware } = require('./middleware/logging.js');
@@ -87,6 +88,7 @@ app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/pricing', pricingRateLimiter, pricingRoutes);
 app.use('/api/batch', batchRoutes);
 app.use('/api/billing', billingRoutes);
+app.use('/api/fem', femRoutes);
 
 // Legacy Routes (maintain backward compatibility)
 app.use('/api/calculate', calculateRoute);

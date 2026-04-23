@@ -12,6 +12,7 @@
  * @param {Object} mapper - Coordinate mapper with mapX, mapY functions
  */
 function drawContourLabels(ctx, contours, levels, mapper) {
+  console.log('[contourLabels] drawContourLabels called with', contours.length, 'contours');
   ctx.font = '10px Arial';
   ctx.fillStyle = '#ffffff';
   ctx.textAlign = 'center';
@@ -52,6 +53,7 @@ function drawContourLabels(ctx, contours, levels, mapper) {
 
     ctx.restore();
   });
+  console.log('[contourLabels] drawContourLabels completed');
 }
 
 /**

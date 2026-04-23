@@ -71,7 +71,9 @@ router.get('/me', authenticate, async (req, res) => {
  */
 router.put('/me', authenticate, async (req, res) => {
   try {
-    const user = await authService.updateUser(req.user.userId, req.body);
+    const user = await authService.updateUser(req.user.userId, req.body, {
+      allowedFields: ['firstName', 'lastName']
+    });
     
     res.json({
       success: true,
