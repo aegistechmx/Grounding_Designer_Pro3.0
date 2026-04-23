@@ -3,7 +3,7 @@
  * Handles email notifications using Resend (or SendGrid)
  */
 
-import { Resend } from 'resend';
+const { Resend } = require('resend');
 
 class EmailService {
   constructor() {

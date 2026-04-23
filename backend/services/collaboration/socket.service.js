@@ -3,7 +3,7 @@
  * Handles Socket.IO for collaborative editing
  */
 
-import { Server } from 'socket.io';
+const { Server } = require('socket.io');
 
 class SocketService {
   constructor() {
