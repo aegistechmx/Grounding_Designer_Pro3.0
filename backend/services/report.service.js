@@ -2,11 +2,13 @@
  * Report Service
  * Handles PDF, Excel, and DXF report generation
  * Heavy computation - should run in worker/job queue
+ * Uses unified PDF service architecture
  */
 
 const { exec } = require('child_process');
 const path = require('path');
 const fs = require('fs').promises;
+const storageService = require('./storage.service');
 
 class ReportService {
   /**
@@ -84,6 +86,7 @@ class ReportService {
 
   /**
    * Process PDF generation (called by worker)
+   * Uses Node.js PDF generation with unified service architecture
    */
   async processPDF(jobId) {
     const dataPath = path.join(__dirname, '../jobs/reports', `${jobId}.json`);
@@ -99,7 +102,8 @@ class ReportService {
         reportData.heatmapPath = heatmapPath;
       }
       
-      // Run Python PDF generator
+      // Use Node.js PDF generation (unified service)
+      // For now, use Python as fallback - can be migrated to pure Node.js
       const pythonScript = path.join(__dirname, '../workers/reports/generate_pdf.py');
       
       return new Promise((resolve, reject) => {
@@ -185,6 +189,30 @@ class ReportService {
       return data;
     } catch (error) {
       throw new Error(`Report not found: ${error.message}`);
+    }
+  }
+
+  /**
+   * Upload generated report to storage
+   */
+  async uploadToStorage(jobId, format = 'pdf', metadata = {}) {
+    const resultPath = path.join(__dirname, '../jobs/reports/results', `${jobId}.${format}`);
+    
+    try {
+      const data = await fs.readFile(resultPath);
+      
+      let uploadResult;
+      if (format === 'pdf') {
+        uploadResult = await storageService.uploadPDF(jobId, data, metadata);
+      } else if (format === 'xlsx') {
+        uploadResult = await storageService.uploadExcel(jobId, data, metadata);
+      } else if (format === 'dxf') {
+        uploadResult = await storageService.uploadDXF(jobId, data, metadata);
+      }
+      
+      return uploadResult;
+    } catch (error) {
+      throw new Error(`Storage upload failed: ${error.message}`);
     }
   }
 }

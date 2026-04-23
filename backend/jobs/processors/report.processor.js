@@ -1,6 +1,7 @@
 /**
  * Report Job Processor
  * Handles PDF, Excel, and DXF generation jobs in the queue
+ * Integrates with storage service for cloud upload
  */
 
 const { Worker } = require('bullmq');
@@ -8,6 +9,7 @@ const Redis = require('ioredis');
 const fs = require('fs');
 const path = require('path');
 const PDFDocument = require('pdfkit');
+const storageService = require('../../services/storage.service');
 
 // Redis connection
 const connection = new Redis({
@@ -97,10 +99,20 @@ async function processPDFJob(job) {
 
     await job.updateProgress(100);
 
+    // Upload to storage
+    const pdfBuffer = fs.readFileSync(filePath);
+    const uploadResult = await storageService.uploadPDF(job.id, pdfBuffer, {
+      projectName,
+      clientName,
+      engineer,
+      jobId: job.id
+    });
+
     return {
       success: true,
-      downloadUrl: `http://localhost:3001/files/${fileName}`,
-      fileName
+      downloadUrl: uploadResult.url,
+      fileName,
+      storageKey: uploadResult.key
     };
   } catch (error) {
     console.error('PDF job processing error:', error);
