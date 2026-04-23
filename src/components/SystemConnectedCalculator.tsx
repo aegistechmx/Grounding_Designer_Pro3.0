@@ -316,10 +316,10 @@ export const SystemConnectedCalculator: React.FC = () => {
           <div className="bg-gray-800 rounded-xl p-6 space-y-6">
             {/* 1. Métricas principales */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <MetricCard title="Resistencia (Rg)" value={results.Rg} unit="Ω" type={results.Rg <= 5 ? 'validated' : 'auto'} description={results.Rg < 5 ? 'Excelente' : 'Aceptable'} trend={undefined} trendValue="" />
-              <MetricCard title="GPR" value={results.GPR} unit="V" type="auto" description="Ground Potential Rise" trend={undefined} trendValue="" />
-              <MetricCard title="Tensión Contacto" value={results.Em} unit="V" type={results.touchSafe ? 'validated' : 'warning'} description={`Límite: ${results.Etouch70.toFixed(0)} V`} trend={undefined} trendValue="" />
-              <MetricCard title="Tensión Paso" value={results.Es} unit="V" type={results.stepSafe ? 'validated' : 'warning'} description={`Límite: ${results.Estep70.toFixed(0)} V`} trend={undefined} trendValue="" />
+              <MetricCard title="Resistencia (Rg)" value={results.Rg} unit="Ω" type={results.Rg <= 5 ? 'validated' : 'auto'} trend={undefined} trendValue={undefined} />
+              <MetricCard title="GPR" value={results.GPR} unit="V" type="auto" trend={undefined} trendValue={undefined} />
+              <MetricCard title="Tensión Contacto" value={results.Em} unit="V" type={results.touchSafe ? 'validated' : 'warning'} trend={undefined} trendValue={undefined} />
+              <MetricCard title="Tensión Paso" value={results.Es} unit="V" type={results.stepSafe ? 'validated' : 'warning'} trend={undefined} trendValue={undefined} />
             </div>
             
             {/* 2. Eficiencia */}
